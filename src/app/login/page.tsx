@@ -32,9 +32,11 @@ export default function LoginPage() {
         const user = getUser();
         const token = getToken();
         if (user && token) {
-            if (user.role === 'admin') router.push("/admin");
-            else if (user.role === 'hospital') router.push("/hospital/dashboard");
-            else router.push("/dashboard");
+            if (user.role === 'hospital') {
+                router.push("/hospital/dashboard");
+            } else {
+                localStorage.clear();
+            }
         }
     }, [router]);
 
@@ -85,9 +87,14 @@ export default function LoginPage() {
                 return;
             }
 
-            if (data.role === 'admin') router.push("/admin");
-            else if (data.role === 'hospital') router.push("/hospital/dashboard");
-            else router.push("/dashboard");
+            if (data.role === 'hospital') {
+                router.push("/hospital/dashboard");
+            } else {
+                localStorage.clear();
+                setError(data.role === 'admin' 
+                  ? "Admin access has been moved to the dedicated Admin Portal." 
+                  : "User access has been moved to the User Portal.");
+            }
 
         } catch (err: any) {
             setError(err.response?.data?.message || "Invalid email or password");
@@ -155,10 +162,14 @@ export default function LoginPage() {
             setToken(data.token);
             window.dispatchEvent(new Event('storage'));
 
-            // Redirect based on role
-            if (data.role === 'admin') router.push("/admin");
-            else if (data.role === 'hospital') router.push("/hospital/dashboard");
-            else router.push("/dashboard");
+            if (data.role === 'hospital') {
+                router.push("/hospital/dashboard");
+            } else {
+                localStorage.clear();
+                setError(data.role === 'admin' 
+                  ? "Admin access has been moved to the dedicated Admin Portal." 
+                  : "User access has been moved to the User Portal.");
+            }
         } catch (err: any) {
             console.error("Error with Google Login:", err);
             setError(err.message || "Google Sign-In failed. Please try again.");
