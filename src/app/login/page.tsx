@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setToken, setUser as setStoredUser, getToken, getUser } from "@/lib/tokenStorage";
 import { motion } from "framer-motion";
-import { Loader2, ArrowLeft, Lock, Mail, Building2, ShieldCheck, Activity } from "lucide-react";
+import { Loader2, ArrowLeft, Lock, Mail, Building2, ShieldCheck, Activity, ArrowRight } from "lucide-react";
 import api from "@/lib/api";
 import Image from "next/image";
 
@@ -90,7 +90,7 @@ export default function HospitalLoginPage() {
                     <div className="relative z-10">
                         <h2 className="text-4xl font-black mb-6 leading-tight">Partner with the future of Healthcare.</h2>
                         <p className="text-blue-100 font-medium text-lg leading-relaxed opacity-90">
-                            Access your hospital command center to manage doctor slots, track patient appointments, and monitor your facility's digital footprint.
+                            Access your hospital command center to manage doctor slots, track patient appointments, and monitor your facility&apos;s digital footprint.
                         </p>
                     </div>
 

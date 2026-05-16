@@ -1,20 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async redirects() {
-    try {
-      const res = await fetch(process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/hospitals` : 'http://localhost:5000/api/hospitals');
-      const hospitals = await res.json();
-      if (!Array.isArray(hospitals)) return [];
-      return hospitals.map((h) => ({
-        source: `/hospitals/${h._id}`,
-        destination: `/hospitals/${h.slug || h._id}`,
-        permanent: true,
-      }));
-    } catch (e) {
-      console.warn('Could not load static hospital redirects', e);
-      return [];
-    }
-  },
+  // Redirects removed for hospital panel to prevent build-time fetch errors
+
   images: {
     remotePatterns: [
       {

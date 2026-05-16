@@ -131,7 +131,7 @@ export default function HospitalDashboard() {
                                 </div>
                                 <div>
                                     <h3 className="font-black text-lg">Pillora-Managed</h3>
-                                    <p className="text-blue-100 text-xs font-medium">Only admins can modify your slots.</p>
+                                    <p className="text-blue-100 text-xs font-medium">Only admins can modify your facility&apos;s slots.</p>
                                 </div>
                             </div>
                         </motion.div>

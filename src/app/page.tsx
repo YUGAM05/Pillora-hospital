@@ -95,7 +95,7 @@ export default function HospitalPortalHome() {
                     <FeatureCard 
                         icon={<Users className="w-8 h-8 text-blue-600" />}
                         title="Doctor Directory"
-                        desc="Manage your hospital's specialist profiles, availability timings, and consultation fees from a single dashboard."
+                        desc="Manage your hospital&apos;s specialist profiles, availability timings, and consultation fees from a single dashboard."
                     />
                     <FeatureCard 
                         icon={<Zap className="w-8 h-8 text-blue-600" />}
