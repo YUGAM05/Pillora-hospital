@@ -103,44 +103,24 @@ export default function HospitalDashboard() {
     const isSelfManaged = stats?.management_type === 'SELF';
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] text-gray-900">
-            {/* Sidebar / Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="p-2.5 bg-primary rounded-xl">
-                            <Activity className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-black tracking-tight">Hospital Dashboard</h1>
-                            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{user?.name}</p>
-                        </div>
+        <div className="min-h-screen bg-white text-slate-900 font-sans">
+            <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Hospital Command Center</h1>
+                        <p className="text-slate-500 font-medium">Manage your facility operations and patient flow.</p>
                     </div>
-                    
-                    <div className="flex items-center gap-4">
-                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                            stats?.plan === 'Enterprise' ? 'bg-amber-50 text-amber-600 border-amber-200' :
-                            stats?.plan === 'Premium' ? 'bg-purple-50 text-purple-600 border-purple-200' :
-                            'bg-blue-50 text-blue-600 border-blue-200'
-                        }`}>
-                            {stats?.plan || 'Standard'} Plan
+                    <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest border border-blue-100 shadow-sm">
+                            {stats?.plan || 'Standard'} Tier
                         </div>
-                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
-                            isSelfManaged ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-blue-50 text-blue-600 border-blue-200'
-                        }`}>
-                            {stats?.management_type} Managed
+                        <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
+                            System Online
                         </div>
-                        <button onClick={() => {
-                            localStorage.clear();
-                            window.location.href = '/login';
-                        }} className="p-2.5 bg-gray-50 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                            <LogOut className="w-5 h-5" />
-                        </button>
                     </div>
                 </div>
-            </header>
 
-            <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
+
                 {/* Mode Warning & Benefits */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {!isSelfManaged && (

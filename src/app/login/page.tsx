@@ -3,40 +3,24 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  signInWithPopup
-} from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
 import { setToken, setUser as setStoredUser, getToken, getUser } from "@/lib/tokenStorage";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, ArrowRight, Lock, Mail, KeyRound } from "lucide-react";
+import { motion } from "framer-motion";
+import { Loader2, ArrowLeft, Lock, Mail, Building2, ShieldCheck, Activity } from "lucide-react";
 import api from "@/lib/api";
 import Image from "next/image";
 
-
-export default function LoginPage() {
+export default function HospitalLoginPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
 
-    // MFA state for admin login
-    const [mfaStep, setMfaStep] = useState(false);
-    const [mfaSetup, setMfaSetup] = useState(false);
-    const [mfaCode, setMfaCode] = useState("");
-    const [mfaUserId, setMfaUserId] = useState("");
-    const [qrCode, setQrCode] = useState("");
-
     useEffect(() => {
         const user = getUser();
         const token = getToken();
-        if (user && token) {
-            if (user.role === 'hospital') {
-                router.push("/hospital/dashboard");
-            } else {
-                localStorage.clear();
-            }
+        if (user && token && user.role === 'hospital') {
+            router.push("/hospital/dashboard");
         }
     }, [router]);
 
@@ -49,25 +33,13 @@ export default function LoginPage() {
             const res = await api.post("/auth/login", { email, password });
             const data = res.data;
 
-            // ✅ Handle MFA required (admin flow) — DO NOT save token here
-            if (data.mfaRequired) {
-                setMfaUserId(data.userId);
-                setMfaStep(true);
+            if (data.role !== 'hospital' && data.role !== 'admin') {
+                setError("This portal is only for Hospital Partners. Please use the User App.");
                 return;
             }
 
-            // ✅ Handle MFA setup required (first-time admin)
-            if (data.mfaSetupRequired) {
-                setMfaUserId(data.userId);
-                setQrCode(data.qrCode);
-                setMfaSetup(true);
-                setMfaStep(true);
-                return;
-            }
-
-            // ✅ Non-admin: token is present, save it
             if (!data.token) {
-                setError("Login failed: no token received. Please try again.");
+                setError("Login failed: no token received.");
                 return;
             }
 
@@ -87,14 +59,7 @@ export default function LoginPage() {
                 return;
             }
 
-            if (data.role === 'hospital') {
-                router.push("/hospital/dashboard");
-            } else {
-                localStorage.clear();
-                setError(data.role === 'admin' 
-                  ? "Admin access has been moved to the dedicated Admin Portal." 
-                  : "User access has been moved to the User Portal.");
-            }
+            router.push("/hospital/dashboard");
 
         } catch (err: any) {
             setError(err.response?.data?.message || "Invalid email or password");
@@ -103,227 +68,105 @@ export default function LoginPage() {
         }
     };
 
-    const handleMfaVerify = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError("");
-        try {
-            const res = await api.post('/auth/verify-mfa', {
-                userId: mfaUserId,
-                token: mfaCode,
-            });
-            const data = res.data;
-            if (!data.token) {
-                setError("MFA verification failed: no token received.");
-                return;
-            }
-            setToken(data.token);
-            setStoredUser(JSON.stringify({
-                _id: data._id,
-                name: data.name,
-                email: data.email,
-                role: data.role,
-                status: data.status
-            }));
-            window.dispatchEvent(new Event('storage'));
-            router.push("/admin");
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Invalid authenticator code");
-            setMfaCode("");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-
-    const handleGoogleLogin = async () => {
-        setLoading(true);
-        setError("");
-
-        try {
-            if (!auth || !googleProvider) {
-                throw new Error("Auth not initialized");
-            }
-
-            const result = await signInWithPopup(auth, googleProvider);
-            const user = result.user;
-            const idToken = await user.getIdToken();
-
-            // Mock backend verification for this demo
-            const response = await api.post("/auth/login", { 
-                email: user.email, 
-                googleToken: idToken,
-                name: user.displayName,
-                profilePicture: user.photoURL
-            });
-
-            const data = response.data;
-            setStoredUser(JSON.stringify(data));
-            setToken(data.token);
-            window.dispatchEvent(new Event('storage'));
-
-            if (data.role === 'hospital') {
-                router.push("/hospital/dashboard");
-            } else {
-                localStorage.clear();
-                setError(data.role === 'admin' 
-                  ? "Admin access has been moved to the dedicated Admin Portal." 
-                  : "User access has been moved to the User Portal.");
-            }
-        } catch (err: any) {
-            console.error("Error with Google Login:", err);
-            setError(err.message || "Google Sign-In failed. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] p-6 relative overflow-hidden">
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/5 blur-[120px] rounded-full" />
+        <div className="flex min-h-screen items-center justify-center bg-white p-6 relative overflow-hidden">
+            {/* Background Accents */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-50 blur-[120px] rounded-full opacity-60" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-100/30 blur-[120px] rounded-full opacity-60" />
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-md bg-white border border-gray-100 p-10 rounded-[2.5rem] shadow-2xl relative z-10"
-            >
-                <div className="text-center mb-8">
-                    <div className="mb-6 flex justify-center">
-                        <div className="p-4 bg-primary/5 rounded-3xl relative w-16 h-16">
-                            <Image src="/pillora-logo-v2.svg" alt="Pillora" fill className="object-contain" />
-                        </div>
-                    </div>
-                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">
-                        {mfaStep ? 'Admin Verification' : 'Welcome Back'}
-                    </h2>
-                    <p className="text-gray-500 mt-2 text-sm font-medium">
-                        {mfaStep ? 'Enter your 6-digit authenticator code' : 'Enter your credentials to access Pillora'}
-                    </p>
-                </div>
-
-                {error && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl text-xs font-bold text-center border border-red-100 flex items-center justify-center gap-2">
-                        <Lock className="w-4 h-4" /> {error}
-                    </motion.div>
-                )}
-
-                <AnimatePresence mode="wait">
-                {mfaStep ? (
-                    <motion.form key="mfa" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} onSubmit={handleMfaVerify} className="space-y-6">
-                        <div className="flex items-center justify-center mb-2">
-                            <div className="p-4 bg-blue-50 rounded-2xl">
-                                <KeyRound className="w-8 h-8 text-blue-600" />
-                            </div>
-                        </div>
-                        {mfaSetup && qrCode && (
-                            <div className="text-center space-y-3 mb-4">
-                                <p className="text-slate-500 text-sm">Scan this QR code with your Authenticator app:</p>
-                                <Image src={qrCode} alt="MFA QR Code" width={160} height={160} className="mx-auto rounded-xl border border-slate-100 p-2" unoptimized />
-                            </div>
-                        )}
-                        <div>
-                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 text-center">6-Digit Code</label>
-                            <input
-                                className="block w-full px-4 py-4 rounded-2xl border border-slate-200 bg-gray-50 text-slate-900 text-center text-2xl tracking-[0.5em] font-bold outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                                maxLength={6}
-                                value={mfaCode}
-                                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                required
-                                autoFocus
-                                placeholder="000000"
-                            />
-                        </div>
-                        <button
-                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-blue-600/30 disabled:opacity-70 transition-all"
-                            type="submit"
-                            disabled={loading || mfaCode.length !== 6}
-                        >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify & Access Admin'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => { setMfaStep(false); setMfaSetup(false); setError(''); setMfaCode(''); }}
-                            className="w-full text-sm text-slate-400 hover:text-blue-600 transition-colors text-center font-medium"
-                        >
-                            ← Back to Login
-                        </button>
-                    </motion.form>
-                ) : (
-                    <motion.div key="login" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-                    <form onSubmit={handleEmailLogin} className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
-                        <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                required
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none font-bold text-gray-900 transition-all"
-                                placeholder="name@pillora.in"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <div className="flex justify-between items-center ml-1">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
-                            <Link href="/forgot-password" className="text-[10px] font-black text-primary uppercase hover:underline">Forgot?</Link>
-                        </div>
-                        <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                            <input
-                                required
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary/20 outline-none font-bold text-gray-900 tracking-widest transition-all"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-gray-900/20 hover:bg-gray-800 hover:-translate-y-0.5 transition-all active:scale-95 disabled:opacity-70"
-                    >
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Sign In"}
-                    </button>
-                </form>
-
-                <div className="relative my-8">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-                    <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest"><span className="bg-white px-4 text-gray-400">Or continue with</span></div>
-                </div>
-
-                <button
-                    onClick={handleGoogleLogin}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 bg-white border border-gray-100 py-4 rounded-2xl font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm active:scale-[0.98] disabled:opacity-70"
-                >
-                    <Image src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width={20} height={20} />
-                    Google Account
-                </button>
+            <div className="w-full max-w-5xl flex flex-col md:flex-row bg-white border border-slate-100 rounded-[3rem] shadow-2xl overflow-hidden relative z-10">
                 
-                <p className="text-[10px] text-gray-400 text-center mt-8 font-medium">
-                    By continuing, you agree to our 
-                    <Link href="/terms" className="text-primary font-bold"> Terms</Link> & 
-                    <Link href="/privacy" className="text-primary font-bold"> Privacy</Link>
-                </p>
+                {/* Left Side: Branding/Info */}
+                <div className="hidden md:flex w-1/2 bg-blue-600 p-16 flex-col justify-between text-white relative">
+                    <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+                    
+                    <Link href="/" className="flex items-center gap-3 relative z-10 group">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-lg group-hover:scale-110 transition-transform">
+                            <Activity className="w-6 h-6" />
+                        </div>
+                        <span className="text-xl font-black tracking-tight">Pillora <span className="text-blue-100 opacity-80">Hospital</span></span>
+                    </Link>
 
-                <div className="mt-8 text-center border-t border-gray-50 pt-6">
-                    <p className="text-gray-500 text-xs font-bold">
-                        New here? <Link href="/register" className="text-primary hover:underline">Create Account</Link>
-                    </p>
+                    <div className="relative z-10">
+                        <h2 className="text-4xl font-black mb-6 leading-tight">Partner with the future of Healthcare.</h2>
+                        <p className="text-blue-100 font-medium text-lg leading-relaxed opacity-90">
+                            Access your hospital command center to manage doctor slots, track patient appointments, and monitor your facility's digital footprint.
+                        </p>
+                    </div>
+
+                    <div className="relative z-10 flex items-center gap-4">
+                        <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
+                            <ShieldCheck className="w-6 h-6" />
+                        </div>
+                        <p className="text-sm font-bold text-blue-50">Enterprise-Grade Security Protocol Active</p>
+                    </div>
                 </div>
-                    </motion.div>
-                )}
-                </AnimatePresence>
-            </motion.div>
+
+                {/* Right Side: Login Form */}
+                <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center">
+                    <div className="mb-10 text-center md:text-left">
+                        <h1 className="text-3xl font-black text-slate-900 mb-2">Hospital Login</h1>
+                        <p className="text-slate-500 font-medium">Please enter your partner credentials</p>
+                    </div>
+
+                    {error && (
+                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-xs font-bold border border-rose-100 flex items-center gap-2">
+                            <Lock className="w-4 h-4" /> {error}
+                        </motion.div>
+                    )}
+
+                    <form onSubmit={handleEmailLogin} className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
+                            <div className="relative">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                <input
+                                    required
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 transition-all"
+                                    placeholder="hospital@pillora.in"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center ml-1">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Password</label>
+                            </div>
+                            <div className="relative">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                                <input
+                                    required
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 tracking-widest transition-all"
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-3"
+                        >
+                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Sign In to Dashboard <ArrowRight className="w-4 h-4" /></>}
+                        </button>
+                    </form>
+
+                    <div className="mt-12 text-center pt-8 border-t border-slate-50">
+                        <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-4">Need Assistance?</p>
+                        <div className="flex items-center justify-center gap-4">
+                            <Link href="mailto:support@pillora.in" className="text-blue-600 text-sm font-bold hover:underline">Contact Support</Link>
+                            <div className="w-1 h-1 bg-slate-200 rounded-full" />
+                            <Link href="/" className="text-slate-500 text-sm font-bold hover:underline">Back to Home</Link>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
-
