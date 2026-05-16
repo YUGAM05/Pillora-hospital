@@ -3,7 +3,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { getToken } from "@/lib/tokenStorage";
-import { Building2, MapPin, Phone, IndianRupee, Clock, FileText, Loader2, CheckCircle2, CreditCard, User, GraduationCap, Calendar, Plus, Trash2, Image as ImageIcon, XCircle, Lock, Upload, Camera } from "lucide-react";
+import { Building2, MapPin, Phone, IndianRupee, Clock, FileText, Loader2, CheckCircle2, CreditCard, User, GraduationCap, Calendar, Plus, Trash2, Image as ImageIcon, XCircle, Lock, Upload, Camera, Zap, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
