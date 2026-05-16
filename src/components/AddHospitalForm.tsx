@@ -26,6 +26,7 @@ export default function AddHospitalForm({ onClose }: { onClose?: () => void }) {
         isOpen24Hours: false,
         isOnlinePaymentAvailable: false,
         management_type: "SELF" as "SELF" | "PILLORA",
+        plan: "Standard" as "Standard" | "Premium" | "Enterprise",
         image: "", // Main image
         images: [] as string[],
         phoneNumbers: [] as string[],
@@ -152,6 +153,7 @@ export default function AddHospitalForm({ onClose }: { onClose?: () => void }) {
                 consultationFee: Number(formData.consultationFee),
                 images: formData.images.filter(img => img.trim() !== ""),
                 phoneNumbers: formData.phoneNumbers.filter(ph => ph.trim() !== ""),
+                plan: formData.plan
             };
 
             const res = await api.post("/admin/hospitals/register", payload);
@@ -331,6 +333,42 @@ export default function AddHospitalForm({ onClose }: { onClose?: () => void }) {
                                 <label htmlFor="isOnlinePaymentAvailable" className="text-sm font-bold text-gray-700 cursor-pointer flex items-center gap-2">
                                     <CreditCard className="w-4 h-4" /> Online Pay
                                 </label>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="text-xs font-black text-gray-400 uppercase tracking-wider">Subscription Plan</label>
+                            <div className="grid grid-cols-1 gap-3">
+                                {[
+                                    { id: 'Standard', name: 'Standard Listing', price: '₹2,000', icon: <CheckCircle2 className="w-4 h-4" />, features: ['Verified Badge', 'Doctor Names + Specialization'] },
+                                    { id: 'Premium', name: 'Premium Feature', price: '₹5,000', icon: <Zap className="w-4 h-4" />, features: ['Everything in Standard', 'Top of Search', 'Govt Schemes Tag'] },
+                                    { id: 'Enterprise', name: 'Enterprise Feature', price: '₹10,000', icon: <ShieldCheck className="w-4 h-4" />, features: ['Everything in Premium', 'Homepage Banner', 'Priority Support'] }
+                                ].map((plan) => (
+                                    <button
+                                        key={plan.id}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, plan: plan.id as any })}
+                                        className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all text-left ${
+                                            formData.plan === plan.id 
+                                            ? 'border-blue-600 bg-blue-50/50' 
+                                            : 'border-gray-100 bg-gray-50/50 hover:border-gray-200'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-2 rounded-xl ${formData.plan === plan.id ? 'bg-blue-600 text-white' : 'bg-white text-gray-400'}`}>
+                                                {plan.icon}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900 leading-none mb-1">{plan.name}</p>
+                                                <p className="text-[10px] text-gray-500 font-medium">{plan.features.join(' • ')}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-black text-blue-600">{plan.price}</p>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">/ Month</p>
+                                        </div>
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
