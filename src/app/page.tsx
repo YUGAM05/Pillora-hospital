@@ -18,24 +18,6 @@ import { motion } from "framer-motion";
 export default function HospitalPortalHome() {
     return (
         <main className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-700">
-            {/* Navigation / Header Strip */}
-            <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                            <Activity className="w-6 h-6" />
-                        </div>
-                        <span className="text-xl font-black tracking-tight text-slate-900">Pillora <span className="text-blue-600">Hospital</span></span>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        <Link href="/login" className="text-sm font-bold text-slate-500 hover:text-blue-600 transition-colors">Partner Login</Link>
-                        <Link href="/login" className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 transition-all active:scale-95">
-                            Access Dashboard
-                        </Link>
-                    </div>
-                </div>
-            </nav>
-
             {/* Hero Section */}
             <section className="relative pt-20 pb-32 overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-50/50 rounded-full blur-[120px] -z-10 opacity-50" />
