@@ -119,6 +119,13 @@ export default function HospitalDashboard() {
                     
                     <div className="flex items-center gap-4">
                         <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                            stats?.plan === 'Enterprise' ? 'bg-amber-50 text-amber-600 border-amber-200' :
+                            stats?.plan === 'Premium' ? 'bg-purple-50 text-purple-600 border-purple-200' :
+                            'bg-blue-50 text-blue-600 border-blue-200'
+                        }`}>
+                            {stats?.plan || 'Standard'} Plan
+                        </div>
+                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                             isSelfManaged ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-blue-50 text-blue-600 border-blue-200'
                         }`}>
                             {stats?.management_type} Managed
@@ -134,23 +141,43 @@ export default function HospitalDashboard() {
             </header>
 
             <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
-                {/* Mode Warning */}
-                {!isSelfManaged && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-blue-600 text-white p-6 rounded-[2rem] shadow-xl shadow-blue-900/10 flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
-                                <Info className="w-6 h-6 text-white" />
+                {/* Mode Warning & Benefits */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {!isSelfManaged && (
+                        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-blue-600 text-white p-6 rounded-[2rem] shadow-xl shadow-blue-900/10 flex items-center justify-between gap-6 h-full">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                                    <Info className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-lg">Pillora-Managed</h3>
+                                    <p className="text-blue-100 text-xs font-medium">Only admins can modify your slots.</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="font-black text-lg">Pillora-Managed Mode Active</h3>
-                                <p className="text-blue-100 text-sm font-medium">Only Pillora Super-Admins can modify your slots and doctor profiles.</p>
-                            </div>
+                        </motion.div>
+                    )}
+                    
+                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-blue-900/5 flex items-center justify-between gap-6">
+                        <div className="flex flex-wrap gap-2">
+                            {stats?.is_featured && (
+                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">Top of Search</span>
+                            )}
+                            {stats?.has_govt_schemes && (
+                                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-100">Govt Schemes</span>
+                            )}
+                            {stats?.is_spotlight && (
+                                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-100">Spotlight</span>
+                            )}
+                            {stats?.priority_support && (
+                                <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-rose-100">Priority Support</span>
+                            )}
                         </div>
-                        <button className="px-6 py-3 bg-white text-blue-600 font-black rounded-xl hover:bg-blue-50 transition-all flex items-center gap-2 text-sm whitespace-nowrap">
-                            <RefreshCcw className="w-4 h-4" /> Request Switch
-                        </button>
+                        <div className="text-right">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plan Benefits</p>
+                            <p className="text-xs font-bold text-primary">Active</p>
+                        </div>
                     </motion.div>
-                )}
+                </div>
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
