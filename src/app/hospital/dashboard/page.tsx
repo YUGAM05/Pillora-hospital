@@ -21,7 +21,21 @@ export default function HospitalDashboard() {
     const [error, setError] = useState("");
     const [user, setUser] = useState<any>(null);
     const [showAddDoctor, setShowAddDoctor] = useState(false);
-    const [showSlotGen, setShowSlotGen] = useState(false);
+    const [showSlotGen, setShowSlotGen] = useState<any>(null);
+    const [newDoctor, setNewDoctor] = useState({ name: "", specialty: "", fee: 200 });
+
+    const handleAddDoctorSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await api.post("/hospital/dashboard/doctors", newDoctor);
+            alert("Doctor recruited successfully!");
+            setShowAddDoctor(false);
+            setNewDoctor({ name: "", specialty: "", fee: 200 });
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to recruit doctor");
+        }
+    };
 
     const fetchData = useCallback(async () => {
         try {
@@ -159,6 +173,38 @@ export default function HospitalDashboard() {
                     </motion.div>
                 </div>
 
+                {isSelfManaged && (
+                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                                    <Clock className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-lg text-slate-900 leading-tight">Quick Slot & Timing Generator</h3>
+                                    <p className="text-slate-500 text-xs font-medium mt-0.5">Quickly select a doctor to set their available date, start/end timing, and booking slot duration.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                            {doctors.map((doc: any) => (
+                                <button
+                                    key={doc._id}
+                                    onClick={() => setShowSlotGen(doc)}
+                                    className="px-5 py-4 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 text-slate-700 hover:text-blue-600 font-black rounded-2xl text-xs flex items-center gap-2.5 transition-all shadow-sm hover:shadow active:scale-95 shrink-0"
+                                >
+                                    <Clock className="w-4 h-4" /> Setup Timing for Dr. {doc.name}
+                                </button>
+                            ))}
+                            {doctors.length === 0 && (
+                                <div className="text-center py-6 w-full bg-slate-50 rounded-2xl border border-dashed border-slate-100">
+                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest italic">Add a doctor below first to configure timings and generate slots.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard label="Total Doctors" value={stats?.stats?.doctors} icon={<Stethoscope className="text-blue-500" />} />
@@ -276,9 +322,37 @@ export default function HospitalDashboard() {
                     <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-2xl font-black">Generate Slots</h3>
-                            <button onClick={() => setShowSlotGen(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowSlotGen(null)}><XCircle className="w-6 h-6 text-gray-400" /></button>
                         </div>
-                        <SlotGenTool doctor={showSlotGen} onClose={() => { setShowSlotGen(false); fetchData(); }} />
+                        <SlotGenTool doctor={showSlotGen} onClose={() => { setShowSlotGen(null); fetchData(); }} />
+                    </motion.div>
+                </div>
+            )}
+
+            {showAddDoctor && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
+                        <div className="flex items-center justify-between mb-8">
+                            <h3 className="text-2xl font-black">Recruit New Doctor</h3>
+                            <button onClick={() => setShowAddDoctor(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                        </div>
+                        <form onSubmit={handleAddDoctorSubmit} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doctor Name</label>
+                                <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty</label>
+                                <input required type="text" placeholder="Cardiologist" value={newDoctor.specialty} onChange={e => setNewDoctor({...newDoctor, specialty: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Consultation Fee (₹)</label>
+                                <input required type="number" value={newDoctor.fee} onChange={e => setNewDoctor({...newDoctor, fee: Number(e.target.value)})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none" />
+                            </div>
+                            <button className="w-full py-5 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all">
+                                Recruit Doctor
+                            </button>
+                        </form>
                     </motion.div>
                 </div>
             )}
