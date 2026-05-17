@@ -109,6 +109,19 @@ export default function HospitalDashboard() {
         }
     };
 
+    const handleDeleteSlot = async (slotId: string) => {
+        if (!window.confirm("Are you sure you want to completely delete this slot? All associated bookings (if any) will also be deleted!")) {
+            return;
+        }
+        try {
+            await api.delete(`/hospital/dashboard/slots/${slotId}`);
+            alert("Slot deleted successfully!");
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to delete slot");
+        }
+    };
+
     const handleAddDoctorSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -890,6 +903,7 @@ export default function HospitalDashboard() {
                                                         </td>
                                                         <td className="p-4 pr-6 text-right">
                                                             {isSelfManaged && activeSlotSubTab === 'upcoming' && (
+                                                                <>
                                                                 <button
                                                                     disabled={!isCancellable}
                                                                     onClick={() => setShowCancelSlotModal(slot)}
@@ -901,11 +915,26 @@ export default function HospitalDashboard() {
                                                                 >
                                                                     Cancel Slot
                                                                 </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteSlot(slot._id)}
+                                                                    className="px-3 py-1.5 ml-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-600/10 active:scale-95"
+                                                                >
+                                                                    Delete Slot
+                                                                </button>
+                                                            </>
                                                             )}
                                                             {activeSlotSubTab === 'cancelled' && slot.cancellationReason && (
                                                                 <span className="text-[10px] text-slate-400 font-medium italic block" title={`Reason: ${slot.cancellationReason}`}>
                                                                     Reason: {slot.cancellationReason}
                                                                 </span>
+                                                            )}
+                                                            {activeSlotSubTab === 'cancelled' && (
+                                                                <button
+                                                                    onClick={() => handleDeleteSlot(slot._id)}
+                                                                    className="px-3 py-1.5 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-600/10 active:scale-95"
+                                                                >
+                                                                    Delete Slot
+                                                                </button>
                                                             )}
                                                         </td>
                                                     </tr>
