@@ -327,7 +327,7 @@ export default function HospitalDashboard() {
         );
     }
 
-    const isSelfManaged = stats?.management_type === 'SELF';
+    const isSelfManaged = true;
 
     // Calculate doctor bookings breakdown
     const getDoctorBreakdown = () => {
