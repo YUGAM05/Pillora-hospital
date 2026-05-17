@@ -21,20 +21,92 @@ export default function HospitalDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [user, setUser] = useState<any>(null);
+    
+    // Tabs & Filters
+    const [doctorTab, setDoctorTab] = useState<"individual" | "group">("individual");
+    const [filterDate, setFilterDate] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [filterSpecialty, setFilterSpecialty] = useState("");
+    const [filterStatus, setFilterStatus] = useState("");
+
+    // Recruit Doctor States
     const [showAddDoctor, setShowAddDoctor] = useState(false);
     const [showSlotGen, setShowSlotGen] = useState<any>(null);
     const [newDoctor, setNewDoctor] = useState({ name: "", specialty: "", fee: 200 });
 
+    // Specialty Group States
+    const [showAddSpecialtyGroup, setShowAddSpecialtyGroup] = useState(false);
+    const [groupName, setGroupName] = useState("");
+    const [groupDept, setGroupDept] = useState("");
+    const [groupFee, setGroupFee] = useState(500);
+    const [groupMaxSlots, setGroupMaxSlots] = useState(10);
+    const [groupDocsCount, setGroupDocsCount] = useState(5);
+    const [groupDesc, setGroupDesc] = useState("");
+    const [groupStartTime, setGroupStartTime] = useState("09:00");
+    const [groupEndTime, setGroupEndTime] = useState("17:00");
+    const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+
     const handleAddDoctorSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await api.post("/hospital/dashboard/doctors", newDoctor);
+            await api.post("/hospital/dashboard/doctors", {
+                ...newDoctor,
+                isSpecialtyGroup: false
+            });
             alert("Doctor recruited successfully!");
             setShowAddDoctor(false);
             setNewDoctor({ name: "", specialty: "", fee: 200 });
             fetchData();
         } catch (err: any) {
             alert(err.response?.data?.message || "Failed to recruit doctor");
+        }
+    };
+
+    const handleAddSpecialtyGroupSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const availability = groupDays.map(day => ({
+                day,
+                startTime: groupStartTime,
+                endTime: groupEndTime
+            }));
+
+            await api.post("/hospital/dashboard/doctors", {
+                name: `${groupName} Specialty Group`,
+                specialty: groupName,
+                fee: groupFee,
+                availability,
+                isSpecialtyGroup: true,
+                department: groupDept,
+                maxAppointmentsPerSlot: groupMaxSlots,
+                doctorsCount: groupDocsCount,
+                description: groupDesc
+            });
+
+            alert("Specialty Group created successfully!");
+            setShowAddSpecialtyGroup(false);
+            setGroupName("");
+            setGroupDept("");
+            setGroupFee(500);
+            setGroupMaxSlots(10);
+            setGroupDocsCount(5);
+            setGroupDesc("");
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to create specialty group");
+        }
+    };
+
+    const toggleDoctorStatus = async (doc: any) => {
+        try {
+            await api.put(`/hospital/dashboard/doctors/${doc._id}`, {
+                is_active: !doc.is_active
+            });
+            alert(`${doc.isSpecialtyGroup ? 'Specialty Group' : 'Doctor'} status updated successfully!`);
+            fetchData();
+        } catch (err: any) {
+            alert("Failed to update status");
         }
     };
 
@@ -81,25 +153,57 @@ export default function HospitalDashboard() {
         fetchData();
     }, [fetchData, router]);
 
+    const filteredAppointments = appointments.filter((app: any) => {
+        const appDateStr = app.slotTime ? new Date(app.slotTime).toISOString().split('T')[0] : "";
+        
+        if (filterDate && appDateStr !== filterDate) return false;
+        
+        if (startDate && appDateStr < startDate) return false;
+        if (endDate && appDateStr > endDate) return false;
+
+        if (filterSpecialty && !app.doctor?.specialty?.toLowerCase().includes(filterSpecialty.toLowerCase())) return false;
+
+        if (filterStatus && app.status !== filterStatus) return false;
+
+        return true;
+    });
+
+    const filteredDoctors = doctors.filter((doc: any) => {
+        if (doctorTab === "individual") {
+            return doc.isSpecialtyGroup !== true;
+        } else {
+            return doc.isSpecialtyGroup === true;
+        }
+    });
+
     const exportToExcel = () => {
-        if (appointments.length === 0) {
-            alert("No appointments available to export.");
+        if (filteredAppointments.length === 0) {
+            alert("No filtered appointments available to export.");
             return;
         }
 
         // CSV Header
-        const headers = ["Appointment ID", "Patient Name", "Patient Phone", "Doctor Name", "Appointment Date", "Appointment Time", "Status"];
+        const headers = ["Token No.", "Patient Name", "Contact Number", "Specialty", "Appointment Date", "Time Slot", "Booking Date", "Status", "Hospital Name"];
         
         // CSV Rows
-        const rows = appointments.map((app) => [
-            app._id,
-            `"${app.patient?.name || 'N/A'}"`,
-            `"${app.patient?.phone || 'N/A'}"`,
-            `"${app.doctor?.name || 'N/A'}"`,
-            `"${new Date(app.slotTime).toLocaleDateString()}"`,
-            `"${new Date(app.slotTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}"`,
-            `"${app.status || 'N/A'}"`
-        ]);
+        const rows = filteredAppointments.map((app, index) => {
+            const tokenNo = app.tokenNo || `T-${index + 1001}`;
+            const timeSlot = app.slot 
+                ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` 
+                : new Date(app.slotTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            return [
+                `"${tokenNo}"`,
+                `"${app.patient?.name || 'N/A'}"`,
+                `"${app.patient?.phone || 'N/A'}"`,
+                `"${app.doctor?.specialty || 'N/A'}"`,
+                `"${new Date(app.slotTime).toLocaleDateString()}"`,
+                `"${timeSlot}"`,
+                `"${new Date(app.bookingDate || app.createdAt || Date.now()).toLocaleDateString()}"`,
+                `"${app.status || 'N/A'}"`,
+                `"${stats?.hospital?.name || stats?.name || user?.hospitalName || 'Pillora Hospital'}"`
+            ];
+        });
 
         const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -336,42 +440,111 @@ export default function HospitalDashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Doctors List */}
+                    {/* Doctors & Specialty Groups List */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-black flex items-center gap-2">
-                                <Users className="w-6 h-6 text-primary" /> Our Doctors
-                            </h2>
+                            <div className="flex items-center gap-2">
+                                <Users className="w-6 h-6 text-primary" />
+                                <h2 className="text-xl font-black">Staff & Groups</h2>
+                            </div>
                             {isSelfManaged && (
-                                <button onClick={() => setShowAddDoctor(true)} className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90">
-                                    <Plus className="w-5 h-5" />
+                                <button 
+                                    onClick={() => doctorTab === "individual" ? setShowAddDoctor(true) : setShowAddSpecialtyGroup(true)} 
+                                    className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all flex items-center gap-1 text-[10px] font-black uppercase tracking-wider shadow-md shadow-primary/10"
+                                    title={doctorTab === "individual" ? "Add Doctor" : "Add Specialty Group"}
+                                >
+                                    <Plus className="w-4 h-4" /> Add {doctorTab === "individual" ? "Doc" : "Group"}
                                 </button>
                             )}
                         </div>
+
+                        {/* Tabs */}
+                        <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex gap-2">
+                            <button 
+                                onClick={() => setDoctorTab("individual")} 
+                                className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                    doctorTab === "individual" 
+                                        ? "bg-white text-slate-800 shadow-sm" 
+                                        : "text-slate-400 hover:text-slate-600"
+                                }`}
+                            >
+                                Individual
+                            </button>
+                            <button 
+                                onClick={() => setDoctorTab("group")} 
+                                className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                    doctorTab === "group" 
+                                        ? "bg-white text-slate-800 shadow-sm" 
+                                        : "text-slate-400 hover:text-slate-600"
+                                }`}
+                            >
+                                Specialty Groups
+                            </button>
+                        </div>
                         
-                        <div className="space-y-4">
-                            {doctors.map((doc: any) => (
-                                <div key={doc._id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:border-primary/30 transition-all group">
+                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                            {filteredDoctors.map((doc: any) => (
+                                <div key={doc._id} className={`bg-white p-5 rounded-2xl border ${doc.is_active ? 'border-gray-100' : 'border-dashed border-rose-200 bg-rose-50/20'} shadow-sm hover:border-primary/30 transition-all group`}>
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center font-black text-primary text-xl group-hover:bg-primary group-hover:text-white transition-colors">
                                             {doc.name.charAt(0)}
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-gray-900">{doc.name}</p>
-                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">{doc.specialty}</p>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-900 truncate">{doc.name}</p>
+                                            <p className="text-xs text-gray-500 font-bold uppercase tracking-wider truncate">{doc.specialty}</p>
+                                            {doc.isSpecialtyGroup && doc.department && (
+                                                <span className="text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">
+                                                    {doc.department}
+                                                </span>
+                                            )}
                                         </div>
                                         <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
                                     </div>
+
+                                    {doc.isSpecialtyGroup && (
+                                        <div className="mt-3.5 pt-3.5 border-t border-slate-50 grid grid-cols-2 gap-3 text-[10px] font-bold text-slate-500">
+                                            <div>
+                                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Max Per Slot</span>
+                                                <span className="font-extrabold text-slate-700">{doc.maxAppointmentsPerSlot || 1} Patients</span>
+                                            </div>
+                                            <div>
+                                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Doctors Pool</span>
+                                                <span className="font-extrabold text-slate-700">{doc.doctorsCount || 1} Available</span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
                                         <span className="text-xs font-black text-emerald-600">₹{doc.fee} / Visit</span>
-                                        {isSelfManaged && (
-                                            <button onClick={() => setShowSlotGen(doc)} className="text-[10px] font-black uppercase text-primary hover:underline">
-                                                Manage Slots
-                                            </button>
-                                        )}
+                                        <div className="flex items-center gap-3">
+                                            {isSelfManaged && (
+                                                <>
+                                                    <button 
+                                                        onClick={() => toggleDoctorStatus(doc)} 
+                                                        className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded ${
+                                                            doc.is_active 
+                                                                ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' 
+                                                                : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                                        }`}
+                                                    >
+                                                        {doc.is_active ? 'Deactivate' : 'Activate'}
+                                                    </button>
+                                                    {doc.is_active && (
+                                                        <button onClick={() => setShowSlotGen(doc)} className="text-[10px] font-black uppercase text-primary hover:underline">
+                                                            Slots
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
+                            {filteredDoctors.length === 0 && (
+                                <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                                    <p className="text-slate-400 font-bold italic text-xs">No {doctorTab === "individual" ? "doctors recruited" : "specialty groups created"} yet.</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -379,14 +552,83 @@ export default function HospitalDashboard() {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-black flex items-center gap-2">
-                                <Calendar className="w-6 h-6 text-primary" /> Recent Appointments
+                                <Calendar className="w-6 h-6 text-primary" /> Appointments ({filteredAppointments.length})
                             </h2>
                             <button
                                 onClick={exportToExcel}
                                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
                             >
-                                <Download className="w-4 h-4" /> Export to Excel
+                                <Download className="w-4 h-4" /> Export Excel
                             </button>
+                        </div>
+
+                        {/* Filters Card */}
+                        <div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 shadow-sm">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Single Date</label>
+                                <input 
+                                    type="date" 
+                                    value={filterDate} 
+                                    onChange={(e) => {
+                                        setFilterDate(e.target.value);
+                                        if (e.target.value) {
+                                            setStartDate("");
+                                            setEndDate("");
+                                        }
+                                    }} 
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    value={startDate} 
+                                    onChange={(e) => {
+                                        setStartDate(e.target.value);
+                                        if (e.target.value) setFilterDate("");
+                                    }} 
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">End Date</label>
+                                <input 
+                                    type="date" 
+                                    value={endDate} 
+                                    onChange={(e) => {
+                                        setEndDate(e.target.value);
+                                        if (e.target.value) setFilterDate("");
+                                    }} 
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Specialty</label>
+                                <input 
+                                    type="text" 
+                                    placeholder="e.g. Cardiology" 
+                                    value={filterSpecialty} 
+                                    onChange={(e) => setFilterSpecialty(e.target.value)} 
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Status</label>
+                                <select 
+                                    value={filterStatus} 
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                >
+                                    <option value="">All Statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="confirmed">Confirmed</option>
+                                    <option value="checked-in">Checked-in</option>
+                                    <option value="in-consultation">In-consultation</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
                         </div>
                         
                         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-blue-900/5 overflow-hidden">
@@ -395,13 +637,13 @@ export default function HospitalDashboard() {
                                     <thead>
                                         <tr className="bg-gray-50/50 border-b border-gray-100">
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Patient</th>
-                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Doctor</th>
+                                            <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Doctor / Specialty</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
                                             <th className="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
-                                        {appointments.map((app: any) => (
+                                        {filteredAppointments.map((app: any) => (
                                             <tr key={app._id} className="hover:bg-gray-50/50 transition-colors">
                                                 <td className="px-6 py-4">
                                                     <p className="font-bold text-gray-900">{app.patient?.name}</p>
@@ -482,6 +724,87 @@ export default function HospitalDashboard() {
                             </div>
                             <button className="w-full py-5 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all">
                                 Recruit Doctor
+                            </button>
+                        </form>
+                    </motion.div>
+                </div>
+            )}
+
+            {showAddSpecialtyGroup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl my-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-black">Create Specialty Group</h3>
+                            <button onClick={() => setShowAddSpecialtyGroup(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                        </div>
+                        <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty Name</label>
+                                <input required type="text" placeholder="e.g. Cardiology" value={groupName} onChange={e => setGroupName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
+                                <input required type="text" placeholder="e.g. Department of Cardiac Sciences" value={groupDept} onChange={e => setGroupDept(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Fee (₹)</label>
+                                    <input required type="number" value={groupFee} onChange={e => setGroupFee(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Max Per Slot</label>
+                                    <input required type="number" value={groupMaxSlots} onChange={e => setGroupMaxSlots(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Docs Count</label>
+                                    <input required type="number" value={groupDocsCount} onChange={e => setGroupDocsCount(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Availability Schedule</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[8px] font-bold text-slate-400 uppercase ml-0.5">Start Time</label>
+                                        <input type="time" value={groupStartTime} onChange={e => setGroupStartTime(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[8px] font-bold text-slate-400 uppercase ml-0.5">End Time</label>
+                                        <input type="time" value={groupEndTime} onChange={e => setGroupEndTime(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Available Days</label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
+                                        <label key={day} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 cursor-pointer select-none">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={groupDays.includes(day)} 
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setGroupDays([...groupDays, day]);
+                                                    } else {
+                                                        setGroupDays(groupDays.filter(d => d !== day));
+                                                    }
+                                                }}
+                                                className="rounded text-primary"
+                                            />
+                                            <span className="text-[10px] font-bold text-slate-700">{day}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Description / Notes</label>
+                                <textarea placeholder="General details about the group or department..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs h-20 resize-none" />
+                            </div>
+
+                            <button className="w-full py-4 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all text-xs uppercase tracking-wider">
+                                Create Specialty Group
                             </button>
                         </form>
                     </motion.div>

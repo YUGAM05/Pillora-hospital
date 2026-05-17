@@ -51,7 +51,7 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
                 </div>
                 <div>
                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Generating for</p>
-                    <p className="font-bold text-slate-900 leading-tight">Dr. {doctor.name}</p>
+                    <p className="font-bold text-slate-900 leading-tight">{doctor.isSpecialtyGroup ? "" : "Dr. "}{doctor.name}</p>
                 </div>
             </div>
 
