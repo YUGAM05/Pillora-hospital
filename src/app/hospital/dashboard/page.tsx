@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
     Users, Activity, Calendar, Clock, Plus, Settings, 
     LogOut, User, Stethoscope, ChevronRight, CheckCircle2, 
-    XCircle, AlertCircle, Info, RefreshCcw, LayoutDashboard
+    XCircle, AlertCircle, Info, RefreshCcw, LayoutDashboard,
+    Download
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 
@@ -80,6 +81,37 @@ export default function HospitalDashboard() {
         fetchData();
     }, [fetchData, router]);
 
+    const exportToExcel = () => {
+        if (appointments.length === 0) {
+            alert("No appointments available to export.");
+            return;
+        }
+
+        // CSV Header
+        const headers = ["Appointment ID", "Patient Name", "Patient Phone", "Doctor Name", "Appointment Date", "Appointment Time", "Status"];
+        
+        // CSV Rows
+        const rows = appointments.map((app) => [
+            app._id,
+            `"${app.patient?.name || 'N/A'}"`,
+            `"${app.patient?.phone || 'N/A'}"`,
+            `"${app.doctor?.name || 'N/A'}"`,
+            `"${new Date(app.slotTime).toLocaleDateString()}"`,
+            `"${new Date(app.slotTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}"`,
+            `"${app.status || 'N/A'}"`
+        ]);
+
+        const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Hospital_Bookings_Report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     const handleStatusUpdate = async (id: string, status: string) => {
         try {
             await api.put(`/hospital/dashboard/appointments/${id}/status`, { status });
@@ -115,6 +147,19 @@ export default function HospitalDashboard() {
     }
 
     const isSelfManaged = stats?.management_type === 'SELF';
+
+    // Calculate doctor bookings breakdown
+    const getDoctorBreakdown = () => {
+        const breakdown: { [key: string]: number } = {};
+        appointments.forEach(app => {
+            const name = app.doctor?.name || "Other";
+            breakdown[name] = (breakdown[name] || 0) + 1;
+        });
+        return Object.entries(breakdown).map(([name, count]) => ({ name, count }));
+    };
+
+    const doctorData = getDoctorBreakdown();
+    const maxCount = Math.max(...doctorData.map(d => d.count), 1);
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans">
@@ -212,6 +257,84 @@ export default function HospitalDashboard() {
                     <StatCard label="Pending Review" value={stats?.stats?.pending} icon={<Clock className="text-amber-500" />} />
                 </div>
 
+                {/* Bookings Analytics & Operational Graphs */}
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                            <Activity className="w-6 h-6 text-primary" /> Bookings & Operational Analytics
+                        </h3>
+                        <p className="text-slate-500 text-xs font-semibold mt-1">Real-time performance metrics and doctor appointment distributions.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {/* Bar Chart: Bookings per Doctor */}
+                        <div className="md:col-span-2 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col h-[320px]">
+                            <h4 className="text-sm font-extrabold text-slate-800 mb-6 uppercase tracking-wider">Bookings Distribution by Doctor</h4>
+                            <div className="flex-1 flex items-end gap-6 sm:gap-10 px-4 pb-4 border-b border-slate-200">
+                                {doctorData.map((d, i) => (
+                                    <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
+                                        <div className="relative w-full flex flex-col items-center justify-end h-full">
+                                            {/* Count tooltip */}
+                                            <div className="absolute -top-8 px-2 py-1 bg-slate-900 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg shrink-0">
+                                                {d.count} Bookings
+                                            </div>
+                                            {/* Bar */}
+                                            <motion.div
+                                                initial={{ height: 0 }}
+                                                animate={{ height: `${(d.count / maxCount) * 80}%` }}
+                                                transition={{ duration: 0.8, ease: "easeOut", delay: i * 0.1 }}
+                                                className="w-full sm:w-10 bg-gradient-to-t from-blue-600 to-indigo-400 rounded-t-xl group-hover:from-blue-700 group-hover:to-indigo-500 transition-colors shadow-lg shadow-blue-500/20"
+                                            />
+                                        </div>
+                                        <p className="text-[10px] font-black text-slate-400 text-center truncate w-20" title={d.name}>
+                                            Dr. {d.name.split(" ").pop()}
+                                        </p>
+                                    </div>
+                                ))}
+                                {doctorData.length === 0 && (
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold italic text-sm">
+                                        No bookings data to display in chart.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Status Distribution Breakdown */}
+                        <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col h-[320px] justify-between">
+                            <div>
+                                <h4 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Status Distribution</h4>
+                                <div className="space-y-3.5">
+                                    {['confirmed', 'pending', 'checked-in', 'completed', 'cancelled'].map((status) => {
+                                        const count = appointments.filter(a => a.status === status).length;
+                                        const percentage = appointments.length > 0 ? (count / appointments.length) * 100 : 0;
+                                        const color = status === 'completed' || status === 'confirmed' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-500' : status === 'checked-in' ? 'bg-blue-500' : status === 'cancelled' ? 'bg-rose-500' : 'bg-slate-400';
+
+                                        return (
+                                            <div key={status} className="space-y-1">
+                                                <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-600">
+                                                    <span>{status}</span>
+                                                    <span>{count} ({Math.round(percentage)}%)</span>
+                                                </div>
+                                                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                                    <motion.div 
+                                                        initial={{ width: 0 }} 
+                                                        animate={{ width: `${percentage}%` }} 
+                                                        transition={{ duration: 1, ease: "easeOut" }}
+                                                        className={`h-full ${color}`} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest border-t border-slate-200/60 pt-3">
+                                Total Monitored: {appointments.length} Appointments
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Doctors List */}
                     <div className="lg:col-span-1 space-y-6">
@@ -254,9 +377,17 @@ export default function HospitalDashboard() {
 
                     {/* Appointments List */}
                     <div className="lg:col-span-2 space-y-6">
-                        <h2 className="text-xl font-black flex items-center gap-2">
-                            <Calendar className="w-6 h-6 text-primary" /> Recent Appointments
-                        </h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl font-black flex items-center gap-2">
+                                <Calendar className="w-6 h-6 text-primary" /> Recent Appointments
+                            </h2>
+                            <button
+                                onClick={exportToExcel}
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
+                            >
+                                <Download className="w-4 h-4" /> Export to Excel
+                            </button>
+                        </div>
                         
                         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-blue-900/5 overflow-hidden">
                             <div className="overflow-x-auto">
