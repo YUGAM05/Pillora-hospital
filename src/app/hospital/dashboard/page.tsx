@@ -842,8 +842,22 @@ export default function HospitalDashboard() {
                                                     <tr key={app._id} className="hover:bg-slate-50/50 transition-colors">
                                                         <td className="p-4 pl-6 font-extrabold text-slate-900">{app.tokenNo || `T-${idx + 1001}`}</td>
                                                         <td className="p-4">
-                                                            <div className="font-bold text-slate-800">{app.patient?.name || 'N/A'}</div>
-                                                            <div className="text-[10px] text-slate-400 font-bold mt-0.5">{app.patient?.phone || 'N/A'}</div>
+                                                            <div className="font-bold text-slate-800">
+                                                                {app.patientName || app.patient?.name || 'N/A'}
+                                                                {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
+                                                                    <span className="text-[10px] text-slate-400 font-medium ml-1">
+                                                                        ({app.patientAge || app.patient?.age} yrs)
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-400 font-bold mt-0.5">
+                                                                {app.patientPhone || app.patient?.phone || 'N/A'}
+                                                            </div>
+                                                            {(app.patientEmail || app.patient?.email) && (
+                                                                <div className="text-[9px] text-slate-400 mt-0.5">
+                                                                    {app.patientEmail || app.patient?.email}
+                                                                </div>
+                                                            )}
                                                         </td>
                                                         <td className="p-4 font-bold text-slate-700">Dr. {app.doctor?.name}</td>
                                                         <td className="p-4 font-bold uppercase tracking-wider text-[10px] text-slate-400">{app.doctor?.specialty}</td>
@@ -891,8 +905,18 @@ export default function HospitalDashboard() {
                                                         <span className="px-2.5 py-1 bg-slate-900 text-white font-mono text-[9px] rounded-lg font-black tracking-wider">
                                                             {app.tokenNo || `T-${idx + 1001}`}
                                                         </span>
-                                                        <h4 className="font-extrabold text-slate-800 mt-2 text-sm">{app.patient?.name || 'N/A'}</h4>
-                                                        <p className="text-[10px] text-slate-400 font-bold">{app.patient?.phone || 'N/A'}</p>
+                                                        <h4 className="font-extrabold text-slate-800 mt-2 text-sm">
+                                                            {app.patientName || app.patient?.name || 'N/A'}
+                                                            {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
+                                                                <span className="text-[10px] text-slate-400 font-medium ml-1">
+                                                                    ({app.patientAge || app.patient?.age} yrs)
+                                                                </span>
+                                                            )}
+                                                        </h4>
+                                                        <p className="text-[10px] text-slate-400 font-bold">{app.patientPhone || app.patient?.phone || 'N/A'}</p>
+                                                        {(app.patientEmail || app.patient?.email) && (
+                                                            <p className="text-[9px] text-slate-400 mt-0.5">{app.patientEmail || app.patient?.email}</p>
+                                                        )}
                                                     </div>
                                                     <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
                                                         app.status === 'completed' || app.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : app.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' : app.status === 'checked-in' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
