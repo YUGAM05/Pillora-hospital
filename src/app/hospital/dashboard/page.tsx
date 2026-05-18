@@ -65,6 +65,17 @@ export default function HospitalDashboard() {
     const [addSlotRecurrenceDays, setAddSlotRecurrenceDays] = useState<string[]>([]);
     const [addSlotRecurrenceUntil, setAddSlotRecurrenceUntil] = useState("");
 
+    // Manual Walk-In Booking States
+    const [showManualBooking, setShowManualBooking] = useState(false);
+    const [manualPatientName, setManualPatientName] = useState("");
+    const [manualPatientEmail, setManualPatientEmail] = useState("");
+    const [manualPatientPhone, setManualPatientPhone] = useState("");
+    const [manualDoctorId, setManualDoctorId] = useState("");
+    const [manualBookingDate, setManualBookingDate] = useState(new Date().toISOString().split("T")[0]);
+    const [manualSlotId, setManualSlotId] = useState("");
+    const [manualPaymentStatus, setManualPaymentStatus] = useState("pending");
+    const [manualBookingNotes, setManualBookingNotes] = useState("");
+
     const handleAddSlotSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -183,6 +194,46 @@ export default function HospitalDashboard() {
             fetchData();
         } catch (err: any) {
             alert("Failed to update status");
+        }
+    };
+
+    const handleManualBookingSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!manualDoctorId || !manualSlotId) {
+            alert("Please select both a doctor and an available slot.");
+            return;
+        }
+
+        const selectedSlot = slots.find(s => s._id === manualSlotId);
+        if (!selectedSlot) {
+            alert("Selected slot is not valid.");
+            return;
+        }
+
+        try {
+            await api.post("/hospital/dashboard/appointments/manual", {
+                patientName: manualPatientName,
+                patientEmail: manualPatientEmail,
+                patientPhone: manualPatientPhone,
+                doctorId: manualDoctorId,
+                slotId: manualSlotId,
+                slotTime: selectedSlot.startTime,
+                notes: manualBookingNotes,
+                paymentStatus: manualPaymentStatus
+            });
+
+            alert("Walk-in appointment booked successfully!");
+            setShowManualBooking(false);
+            setManualPatientName("");
+            setManualPatientEmail("");
+            setManualPatientPhone("");
+            setManualDoctorId("");
+            setManualSlotId("");
+            setManualBookingNotes("");
+            setManualPaymentStatus("pending");
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to book manual appointment");
         }
     };
 
@@ -412,6 +463,12 @@ export default function HospitalDashboard() {
                                     <p className="text-slate-500 text-xs font-medium mt-0.5">Quickly select a doctor to set their available date, start/end timing, and booking slot duration.</p>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => setShowManualBooking(true)}
+                                className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/10 active:scale-95 shrink-0"
+                            >
+                                <Plus className="w-4 h-4" /> Book Walk-In Appointment
+                            </button>
                         </div>
                         <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                             {doctors.map((doc: any) => (
@@ -1348,6 +1405,107 @@ export default function HospitalDashboard() {
                             </div>
                             <button className="w-full py-5 bg-rose-600 text-white font-black rounded-[2rem] shadow-2xl hover:bg-rose-700 transition-all text-xs uppercase tracking-wider">
                                 Confirm Cancellation
+                            </button>
+                        </form>
+                    </motion.div>
+                </div>
+            )}
+
+            {showManualBooking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-black text-slate-900">Book Walk-In Appointment</h3>
+                            <button onClick={() => setShowManualBooking(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                        </div>
+                        <form onSubmit={handleManualBookingSubmit} className="space-y-4 pr-2 custom-scrollbar">
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Full Name</label>
+                                <input required type="text" placeholder="John Doe" value={manualPatientName} onChange={e => setManualPatientName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Email Address</label>
+                                    <input required type="email" placeholder="john@example.com" value={manualPatientEmail} onChange={e => setManualPatientEmail(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Phone Number</label>
+                                    <input type="tel" placeholder="e.g. +91 98765 43210" value={manualPatientPhone} onChange={e => setManualPatientPhone(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Assign Doctor / Specialty Group</label>
+                                <select required value={manualDoctorId} onChange={e => { setManualDoctorId(e.target.value); setManualSlotId(""); }} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
+                                    <option value="">-- Choose Staff / Group --</option>
+                                    {doctors.map((doc: any) => (
+                                        <option key={doc._id} value={doc._id}>
+                                            {doc.name} ({doc.specialty})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Appointment Date</label>
+                                    <input required type="date" min={new Date().toISOString().split("T")[0]} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Offline Payment Status</label>
+                                    <select value={manualPaymentStatus} onChange={e => setManualPaymentStatus(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
+                                        <option value="pending">Pending Payment</option>
+                                        <option value="paid">Paid (Offline Collected)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {manualDoctorId && (
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Available Slot</label>
+                                    <select required value={manualSlotId} onChange={e => setManualSlotId(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
+                                        <option value="">-- Select Slot Time --</option>
+                                        {slots.filter((s: any) => {
+                                            const matchDoc = s.doctor?._id === manualDoctorId;
+                                            const slotDate = new Date(s.startTime).toISOString().split("T")[0];
+                                            const matchDate = slotDate === manualBookingDate;
+                                            const isAvailable = s.status === "available";
+                                            const maxAppts = s.max_appointments || 1;
+                                            const bookingCount = s.bookingCount || 0;
+                                            const hasCapacity = bookingCount < maxAppts;
+                                            return matchDoc && matchDate && isAvailable && hasCapacity;
+                                        }).map((s: any) => {
+                                            const timeRangeStr = `${new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                                            const remaining = (s.max_appointments || 1) - (s.bookingCount || 0);
+                                            return (
+                                                <option key={s._id} value={s._id}>
+                                                    {timeRangeStr} ({remaining} remaining spots)
+                                                </option>
+                                            );
+                                        })}
+                                    </select>
+                                    {slots.filter((s: any) => {
+                                        const matchDoc = s.doctor?._id === manualDoctorId;
+                                        const slotDate = new Date(s.startTime).toISOString().split("T")[0];
+                                        const matchDate = slotDate === manualBookingDate;
+                                        const isAvailable = s.status === "available";
+                                        const maxAppts = s.max_appointments || 1;
+                                        const bookingCount = s.bookingCount || 0;
+                                        const hasCapacity = bookingCount < maxAppts;
+                                        return matchDoc && matchDate && isAvailable && hasCapacity;
+                                    }).length === 0 && (
+                                        <p className="text-[10px] font-bold text-rose-500 mt-1 italic">
+                                            No available slots found for this doctor on this date. Configure and generate slots first!
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="space-y-1">
+                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Booking Notes / Symptoms</label>
+                                <textarea placeholder="Patient notes, reason for visit, walk-in comments..." value={manualBookingNotes} onChange={e => setManualBookingNotes(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs h-20 resize-none" />
+                            </div>
+
+                            <button type="submit" className="w-full py-4 bg-emerald-600 text-white font-black rounded-[2rem] shadow-2xl hover:bg-emerald-700 transition-all text-xs uppercase tracking-wider">
+                                Confirm Walk-in Booking
                             </button>
                         </form>
                     </motion.div>
