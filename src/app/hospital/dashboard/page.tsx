@@ -237,6 +237,19 @@ export default function HospitalDashboard() {
         }
     };
 
+    const handleDeleteDoctor = async (doc: any) => {
+        if (!window.confirm(`Are you sure you want to completely delete ${doc.isSpecialtyGroup ? 'Specialty Group: ' : 'Dr. '}${doc.name}? All associated slots and active appointments will also be deleted!`)) {
+            return;
+        }
+        try {
+            await api.delete(`/hospital/dashboard/doctors/${doc._id}`);
+            alert(`${doc.isSpecialtyGroup ? 'Specialty Group' : 'Doctor'} deleted successfully!`);
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to delete doctor");
+        }
+    };
+
     const fetchData = useCallback(async () => {
         try {
             const token = getToken();
@@ -695,6 +708,12 @@ export default function HospitalDashboard() {
                                                                     Slots
                                                                 </button>
                                                             )}
+                                                            <button 
+                                                                onClick={() => handleDeleteDoctor(doc)} 
+                                                                className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 text-rose-500 hover:bg-rose-100/50"
+                                                            >
+                                                                Delete
+                                                            </button>
                                                         </>
                                                     )}
                                                 </div>
