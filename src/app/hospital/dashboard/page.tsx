@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
-import { getToken, getUser } from "@/lib/tokenStorage";
+import { getToken, getUser, clearAuth } from "@/lib/tokenStorage";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -49,6 +49,7 @@ export default function HospitalDashboard() {
 
     // Slot Management States
     const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots">("appointments");
+    const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
     const [showAddSlot, setShowAddSlot] = useState(false);
@@ -319,7 +320,7 @@ export default function HospitalDashboard() {
                     <h1 className="text-2xl font-black text-gray-900 mb-2">Access Error</h1>
                     <p className="text-gray-500 font-medium">{error}</p>
                     <button onClick={() => {
-                        localStorage.clear();
+                        clearAuth();
                         window.location.href = '/login';
                     }} className="mt-6 px-8 py-3 bg-gray-900 text-white font-bold rounded-xl">Back to Login</button>
                 </div>
@@ -344,7 +345,7 @@ export default function HospitalDashboard() {
 
     return (
         <div className="min-h-screen bg-white text-slate-900 font-sans">
-            <main className="max-w-7xl mx-auto p-6 md:p-8 space-y-8">
+            <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                     <div>
                         <h1 className="text-3xl font-black text-slate-900 tracking-tight">Hospital Command Center</h1>
@@ -412,12 +413,12 @@ export default function HospitalDashboard() {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                             {doctors.map((doc: any) => (
                                 <button
                                     key={doc._id}
                                     onClick={() => setShowSlotGen(doc)}
-                                    className="px-5 py-4 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 text-slate-700 hover:text-blue-600 font-black rounded-2xl text-xs flex items-center gap-2.5 transition-all shadow-sm hover:shadow active:scale-95 shrink-0"
+                                    className="w-full sm:w-auto px-5 py-4 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 text-slate-700 hover:text-blue-600 font-black rounded-2xl text-xs flex items-center justify-center sm:justify-start gap-2.5 transition-all shadow-sm hover:shadow active:scale-95 shrink-0"
                                 >
                                     <Clock className="w-4 h-4" /> Setup Timing for Dr. {doc.name}
                                 </button>
@@ -666,76 +667,89 @@ export default function HospitalDashboard() {
                                 </div>
 
                                 {/* Filters Card */}
-                                <div className="bg-slate-50 p-5 rounded-[2rem] border border-slate-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 shadow-sm">
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Single Date</label>
-                                        <input 
-                                            type="date" 
-                                            value={filterDate} 
-                                            onChange={(e) => {
-                                                setFilterDate(e.target.value);
-                                                if (e.target.value) {
-                                                    setStartDate("");
-                                                    setEndDate("");
-                                                }
-                                            }} 
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Start Date</label>
-                                        <input 
-                                            type="date" 
-                                            value={startDate} 
-                                            onChange={(e) => {
-                                                setStartDate(e.target.value);
-                                                if (e.target.value) setFilterDate("");
-                                            }} 
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">End Date</label>
-                                        <input 
-                                            type="date" 
-                                            value={endDate} 
-                                            onChange={(e) => {
-                                                setEndDate(e.target.value);
-                                                if (e.target.value) setFilterDate("");
-                                            }} 
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Specialty</label>
-                                        <input 
-                                            type="text" 
-                                            placeholder="e.g. Dentist" 
-                                            value={filterSpecialty} 
-                                            onChange={(e) => setFilterSpecialty(e.target.value)} 
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
-                                        />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Status</label>
-                                        <select 
-                                            value={filterStatus} 
-                                            onChange={(e) => setFilterStatus(e.target.value)} 
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                <div className="bg-slate-50 p-4 sm:p-5 rounded-[2rem] border border-slate-100 shadow-sm space-y-3">
+                                    <div className="flex sm:hidden justify-between items-center">
+                                        <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">Filter Appointments</h4>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setShowMobileFilters(!showMobileFilters)} 
+                                            className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider text-slate-600 active:scale-95 transition-all shadow-sm"
                                         >
-                                            <option value="">All Status</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="confirmed">Confirmed</option>
-                                            <option value="checked-in">Checked In</option>
-                                            <option value="in-consultation">In Consultation</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="cancelled">Cancelled</option>
-                                        </select>
+                                            {showMobileFilters ? "Hide Filters" : "Show Filters"}
+                                        </button>
+                                    </div>
+                                    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 ${showMobileFilters ? 'block space-y-3 sm:space-y-0' : 'hidden sm:grid'}`}>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Single Date</label>
+                                            <input 
+                                                type="date" 
+                                                value={filterDate} 
+                                                onChange={(e) => {
+                                                    setFilterDate(e.target.value);
+                                                    if (e.target.value) {
+                                                        setStartDate("");
+                                                        setEndDate("");
+                                                    }
+                                                }} 
+                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Start Date</label>
+                                            <input 
+                                                type="date" 
+                                                value={startDate} 
+                                                onChange={(e) => {
+                                                    setStartDate(e.target.value);
+                                                    if (e.target.value) setFilterDate("");
+                                                }} 
+                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">End Date</label>
+                                            <input 
+                                                type="date" 
+                                                value={endDate} 
+                                                onChange={(e) => {
+                                                    setEndDate(e.target.value);
+                                                    if (e.target.value) setFilterDate("");
+                                                }} 
+                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Specialty</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="e.g. Dentist" 
+                                                value={filterSpecialty} 
+                                                onChange={(e) => setFilterSpecialty(e.target.value)} 
+                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Status</label>
+                                            <select 
+                                                value={filterStatus} 
+                                                onChange={(e) => setFilterStatus(e.target.value)} 
+                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                            >
+                                                <option value="">All Status</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="confirmed">Confirmed</option>
+                                                <option value="checked-in">Checked In</option>
+                                                <option value="in-consultation">In Consultation</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="cancelled">Cancelled</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="bg-white rounded-[2rem] border border-slate-100 shadow-md overflow-hidden">
-                                    <div className="overflow-x-auto">
+                                    {/* Desktop Table View */}
+                                    <div className="hidden sm:block overflow-x-auto">
                                         <table className="w-full text-left border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
@@ -791,6 +805,65 @@ export default function HospitalDashboard() {
                                             </tbody>
                                         </table>
                                     </div>
+
+                                    {/* Mobile Card List View */}
+                                    <div className="block sm:hidden divide-y divide-slate-100">
+                                        {filteredAppointments.map((app: any, idx: number) => (
+                                            <div key={app._id} className="p-5 space-y-4">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <span className="px-2.5 py-1 bg-slate-900 text-white font-mono text-[9px] rounded-lg font-black tracking-wider">
+                                                            {app.tokenNo || `T-${idx + 1001}`}
+                                                        </span>
+                                                        <h4 className="font-extrabold text-slate-800 mt-2 text-sm">{app.patient?.name || 'N/A'}</h4>
+                                                        <p className="text-[10px] text-slate-400 font-bold">{app.patient?.phone || 'N/A'}</p>
+                                                    </div>
+                                                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                        app.status === 'completed' || app.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : app.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' : app.status === 'checked-in' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                                    }`}>
+                                                        {app.status}
+                                                    </span>
+                                                </div>
+                                                <div className="pt-3 border-t border-slate-50 flex justify-between text-xs font-bold text-slate-600">
+                                                    <div>
+                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Doctor</span>
+                                                        <span className="font-extrabold text-slate-700">Dr. {app.doctor?.name}</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Schedule Slot</span>
+                                                        <span className="font-extrabold text-slate-700">{new Date(app.slotTime).toLocaleDateString()}</span>
+                                                        <span className="block text-[9px] text-slate-500 font-black mt-0.5">
+                                                            {app.slot ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Mobile Actions block */}
+                                                <div className="pt-3 border-t border-slate-50">
+                                                    {app.status === 'pending' ? (
+                                                        <div className="flex gap-2 w-full">
+                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="flex-1 py-2 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-1.5 border border-emerald-100 active:scale-95 transition-all shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Confirm</button>
+                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="flex-1 py-2 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl hover:bg-blue-100 flex items-center justify-center gap-1.5 border border-blue-100 active:scale-95 transition-all shadow-sm"><User className="w-3.5 h-3.5" /> Check-in</button>
+                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="flex-1 py-2 bg-rose-50 text-rose-600 font-black text-[10px] uppercase rounded-xl hover:bg-rose-100 flex items-center justify-center gap-1.5 border border-rose-100 active:scale-95 transition-all shadow-sm"><XCircle className="w-3.5 h-3.5" /> Cancel</button>
+                                                        </div>
+                                                    ) : app.status === 'checked-in' ? (
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="w-full py-2.5 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 flex items-center justify-center gap-2 border border-amber-100 active:scale-95 transition-all">
+                                                            <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> Start Consultation
+                                                        </button>
+                                                    ) : app.status === 'in-consultation' ? (
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/15 active:scale-95 transition-all">
+                                                            <CheckCircle2 className="w-3.5 h-3.5" /> Complete Consultation
+                                                        </button>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {filteredAppointments.length === 0 && (
+                                            <div className="text-center py-12 text-slate-400 font-bold italic text-xs">
+                                                No appointments found in this category.
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -842,9 +915,10 @@ export default function HospitalDashboard() {
                             </button>
                         </div>
 
-                        {/* Slot Table */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-100">
-                            <div className="overflow-x-auto">
+                        {/* Slot Table Layout */}
+                        <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                            {/* Desktop Table View */}
+                            <div className="hidden sm:block overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
@@ -909,7 +983,7 @@ export default function HospitalDashboard() {
                                                                     onClick={() => setShowCancelSlotModal(slot)}
                                                                     className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                                                         isCancellable 
-                                                                            ? "bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white hover:shadow-lg hover:shadow-rose-600/10 active:scale-95" 
+                                                                            ? "bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white" 
                                                                             : "bg-slate-50 text-slate-300 cursor-not-allowed"
                                                                     }`}
                                                                 >
@@ -917,7 +991,7 @@ export default function HospitalDashboard() {
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDeleteSlot(slot._id)}
-                                                                    className="px-3 py-1.5 ml-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-600/10 active:scale-95"
+                                                                    className="px-3 py-1.5 ml-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
                                                                 >
                                                                     Delete Slot
                                                                 </button>
@@ -931,7 +1005,7 @@ export default function HospitalDashboard() {
                                                             {activeSlotSubTab === 'cancelled' && (
                                                                 <button
                                                                     onClick={() => handleDeleteSlot(slot._id)}
-                                                                    className="px-3 py-1.5 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white hover:shadow-lg hover:shadow-red-600/10 active:scale-95"
+                                                                    className="px-3 py-1.5 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
                                                                 >
                                                                     Delete Slot
                                                                 </button>
@@ -950,6 +1024,106 @@ export default function HospitalDashboard() {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Mobile Card List View */}
+                            <div className="block sm:hidden divide-y divide-slate-100">
+                                {slots
+                                    .filter((slot: any) => {
+                                        const isCancelled = slot.status === 'cancelled';
+                                        if (activeSlotSubTab === 'upcoming') {
+                                            return !isCancelled;
+                                        } else {
+                                            return isCancelled;
+                                        }
+                                    })
+                                    .map((slot: any) => {
+                                        const slotDateStr = new Date(slot.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                                        const timeRangeStr = `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                                        const isUpcoming = new Date(slot.endTime) >= new Date();
+                                        const isBooked = slot.status === 'booked';
+                                        const isCancellable = slot.status !== 'cancelled' && new Date(slot.startTime) > new Date();
+
+                                        return (
+                                            <div key={slot._id} className="p-5 space-y-4">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <h4 className="font-extrabold text-slate-800 text-sm">Dr. {slot.doctor?.name || "Specialty Group"}</h4>
+                                                        {slot.doctor?.isSpecialtyGroup && (
+                                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-black uppercase tracking-wider rounded-md mt-1 inline-block">Specialty Group</span>
+                                                        )}
+                                                    </div>
+                                                    {slot.status === 'cancelled' ? (
+                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Cancelled</span>
+                                                    ) : !isUpcoming ? (
+                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-slate-100 text-slate-500">Past Slot</span>
+                                                    ) : isBooked ? (
+                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100 font-bold">Fully Booked</span>
+                                                    ) : (
+                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold">Active</span>
+                                                    )}
+                                                </div>
+                                                <div className="pt-3 border-t border-slate-50 grid grid-cols-2 gap-3 text-xs font-bold text-slate-600">
+                                                    <div>
+                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Date</span>
+                                                        <span className="font-extrabold text-slate-700">{slotDateStr}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Time Range</span>
+                                                        <span className="font-extrabold text-slate-700">{timeRangeStr}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-bold text-slate-600">
+                                                    <div>
+                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bookings Count</span>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase mt-1 inline-block ${slot.bookingCount > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
+                                                            {slot.bookingCount || 0} Booked
+                                                        </span>
+                                                    </div>
+                                                    {activeSlotSubTab === 'cancelled' && slot.cancellationReason && (
+                                                        <div className="text-right">
+                                                            <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Reason</span>
+                                                            <span className="text-[10px] text-slate-400 font-medium italic block" title={`Reason: ${slot.cancellationReason}`}>
+                                                                {slot.cancellationReason}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Actions */}
+                                                {isSelfManaged && (
+                                                    <div className="pt-3 border-t border-slate-50 flex justify-end gap-2">
+                                                        {activeSlotSubTab === 'upcoming' && (
+                                                            <button
+                                                                type="button"
+                                                                disabled={!isCancellable}
+                                                                onClick={() => setShowCancelSlotModal(slot)}
+                                                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border ${
+                                                                    isCancellable 
+                                                                        ? "bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white" 
+                                                                        : "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
+                                                                }`}
+                                                            >
+                                                                Cancel Slot
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteSlot(slot._id)}
+                                                            className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
+                                                        >
+                                                            Delete Slot
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                {slots.filter(s => activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled').length === 0 && (
+                                    <div className="text-center py-12 text-slate-400 font-bold italic text-xs">
+                                        No slots found in this category.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -958,7 +1132,7 @@ export default function HospitalDashboard() {
             {/* Modals for Add Doctor and Slot Gen would go here */}
             {showSlotGen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-2xl font-black">Generate Slots</h3>
                             <button onClick={() => setShowSlotGen(null)}><XCircle className="w-6 h-6 text-gray-400" /></button>
@@ -970,25 +1144,25 @@ export default function HospitalDashboard() {
 
             {showAddDoctor && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-2xl font-black">Recruit New Doctor</h3>
+                            <h3 className="text-2xl font-black text-slate-900">Recruit New Doctor</h3>
                             <button onClick={() => setShowAddDoctor(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
                         </div>
                         <form onSubmit={handleAddDoctorSubmit} className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doctor Name</label>
-                                <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none" />
+                                <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty</label>
-                                <input required type="text" placeholder="Cardiologist" value={newDoctor.specialty} onChange={e => setNewDoctor({...newDoctor, specialty: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none" />
+                                <input required type="text" placeholder="Cardiologist" value={newDoctor.specialty} onChange={e => setNewDoctor({...newDoctor, specialty: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Consultation Fee (₹)</label>
-                                <input required type="number" value={newDoctor.fee} onChange={e => setNewDoctor({...newDoctor, fee: Number(e.target.value)})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none" />
+                                <input required type="number" value={newDoctor.fee} onChange={e => setNewDoctor({...newDoctor, fee: Number(e.target.value)})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
                             </div>
-                            <button className="w-full py-5 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all">
+                            <button className="w-full py-4 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all text-xs uppercase tracking-wider">
                                 Recruit Doctor
                             </button>
                         </form>
@@ -998,12 +1172,12 @@ export default function HospitalDashboard() {
 
             {showAddSpecialtyGroup && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl my-8">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-2xl font-black">Create Specialty Group</h3>
                             <button onClick={() => setShowAddSpecialtyGroup(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
                         </div>
-                        <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                        <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4 pr-2 custom-scrollbar">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty Name</label>
                                 <input required type="text" placeholder="e.g. Cardiology" value={groupName} onChange={e => setGroupName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
@@ -1079,12 +1253,12 @@ export default function HospitalDashboard() {
 
             {showAddSlot && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl my-8">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-2xl font-black text-slate-900">Add New Slot</h3>
                             <button onClick={() => setShowAddSlot(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
                         </div>
-                        <form onSubmit={handleAddSlotSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                        <form onSubmit={handleAddSlotSubmit} className="space-y-4 pr-2 custom-scrollbar">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Doctor / Specialty Group</label>
                                 <select required value={addSlotDoctorId} onChange={e => setAddSlotDoctorId(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
@@ -1157,7 +1331,7 @@ export default function HospitalDashboard() {
 
             {showCancelSlotModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-2xl font-black text-slate-900">Cancel Slot</h3>
                             <button onClick={() => setShowCancelSlotModal(null)}><XCircle className="w-6 h-6 text-gray-400" /></button>
@@ -1185,13 +1359,13 @@ export default function HospitalDashboard() {
 
 function StatCard({ label, value, icon }: any) {
     return (
-        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg shadow-blue-900/5 flex items-center gap-5">
-            <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-2xl">
+        <div className="bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 shadow-lg shadow-blue-900/5 flex items-center gap-3 sm:gap-5">
+            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-2xl shrink-0">
                 {icon}
             </div>
             <div>
-                <h4 className="text-3xl font-black text-gray-900">{value || 0}</h4>
-                <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{label}</p>
+                <h4 className="text-xl sm:text-3xl font-black text-gray-900 leading-tight">{value || 0}</h4>
+                <p className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest leading-none mt-1">{label}</p>
             </div>
         </div>
     );

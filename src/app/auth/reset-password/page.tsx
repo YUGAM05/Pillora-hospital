@@ -3,6 +3,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { clearAuth } from "@/lib/tokenStorage";
 import { Lock, ShieldCheck, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -33,7 +34,7 @@ export default function ResetPasswordPage() {
             
             // On success, redirect to login to start a clean session or just go to home
             alert("Password updated successfully! Please login again.");
-            localStorage.clear();
+            clearAuth();
             router.push("/login");
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to update password");
