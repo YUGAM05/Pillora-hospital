@@ -32,7 +32,7 @@ export default function ChangePasswordPage() {
             await api.post("/auth/change-password", { newPassword });
             setSuccess(true);
             setTimeout(() => {
-                router.push("/login");
+                router.replace("/login");
             }, 3000);
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to update password");

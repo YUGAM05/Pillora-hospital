@@ -36,13 +36,13 @@ api.interceptors.response.use(
                 // Prevent any further API error handling from showing error screens
                 isRedirecting = true;
                 clearAuth();
-                window.location.href = '/login';
+                window.location.replace('/login');
                 // Return a promise that never resolves — stops all downstream catch blocks
                 return new Promise(() => {});
             }
             if (error.response?.status === 403 && error.response?.data?.code === 'PASSWORD_RESET_REQUIRED') {
                 isRedirecting = true;
-                window.location.href = '/auth/change-password';
+                window.location.replace('/auth/change-password');
                 return new Promise(() => {});
             }
         }

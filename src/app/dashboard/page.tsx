@@ -13,7 +13,7 @@ export default function DashboardPage() {
     useEffect(() => {
         const storedUser = getUser();
         if (!storedUser) {
-            router.push("/login");
+            router.replace("/login");
         } else {
             setUser(storedUser);
         }
@@ -21,7 +21,7 @@ export default function DashboardPage() {
 
     const handleLogout = () => {
         clearAuth();
-        router.push("/login");
+        router.replace("/login");
     };
 
     if (!user) return null;

@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
             // On success, redirect to login to start a clean session or just go to home
             alert("Password updated successfully! Please login again.");
             clearAuth();
-            router.push("/login");
+            router.replace("/login");
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to update password");
         } finally {
