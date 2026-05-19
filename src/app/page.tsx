@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { 
     LayoutDashboard, 
@@ -14,8 +14,11 @@ import {
     Zap
 } from "lucide-react";
 import { motion } from "framer-motion";
+import PartnerRequestModal from "@/components/PartnerRequestModal";
 
 export default function HospitalPortalHome() {
+    const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+
     return (
         <main className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-700">
             {/* Hero Section */}
@@ -59,7 +62,10 @@ export default function HospitalPortalHome() {
                         <Link href="/login" className="w-full sm:w-auto px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-lg shadow-2xl shadow-slate-200 hover:bg-slate-800 hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
                             Hospital Login <ArrowRight className="w-6 h-6" />
                         </Link>
-                        <button className="w-full sm:w-auto px-10 py-5 bg-white text-slate-600 border border-slate-200 rounded-[2rem] font-bold text-lg hover:bg-slate-50 transition-all">
+                        <button 
+                            onClick={() => setIsPartnerModalOpen(true)}
+                            className="w-full sm:w-auto px-10 py-5 bg-white text-slate-600 border border-slate-200 rounded-[2rem] font-bold text-lg hover:bg-slate-50 transition-all"
+                        >
                             Partner with us
                         </button>
                     </motion.div>
@@ -131,6 +137,11 @@ export default function HospitalPortalHome() {
             <footer className="max-w-7xl mx-auto px-6 py-20 text-center border-t border-slate-50">
                 <p className="text-slate-400 text-sm font-bold uppercase tracking-[0.2em]">© 2026 Pillora Health • Hospital Partner Division</p>
             </footer>
+
+            <PartnerRequestModal 
+                isOpen={isPartnerModalOpen} 
+                onClose={() => setIsPartnerModalOpen(false)} 
+            />
         </main>
     );
 }
