@@ -52,7 +52,7 @@ export default function UploadPrescriptionPage() {
 
         try {
             const response = await api.post('/prescriptions', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': undefined }
             });
             setRxId(response.data.rx_id || '');
             setUploaded(true);
