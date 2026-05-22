@@ -62,7 +62,12 @@ export default function HospitalLoginPage() {
             router.push("/hospital/dashboard");
 
         } catch (err: any) {
-            setError(err.response?.data?.message || "Invalid email or password");
+            if (!err.response) {
+                // Network error — backend is unreachable (ECONNREFUSED, timeout, etc.)
+                setError("Unable to connect to the server. Please check your internet connection or try again later.");
+            } else {
+                setError(err.response?.data?.message || "Invalid email or password");
+            }
         } finally {
             setLoading(false);
         }
