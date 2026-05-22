@@ -30,7 +30,7 @@ export default function HospitalLoginPage() {
         setError("");
 
         try {
-            const res = await api.post("/auth/login", { email, password });
+            const res = await api.post("/auth/login", { email: email.trim(), password });
             const data = res.data;
 
             if (data.role !== 'hospital' && data.role !== 'admin') {
