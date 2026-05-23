@@ -12,6 +12,7 @@ import {
     Download
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -22,6 +23,10 @@ export default function HospitalDashboard() {
     const [error, setError] = useState("");
     const [user, setUser] = useState<any>(null);
     
+    // Analytics States
+    const [peakHours, setPeakHours] = useState<any[]>([]);
+    const [cancellationRate, setCancellationRate] = useState<any>(null);
+
     // Tabs & Filters
     const [doctorTab, setDoctorTab] = useState<"individual" | "group">("individual");
     const [filterDate, setFilterDate] = useState("");
@@ -29,11 +34,12 @@ export default function HospitalDashboard() {
     const [endDate, setEndDate] = useState("");
     const [filterSpecialty, setFilterSpecialty] = useState("");
     const [filterStatus, setFilterStatus] = useState("");
+    const [filterDoctor, setFilterDoctor] = useState("");
 
     // Recruit Doctor States
     const [showAddDoctor, setShowAddDoctor] = useState(false);
     const [showSlotGen, setShowSlotGen] = useState<any>(null);
-    const [newDoctor, setNewDoctor] = useState({ name: "", specialty: "", fee: 200 });
+    const [newDoctor, setNewDoctor] = useState({ name: "", email: "", phone: "", specialty: "", fee: 200 });
 
     // Specialty Group States
     const [showAddSpecialtyGroup, setShowAddSpecialtyGroup] = useState(false);
@@ -52,6 +58,17 @@ export default function HospitalDashboard() {
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
+
+    // Patient Records States
+    const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+    const [selectedPatientName, setSelectedPatientName] = useState<string>("");
+    const [patientNotes, setPatientNotes] = useState<any[]>([]);
+    const [newNoteContent, setNewNoteContent] = useState("");
+
+    // Prescription & Invoice States
+    const [uploadingPrescriptionId, setUploadingPrescriptionId] = useState<string | null>(null);
+    const [generatingInvoiceId, setGeneratingInvoiceId] = useState<string | null>(null);
+
     const [showAddSlot, setShowAddSlot] = useState(false);
     const [showCancelSlotModal, setShowCancelSlotModal] = useState<any>(null);
     const [cancellationReason, setCancellationReason] = useState("");
@@ -143,7 +160,7 @@ export default function HospitalDashboard() {
             });
             alert("Doctor recruited successfully!");
             setShowAddDoctor(false);
-            setNewDoctor({ name: "", specialty: "", fee: 200 });
+            setNewDoctor({ name: "", email: "", phone: "", specialty: "", fee: 200 });
             fetchData();
         } catch (err: any) {
             alert(err.response?.data?.message || "Failed to recruit doctor");
@@ -285,6 +302,21 @@ export default function HospitalDashboard() {
         }
     }, [router]);
 
+    const fetchAnalytics = useCallback(async () => {
+        try {
+            const token = getToken();
+            if (!token) return;
+            const [hoursRes, rateRes] = await Promise.all([
+                api.get("/hospital/dashboard/analytics/booking-hours"),
+                api.get("/hospital/dashboard/analytics/cancellation-rate")
+            ]);
+            setPeakHours(hoursRes.data);
+            setCancellationRate(rateRes.data);
+        } catch (err) {
+            console.error("Failed to fetch analytics");
+        }
+    }, []);
+
     useEffect(() => {
         const u = getUser();
         if (u && u.role !== 'hospital') {
@@ -293,7 +325,14 @@ export default function HospitalDashboard() {
         }
         setUser(u);
         fetchData();
-    }, [fetchData, router]);
+        fetchAnalytics();
+
+        const interval = setInterval(() => {
+            fetchAnalytics();
+        }, 5 * 60 * 1000);
+
+        return () => clearInterval(interval);
+    }, [fetchData, fetchAnalytics, router]);
 
     const filteredAppointments = appointments.filter((app: any) => {
         const appDateStr = app.slotTime ? new Date(app.slotTime).toISOString().split('T')[0] : "";
@@ -304,6 +343,8 @@ export default function HospitalDashboard() {
         if (endDate && appDateStr > endDate) return false;
 
         if (filterSpecialty && !app.doctor?.specialty?.toLowerCase().includes(filterSpecialty.toLowerCase())) return false;
+
+        if (filterDoctor && app.doctor?._id !== filterDoctor) return false;
 
         if (filterStatus && app.status !== filterStatus) return false;
 
@@ -364,6 +405,89 @@ export default function HospitalDashboard() {
             fetchData();
         } catch (err) {
             alert("Failed to update status");
+        }
+    };
+
+    const handleAssignDoctor = async (id: string, doctorId: string) => {
+        if (!doctorId) return;
+        try {
+            await api.put(`/hospital/dashboard/appointments/${id}/assign-doctor`, { doctorId });
+            fetchData();
+            alert("Doctor assigned successfully");
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to assign doctor");
+        }
+    };
+
+    const handleViewRecords = async (patientId: string, patientName: string) => {
+        if (!patientId) {
+            alert("This patient is a guest or not fully registered.");
+            return;
+        }
+        setSelectedPatientId(patientId);
+        setSelectedPatientName(patientName);
+        try {
+            const res = await api.get(`/hospital/dashboard/patients/${patientId}/notes`);
+            setPatientNotes(res.data);
+        } catch (err) {
+            alert("Failed to fetch patient records");
+        }
+    };
+
+    const handleAddNote = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedPatientId || !newNoteContent.trim()) return;
+        try {
+            const res = await api.post(`/hospital/dashboard/patients/${selectedPatientId}/notes`, {
+                note: newNoteContent
+            });
+            setPatientNotes([res.data, ...patientNotes]);
+            setNewNoteContent("");
+        } catch (err) {
+            alert("Failed to add note");
+        }
+    };
+
+    const handlePrescriptionUpload = async (e: React.ChangeEvent<HTMLInputElement>, appointmentId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingPrescriptionId(appointmentId);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const uploadRes = await api.post('/upload', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            await api.put(`/hospital/dashboard/appointments/${appointmentId}/prescription`, {
+                prescriptionUrl: uploadRes.data.url
+            });
+
+            fetchData();
+            alert('Prescription uploaded successfully!');
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Failed to upload prescription');
+        } finally {
+            setUploadingPrescriptionId(null);
+        }
+    };
+
+    const handleGenerateInvoice = async (appointmentId: string, fee: number) => {
+        setGeneratingInvoiceId(appointmentId);
+        try {
+            await api.post(`/hospital/dashboard/appointments/${appointmentId}/invoice`, {
+                amount: fee
+            });
+            fetchData();
+            alert('Invoice generated and sent to patient successfully!');
+        } catch (error) {
+            console.error('Invoice error:', error);
+            alert('Failed to generate invoice');
+        } finally {
+            setGeneratingInvoiceId(null);
         }
     };
 
@@ -611,6 +735,51 @@ export default function HospitalDashboard() {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+                                {/* Peak Booking Hours (Recharts) */}
+                                <div className="md:col-span-2 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col h-[320px]">
+                                    <h4 className="text-sm font-extrabold text-slate-800 mb-6 uppercase tracking-wider">Peak Booking Hours</h4>
+                                    <div className="flex-1 w-full h-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={peakHours}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 800 }} />
+                                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 800 }} />
+                                                <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                                <Bar dataKey="count" fill="#4f46e5" radius={[6, 6, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+
+                                {/* Cancellation Rate */}
+                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center h-[320px]">
+                                    <h4 className="text-sm font-extrabold text-slate-800 mb-6 uppercase tracking-wider text-center">Cancellation Rate</h4>
+                                    <div className="relative w-40 h-40 flex items-center justify-center">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle cx="80" cy="80" r="70" className="stroke-slate-200" strokeWidth="12" fill="none" />
+                                            <motion.circle 
+                                                cx="80" cy="80" r="70" 
+                                                className="stroke-rose-500" 
+                                                strokeWidth="12" 
+                                                fill="none" 
+                                                strokeLinecap="round"
+                                                initial={{ strokeDasharray: "440", strokeDashoffset: "440" }}
+                                                animate={{ strokeDashoffset: 440 - (440 * (cancellationRate?.rate || 0)) / 100 }}
+                                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                            />
+                                        </svg>
+                                        <div className="absolute flex flex-col items-center justify-center">
+                                            <span className="text-3xl font-black text-slate-800">{cancellationRate?.rate || 0}%</span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cancellationRate?.cancelled || 0} Cancelled</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-6 text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">
+                                        Out of {cancellationRate?.total || 0} Total Bookings
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -754,7 +923,7 @@ export default function HospitalDashboard() {
                                             {showMobileFilters ? "Hide Filters" : "Show Filters"}
                                         </button>
                                     </div>
-                                    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3.5 ${showMobileFilters ? 'block space-y-3 sm:space-y-0' : 'hidden sm:grid'}`}>
+                                    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3.5 ${showMobileFilters ? 'block space-y-3 sm:space-y-0' : 'hidden sm:grid'}`}>
                                         <div className="space-y-1">
                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Single Date</label>
                                             <input 
@@ -805,6 +974,17 @@ export default function HospitalDashboard() {
                                             />
                                         </div>
                                         <div className="space-y-1">
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Doctor</label>
+                                            <select 
+                                                value={filterDoctor} 
+                                                onChange={(e) => setFilterDoctor(e.target.value)} 
+                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                            >
+                                                <option value="">All Doctors</option>
+                                                {doctors.map(d => <option key={d._id} value={d._id}>Dr. {d.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1">
                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Status</label>
                                             <select 
                                                 value={filterStatus} 
@@ -849,6 +1029,14 @@ export default function HospitalDashboard() {
                                                                         ({app.patientAge || app.patient?.age} yrs)
                                                                     </span>
                                                                 )}
+                                                                {app.patient?._id && (
+                                                                    <button 
+                                                                        onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
+                                                                        className="ml-2 text-[9px] text-primary hover:underline uppercase tracking-wider font-black"
+                                                                    >
+                                                                        View Records
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                             <div className="text-[10px] text-slate-400 font-bold mt-0.5">
                                                                 {app.patientPhone || app.patient?.phone || 'N/A'}
@@ -869,11 +1057,22 @@ export default function HospitalDashboard() {
                                                         </td>
                                                         <td className="p-4 pr-6 text-right">
                                                             <div className="flex items-center justify-end gap-2">
+                                                                {(app.status === 'pending' || app.status === 'confirmed') && (
+                                                                    <select
+                                                                        className="p-1.5 text-[9px] font-black uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg text-slate-600 outline-none max-w-[100px] hover:border-slate-300 transition-colors"
+                                                                        value={app.doctor?._id || ""}
+                                                                        onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
+                                                                        title="Assign/Reassign Doctor"
+                                                                    >
+                                                                        <option value="" disabled>Assign Doc</option>
+                                                                        {doctors.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                                                                    </select>
+                                                                )}
                                                                 {app.status === 'pending' ? (
                                                                     <div className="flex gap-1">
                                                                         <button title="Confirm" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className={`p-1.5 rounded-lg ${app.status === 'confirmed' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}><CheckCircle2 className="w-4 h-4" /></button>
                                                                         <button title="Check-in" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"><User className="w-4 h-4" /></button>
-                                                                        <button title="Cancel" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"><XCircle className="w-4 h-4" /></button>
+                                                                        <button title="No-Show / Cancel" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"><XCircle className="w-4 h-4" /></button>
                                                                     </div>
                                                                 ) : app.status === 'checked-in' ? (
                                                                     <button onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 flex items-center gap-2">
@@ -883,10 +1082,24 @@ export default function HospitalDashboard() {
                                                                     <button onClick={() => handleStatusUpdate(app._id, 'completed')} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center gap-2">
                                                                         <CheckCircle2 className="w-3 h-3" /> Complete
                                                                     </button>
-                                                                ) : (
-                                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                                                        app.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'
-                                                                    }`}>{app.status}</span>
+                                                                ) : app.status === 'completed' && (
+                                                                    <div className="flex flex-col gap-1.5 w-full max-w-[100px]">
+                                                                        {app.prescriptionUrl ? (
+                                                                            <a href={app.prescriptionUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase text-center bg-blue-50 border border-blue-100 text-blue-600 py-1.5 rounded-lg shadow-sm">View Rx</a>
+                                                                        ) : (
+                                                                            <label className="text-[9px] font-black uppercase text-center bg-slate-50 border border-slate-200 text-slate-600 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors shadow-sm">
+                                                                                {uploadingPrescriptionId === app._id ? 'Uploading...' : 'Upload Rx'}
+                                                                                <input type="file" className="hidden" onChange={(e) => handlePrescriptionUpload(e, app._id)} accept=".pdf,image/*" disabled={uploadingPrescriptionId === app._id} />
+                                                                            </label>
+                                                                        )}
+                                                                        {app.invoiceUrl ? (
+                                                                            <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase text-center bg-emerald-50 border border-emerald-100 text-emerald-600 py-1.5 rounded-lg shadow-sm">View Invoice</a>
+                                                                        ) : (
+                                                                            <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="text-[9px] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50">
+                                                                                {generatingInvoiceId === app._id ? 'Gen...' : 'Gen Invoice'}
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -911,6 +1124,14 @@ export default function HospitalDashboard() {
                                                                 <span className="text-[10px] text-slate-400 font-medium ml-1">
                                                                     ({app.patientAge || app.patient?.age} yrs)
                                                                 </span>
+                                                            )}
+                                                            {app.patient?._id && (
+                                                                <button 
+                                                                    onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
+                                                                    className="ml-2 text-[9px] text-primary hover:underline uppercase tracking-wider font-black"
+                                                                >
+                                                                    View Records
+                                                                </button>
                                                             )}
                                                         </h4>
                                                         <p className="text-[10px] text-slate-400 font-bold">{app.patientPhone || app.patient?.phone || 'N/A'}</p>
@@ -939,7 +1160,17 @@ export default function HospitalDashboard() {
                                                 </div>
                                                 
                                                 {/* Mobile Actions block */}
-                                                <div className="pt-3 border-t border-slate-50">
+                                                <div className="pt-3 border-t border-slate-50 space-y-2">
+                                                    {(app.status === 'pending' || app.status === 'confirmed') && (
+                                                        <select
+                                                            className="w-full py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none text-center hover:border-slate-300 transition-colors"
+                                                            value={app.doctor?._id || ""}
+                                                            onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
+                                                        >
+                                                            <option value="" disabled>-- Assign / Reassign Doctor --</option>
+                                                            {doctors.map(d => <option key={d._id} value={d._id}>Dr. {d.name}</option>)}
+                                                        </select>
+                                                    )}
                                                     {app.status === 'pending' ? (
                                                         <div className="flex gap-2 w-full">
                                                             <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="flex-1 py-2 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-1.5 border border-emerald-100 active:scale-95 transition-all shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Confirm</button>
@@ -954,7 +1185,25 @@ export default function HospitalDashboard() {
                                                         <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/15 active:scale-95 transition-all">
                                                             <CheckCircle2 className="w-3.5 h-3.5" /> Complete Consultation
                                                         </button>
-                                                    ) : null}
+                                                    ) : app.status === 'completed' && (
+                                                        <div className="flex gap-2 w-full">
+                                                            {app.prescriptionUrl ? (
+                                                                <a href={app.prescriptionUrl} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-100 text-center shadow-sm">View Rx</a>
+                                                            ) : (
+                                                                <label className="flex-1 py-2 bg-slate-50 text-slate-600 font-black text-[10px] uppercase rounded-xl border border-slate-200 text-center cursor-pointer hover:bg-slate-100 shadow-sm">
+                                                                    {uploadingPrescriptionId === app._id ? 'Uploading...' : 'Upload Rx'}
+                                                                    <input type="file" className="hidden" onChange={(e) => handlePrescriptionUpload(e, app._id)} accept=".pdf,image/*" disabled={uploadingPrescriptionId === app._id} />
+                                                                </label>
+                                                            )}
+                                                            {app.invoiceUrl ? (
+                                                                <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl border border-emerald-100 text-center shadow-sm">View Invoice</a>
+                                                            ) : (
+                                                                <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="flex-1 py-2 bg-slate-900 text-white font-black text-[10px] uppercase rounded-xl shadow-sm hover:bg-slate-800 disabled:opacity-50">
+                                                                    {generatingInvoiceId === app._id ? 'Generating...' : 'Gen Invoice'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -1072,7 +1321,7 @@ export default function HospitalDashboard() {
                                                             ) : isBooked ? (
                                                                 <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100 font-bold">Fully Booked</span>
                                                             ) : (
-                                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold">Available / Active</span>
+                                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-amber-100 font-bold">Available / Active</span>
                                                             )}
                                                         </td>
                                                         <td className="p-4 pr-6 text-right">
@@ -1253,6 +1502,16 @@ export default function HospitalDashboard() {
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doctor Name</label>
                                 <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                                    <input type="email" placeholder="doctor@example.com" value={newDoctor.email} onChange={e => setNewDoctor({...newDoctor, email: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone</label>
+                                    <input type="tel" placeholder="+91 9876543210" value={newDoctor.phone} onChange={e => setNewDoctor({...newDoctor, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty</label>
@@ -1549,6 +1808,56 @@ export default function HospitalDashboard() {
 
                             <button type="submit" className="w-full py-4 bg-emerald-600 text-white font-black rounded-[2rem] shadow-2xl hover:bg-emerald-700 transition-all text-xs uppercase tracking-wider">
                                 Confirm Walk-in Booking
+                            </button>
+                        </form>
+                    </motion.div>
+                </div>
+            )}
+
+            {selectedPatientId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-2xl rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between mb-6 shrink-0">
+                            <div>
+                                <h3 className="text-xl sm:text-2xl font-black text-slate-900">Patient Records</h3>
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{selectedPatientName}</p>
+                            </div>
+                            <button onClick={() => { setSelectedPatientId(null); setSelectedPatientName(""); setPatientNotes([]); setNewNoteContent(""); }}><XCircle className="w-6 h-6 text-gray-400 hover:text-rose-500 transition-colors" /></button>
+                        </div>
+                        
+                        {/* Notes List */}
+                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-6 custom-scrollbar">
+                            {patientNotes.length === 0 ? (
+                                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 font-bold text-xs">
+                                    No records found for this patient.
+                                </div>
+                            ) : (
+                                patientNotes.map((note, i) => (
+                                    <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <div>
+                                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{note.doctor ? `Dr. ${note.doctor.name}` : 'Hospital Staff'}</span>
+                                                {note.doctor?.specialty && <span className="ml-2 text-[9px] font-bold text-primary bg-blue-50 px-2 py-0.5 rounded-full">{note.doctor.specialty}</span>}
+                                            </div>
+                                            <span className="text-[9px] font-bold text-slate-400">{new Date(note.createdAt).toLocaleString()}</span>
+                                        </div>
+                                        <p className="text-xs font-medium text-slate-700 whitespace-pre-wrap">{note.note}</p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        {/* Add Note Form */}
+                        <form onSubmit={handleAddNote} className="shrink-0 pt-4 border-t border-slate-100">
+                            <textarea
+                                required
+                                value={newNoteContent}
+                                onChange={e => setNewNoteContent(e.target.value)}
+                                placeholder="Add a new note, observation, or diagnosis..."
+                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none text-xs h-24 resize-none mb-4 focus:border-primary transition-colors"
+                            />
+                            <button type="submit" className="w-full py-3.5 bg-slate-900 text-white font-black rounded-2xl shadow-lg hover:bg-slate-800 transition-all text-xs uppercase tracking-wider">
+                                Save Record
                             </button>
                         </form>
                     </motion.div>
