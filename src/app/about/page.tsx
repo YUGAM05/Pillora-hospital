@@ -1,369 +1,250 @@
 "use client";
 import React from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
-import { 
-    ShieldCheck, 
-    Zap, 
-    Cpu, 
-    GraduationCap, 
-    Code2, 
-    HeartPulse, 
-    Building2, 
-    Droplets, 
-    Sparkles, 
-    Quote, 
-    Hospital, 
-    ShieldAlert, 
-    Users, 
-    Target, 
-    Lock, 
+import {
+    Sparkles,
+    Users,
+    Target,
     Eye,
-    CheckCircle2,
-    Shield
+    Building2,
+    LayoutDashboard,
+    MapPin,
+    Rocket
 } from "lucide-react";
 
 const fadeIn = {
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 0, y: 24 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.6 }
 };
 
-const staggerContainer = {
-    animate: {
-        transition: {
-            staggerChildren: 0.1
-        }
-    }
-};
-
 export default function AboutPage() {
     return (
-        <main className="min-h-screen bg-white selection:bg-rose-100 selection:text-rose-900">
-            {/* 1. Hero Section */}
-            <section className="relative py-16 md:py-20 px-6 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-50 via-white to-transparent">
-                {/* Dynamic Background Blobs */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.2, 1],
-                            rotate: [0, 90, 0],
-                            x: [0, 50, 0],
-                            y: [0, 30, 0]
-                        }}
-                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                        className="absolute -top-[20%] -right-[10%] w-[600px] h-[600px] bg-rose-400/10 rounded-full blur-[140px]"
-                    />
-                    <motion.div
-                        animate={{
-                            scale: [1, 1.3, 1],
-                            rotate: [0, -45, 0],
-                            x: [0, -40, 0],
-                            y: [0, 60, 0]
-                        }}
-                        transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-                        className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] bg-blue-400/10 rounded-full blur-[140px]"
-                    />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]" />
-                </div>
+        <main className="min-h-screen bg-white selection:bg-blue-100 selection:text-blue-900 font-sans">
 
-                <div className="max-w-7xl mx-auto relative z-10">
+            {/* Hero */}
+            <section className="relative py-20 md:py-28 px-6 overflow-hidden bg-slate-50">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-blue-100/60 rounded-full blur-[120px] -z-10 -mt-32" />
+                <div className="max-w-5xl mx-auto text-center relative z-10">
                     <motion.div
-                        initial="initial"
-                        animate="animate"
-                        variants={fadeIn}
-                        className="text-center max-w-5xl mx-auto"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5 }}
+                        className="inline-flex items-center gap-2 px-5 py-2 mb-8 text-xs font-black tracking-[0.2em] text-blue-700 uppercase bg-blue-600/10 border border-blue-600/20 rounded-full"
                     >
+                        <Sparkles className="w-4 h-4" />
+                        About Pillora Hospital Portal
+                    </motion.div>
+                    <motion.h1
+                        {...fadeIn}
+                        transition={{ delay: 0.1 }}
+                        className="text-5xl md:text-7xl font-black text-slate-900 mb-6 leading-tight tracking-tighter"
+                    >
+                        Bridging Hospitals <br />
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-800">
+                            & Patients
+                        </span>
+                    </motion.h1>
+                    <motion.p
+                        {...fadeIn}
+                        transition={{ delay: 0.2 }}
+                        className="text-xl text-slate-500 font-medium max-w-3xl mx-auto leading-relaxed"
+                    >
+                        A next-generation hospital management platform designed to make finding the right hospital, booking an appointment, and managing healthcare as simple as a few taps.
+                    </motion.p>
+                </div>
+            </section>
+
+            {/* Who We Are */}
+            <section className="py-24 px-6 bg-white">
+                <div className="max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5 }}
-                            className="inline-flex items-center gap-2 px-5 py-2 mb-6 text-xs font-black tracking-[0.2em] text-rose-700 uppercase bg-rose-600/10 border border-rose-600/20 rounded-full backdrop-blur-md"
+                            initial={{ opacity: 0, x: -30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
                         >
-                            <Sparkles className="w-4 h-4" />
-                            About Us — Pillora
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                                    <Users className="w-6 h-6" />
+                                </div>
+                                <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Who We Are</h2>
+                            </div>
+                            <p className="text-lg text-slate-600 font-medium leading-relaxed mb-6">
+                                Pillora is a next-generation hospital management platform designed to bridge the gap between medical institutions and patients. We believe that finding the right hospital, booking an appointment, and managing healthcare should be as simple as a few taps on your phone.
+                            </p>
+                            <p className="text-lg text-slate-600 font-medium leading-relaxed">
+                                We are currently in our <span className="text-blue-600 font-bold">prototype phase</span>, fine-tuning every detail before our official launch. Our mission is simple — eliminate the administrative chaos that hospitals face daily and give patients a seamless, trustworthy experience when they need care the most.
+                            </p>
                         </motion.div>
-                        <h1 className="text-5xl md:text-8xl font-black text-slate-900 mb-6 leading-tight tracking-tighter">
-                            Digitizing Healthcare <br />
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-600 via-red-600 to-rose-700">Access in India</span>
-                        </h1>
-                        <p className="text-xl md:text-2xl text-slate-600 leading-relaxed mb-8 max-w-3xl mx-auto font-medium">
-                            Ensuring life-saving resources are never more than a few taps away through Blood Connect and Hospital Information Services.
+
+                        <motion.div
+                            initial={{ opacity: 0, x: 30 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true }}
+                            className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/20 rounded-full blur-[80px] -mr-32 -mt-32" />
+                            <div className="relative z-10">
+                                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-900/50">
+                                    <Target className="w-6 h-6" />
+                                </div>
+                                <h3 className="text-2xl font-black mb-4">Our Mission</h3>
+                                <p className="text-slate-300 leading-relaxed font-medium text-lg italic border-l-4 border-blue-500 pl-6">
+                                    "Eliminate the administrative chaos that hospitals face daily and give patients a seamless, trustworthy experience when they need care the most."
+                                </p>
+                            </div>
+                        </motion.div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Our Vision */}
+            <section className="py-24 px-6 bg-slate-50">
+                <div className="max-w-6xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="flex items-center gap-4 mb-10"
+                    >
+                        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                            <Eye className="w-6 h-6" />
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Our Vision</h2>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="bg-white rounded-[3rem] p-10 md:p-16 border border-slate-100 shadow-xl shadow-slate-200/50"
+                    >
+                        <p className="text-2xl md:text-3xl font-black text-slate-900 leading-tight mb-0">
+                            A India where every hospital —{" "}
+                            <span className="text-blue-600">whether a large multi-specialty institution or a small local clinic</span>{" "}
+                            — has access to powerful, affordable tools to manage their operations, grow their patient base, and deliver better care.
                         </p>
                     </motion.div>
                 </div>
             </section>
 
-            {/* 2. Who We Are & Leadership */}
-            <section className="py-24 px-4 relative bg-slate-50 overflow-hidden">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col lg:flex-row gap-16 items-center">
-                        <motion.div
-                            initial={{ opacity: 0, x: -50 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            className="w-full lg:w-1/2 relative"
-                        >
-                            <div className="relative aspect-square max-w-[500px] mx-auto group">
-                                <div className="absolute -inset-4 bg-gradient-to-tr from-rose-500 to-rose-700 rounded-[3rem] opacity-20 blur-2xl group-hover:opacity-30 transition-opacity" />
-                                <div className="relative h-full w-full bg-white rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-2xl">
-                                    <Image
-                                        src="/Yugam-shah-founder.jpeg"
-                                        alt="Yugam Shah - Founder of Pillora"
-                                        fill
-                                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                                        <p className="text-white font-black text-2xl">Yugam Shah</p>
-                                        <p className="text-rose-400 font-bold uppercase tracking-widest text-sm">Founder & CEO</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        <div className="w-full lg:w-1/2 space-y-10">
-                            <div>
-                                <h2 className="text-4xl font-black text-slate-900 mb-6 flex items-center gap-4">
-                                    <Users className="w-10 h-10 text-rose-600" />
-                                    Who We Are
-                                </h2>
-                                <p className="text-xl text-slate-600 leading-relaxed font-medium">
-                                    Pillora is a HealthTech platform founded and led by Yugam Shah, built to digitize the foundational layers of healthcare access in India. We are a healthcare coordination platform focused on two critical pillars: 
-                                    <span className="text-rose-600 font-bold"> Blood Connect</span> and <span className="text-blue-600 font-bold"> Hospital Information Services</span> — ensuring life-saving resources are never more than a few taps away.
-                                </p>
-                            </div>
-
-                            <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full -mr-16 -mt-16 blur-xl" />
-                                <h3 className="text-3xl font-black text-slate-900 mb-6 flex items-center gap-4">
-                                    <Target className="w-8 h-8 text-rose-600" />
-                                    Our Mission
-                                </h3>
-                                <p className="text-lg text-slate-600 leading-relaxed italic border-l-4 border-rose-600 pl-6">
-                                    &quot;In healthcare, a five-minute delay or a piece of wrong information can change everything. Pillora exists to eliminate that gap — giving patients, families, and caregivers fast, verified, and reliable access to critical medical resources.&quot;
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 3. What We Do - Blood Connect */}
+            {/* What We're Building */}
             <section className="py-24 px-6 bg-white">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16">
+                <div className="max-w-6xl mx-auto">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="flex items-center gap-4 mb-10"
+                    >
+                        <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                            <LayoutDashboard className="w-6 h-6" />
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">What We&apos;re Building</h2>
+                    </motion.div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 mb-4 text-xs font-bold tracking-widest text-rose-700 uppercase bg-rose-50 rounded-full"
+                            viewport={{ once: true }}
+                            className="p-10 rounded-[2.5rem] bg-blue-600 text-white relative overflow-hidden"
                         >
-                            <Droplets className="w-4 h-4" />
-                            Blood Connect Services
-                        </motion.div>
-                        <h2 className="text-5xl font-black text-slate-900">Blood Connect</h2>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="p-10 rounded-[3rem] bg-rose-50 border border-rose-100"
-                        >
-                            <h3 className="text-2xl font-black text-rose-900 mb-6">For Donors</h3>
-                            <ul className="space-y-4">
-                                {[
-                                    "Register with personal & contact details",
-                                    "Information kept private until verified match",
-                                    "Geographic proximity matching",
-                                    "Safe and efficient donor-patient connection"
-                                ].map((item, i) => (
-                                    <li key={i} className="flex items-start gap-4">
-                                        <CheckCircle2 className="w-6 h-6 text-rose-600 shrink-0 mt-1" />
-                                        <span className="text-slate-700 font-medium">{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </motion.div>
-
-                        <motion.div
-                            whileHover={{ y: -5 }}
-                            className="p-10 rounded-[3rem] bg-red-50 border border-red-100"
-                        >
-                            <h3 className="text-2xl font-black text-red-900 mb-6">For Recipients</h3>
-                            <ul className="space-y-4">
-                                {[
-                                    "Submit detailed blood requests",
-                                    "Mandatory KYC verification (Aadhaar)",
-                                    "AI-powered Aadhaar validation",
-                                    "Automatic SMS confirmation upon approval"
-                                ].map((item, i) => (
-                                    <li key={i} className="flex items-start gap-4">
-                                        <CheckCircle2 className="w-6 h-6 text-red-600 shrink-0 mt-1" />
-                                        <span className="text-slate-700 font-medium">{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </motion.div>
-                    </div>
-
-                    {/* Security Sub-section */}
-                    <div className="mt-16 bg-slate-900 rounded-[3rem] p-8 md:p-16 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-80 h-80 bg-rose-600/20 rounded-full blur-[100px] -mr-40 -mt-40" />
-                        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                            <div>
-                                <h3 className="text-3xl font-black mb-6 flex items-center gap-4">
-                                    <Lock className="w-10 h-10 text-rose-500" />
-                                    Security & Transparency
-                                </h3>
-                                <p className="text-slate-300 text-lg leading-relaxed mb-8">
-                                    Donor data is stored securely within our verified donor network. A donor&apos;s name and phone number are only shared with a recipient when that recipient has completed full KYC verification and is located in the donor&apos;s nearest area.
+                            <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-white/10 rounded-full blur-xl" />
+                            <div className="relative z-10">
+                                <Building2 className="w-10 h-10 mb-6 opacity-80" />
+                                <h3 className="text-xl font-black mb-4 uppercase tracking-widest text-[13px] text-blue-200">For Hospitals</h3>
+                                <p className="text-blue-100 font-medium leading-relaxed text-lg">
+                                    Manage doctor schedules, track appointments, handle patient inquiries, and build their digital presence — all from one dashboard.
                                 </p>
                             </div>
-                            <div className="space-y-6">
-                                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-                                    <h4 className="font-bold text-rose-400 mb-2 uppercase tracking-wider text-sm">Masked Data Storage</h4>
-                                    <p className="text-slate-200">Aadhaar numbers are saved as <span className="font-mono text-rose-300">**** **** **XX</span>. Only the last 2 digits are visible to admins, ensuring identity protection.</p>
-                                </div>
-                                <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl">
-                                    <h4 className="font-bold text-rose-400 mb-2 uppercase tracking-wider text-sm">Legitimate Connections</h4>
-                                    <p className="text-slate-200">KYC ensures every connection is legitimate, local, and necessary. We have zero tolerance for misuse of donor data.</p>
-                                </div>
+                        </motion.div>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 0.1 }}
+                            className="p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 relative overflow-hidden"
+                        >
+                            <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-blue-100/50 rounded-full blur-xl" />
+                            <div className="relative z-10">
+                                <Users className="w-10 h-10 mb-6 text-blue-600" />
+                                <h3 className="text-xl font-black mb-4 uppercase tracking-widest text-[13px] text-slate-500">For Patients</h3>
+                                <p className="text-slate-600 font-medium leading-relaxed text-lg">
+                                    A reliable, transparent way to discover hospitals, check doctor availability, read service details, and book with zero friction.
+                                </p>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="mt-8 text-center text-xl font-bold text-slate-500 italic"
+                    >
+                        Pillora is not just a listing platform — we are building a{" "}
+                        <span className="text-slate-900 not-italic">full ecosystem.</span>
+                    </motion.p>
                 </div>
             </section>
 
-            {/* 4. Hospital Information Services */}
-            <section className="py-24 px-6 bg-slate-50">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col lg:flex-row gap-16 items-center">
-                        <div className="w-full lg:w-1/2">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                whileInView={{ opacity: 1, scale: 1 }}
-                                className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-xs font-bold tracking-widest text-blue-700 uppercase bg-blue-50 rounded-full"
-                            >
-                                <Hospital className="w-4 h-4" />
-                                Centralized Aggregator
-                            </motion.div>
-                            <h2 className="text-5xl font-black text-slate-900 mb-8">Hospital <br /><span className="text-blue-600">Information Services</span></h2>
-                            <p className="text-xl text-slate-600 leading-relaxed mb-10 font-medium">
-                                Pillora is building a centralized hospital aggregator that helps patients search, compare, and choose the right healthcare facility — <span className="font-bold text-slate-900 italic underline decoration-blue-500 decoration-2">without making a single phone call.</span>
-                            </p>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {[
-                                    "Doctor profiles & specializations",
-                                    "Availability schedules & slots",
-                                    "Transparent pricing & fees",
-                                    "Government scheme coverage",
-                                    "Facilities & specialty units",
-                                    "Emergency service status"
-                                ].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-3 p-4 bg-white rounded-xl border border-slate-200">
-                                        <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
-                                        <span className="text-slate-800 font-bold text-sm tracking-tight">{item}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="w-full lg:w-1/2 grid grid-cols-2 gap-6">
-                            <motion.div whileHover={{ y: -10 }} className="pt-12">
-                                <HospitalCard title="Ayushman Bharat" desc="Verified coverage and benefits for govt schemes." icon={Shield} color="blue" />
-                            </motion.div>
-                            <motion.div whileHover={{ y: -10 }}>
-                                <HospitalCard title="Specialized Units" desc="Detailed mapping of ICU, OT, and specialized units." icon={Cpu} color="indigo" />
-                            </motion.div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* 5. How We Are Built Differently (Table Section) */}
-            <section className="py-24 px-6 bg-white">
-                <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-16">
-                        <h2 className="text-5xl font-black text-slate-900 mb-4">Built Differently</h2>
-                        <div className="h-2 w-24 bg-rose-600 mx-auto rounded-full" />
-                    </div>
-
-                    <div className="overflow-hidden rounded-[2.5rem] border border-slate-200 shadow-2xl">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-900 text-white">
-                                    <th className="px-8 py-6 text-xl font-black">Principle</th>
-                                    <th className="px-8 py-6 text-xl font-black">What It Means for You</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {[
-                                    { p: "KYC-Verified Safety", m: "Only verified recipients access donor information" },
-                                    { p: "Privacy by Design", m: "Donor details are shared only on confirmed matches" },
-                                    { p: "Masked Data Storage", m: "Aadhaar numbers stored as **** **** **XX — never in full" },
-                                    { p: "Verified Data", m: "Zero tolerance for inaccuracies in hospital or donor records" },
-                                    { p: "Speed", m: "Platform responses at enterprise speed — because emergencies don't wait" }
-                                ].map((row, i) => (
-                                    <motion.tr 
-                                        key={i}
-                                        whileHover={{ backgroundColor: "rgba(241, 245, 249, 0.5)" }}
-                                        className="transition-colors"
-                                    >
-                                        <td className="px-8 py-6 font-black text-rose-600">{row.p}</td>
-                                        <td className="px-8 py-6 text-slate-600 font-medium">{row.m}</td>
-                                    </motion.tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            {/* 6. Our Vision */}
-            <section className="py-32 px-6 bg-slate-950 text-white relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.05]" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-600/10 rounded-full blur-[140px] pointer-events-none" />
-                
+            {/* Where We Are Today */}
+            <section className="py-24 px-6 bg-slate-900 text-white relative overflow-hidden">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
                 <div className="max-w-5xl mx-auto text-center relative z-10">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         whileInView={{ opacity: 1, scale: 1 }}
-                        className="inline-flex items-center gap-2 px-5 py-2 mb-8 text-xs font-black tracking-[0.3em] text-rose-500 uppercase bg-rose-500/10 border border-rose-500/20 rounded-full"
+                        viewport={{ once: true }}
+                        className="inline-flex items-center gap-2 px-5 py-2 mb-8 text-xs font-black tracking-[0.3em] text-blue-400 uppercase bg-blue-500/10 border border-blue-500/20 rounded-full"
                     >
-                        <Eye className="w-4 h-4" />
-                        Our Vision
+                        <MapPin className="w-4 h-4" />
+                        Where We Are Today
                     </motion.div>
-                    <h2 className="text-5xl md:text-7xl font-black mb-10 leading-tight">
-                        The Connected <br />
-                        <span className="text-rose-500">Health Grid of India</span>
-                    </h2>
-                    <p className="text-xl md:text-2xl text-slate-400 leading-relaxed font-light mb-12">
-                        By 2028, Pillora aims to be a real-time network where Blood Connect and specialist availability are all synchronized in one place, accessible to anyone, anywhere, in moments.
-                    </p>
-                    <div className="flex items-center justify-center gap-4 text-rose-500 font-black tracking-widest uppercase">
-                        <div className="h-px w-12 bg-rose-500/50" />
-                        Mission 2028
-                        <div className="h-px w-12 bg-rose-500/50" />
-                    </div>
+                    <motion.h2
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-4xl md:text-6xl font-black mb-10 leading-tight"
+                    >
+                        Pre-Launch. <br />
+                        <span className="text-blue-400">Onboarding Early Partners.</span>
+                    </motion.h2>
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="text-xl text-slate-400 leading-relaxed font-medium max-w-3xl mx-auto mb-12"
+                    >
+                        We are pre-launch, onboarding early hospital partners who believe in what we&apos;re building. Every hospital that joins us now becomes a foundational partner — shaping the product, getting priority placement, and growing with us from day one.
+                    </motion.p>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                    >
+                        {[
+                            { label: "Shape the Product", desc: "Your feedback directly influences what we build" },
+                            { label: "Priority Placement", desc: "Be at the top when we go live to patients" },
+                            { label: "Grow Together", desc: "Partner from day one and scale with us" }
+                        ].map((item, i) => (
+                            <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2rem] text-left backdrop-blur-sm">
+                                <div className="w-8 h-8 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
+                                    <Rocket className="w-4 h-4 text-white" />
+                                </div>
+                                <h3 className="font-black text-white mb-2">{item.label}</h3>
+                                <p className="text-slate-400 font-medium text-sm leading-relaxed">{item.desc}</p>
+                            </div>
+                        ))}
+                    </motion.div>
                 </div>
             </section>
+
         </main>
-    );
-}
-
-function HospitalCard({ title, desc, icon: Icon, color }: any) {
-    const colorClasses: any = {
-        blue: "text-blue-600 bg-blue-50 border-blue-100",
-        indigo: "text-indigo-600 bg-indigo-50 border-indigo-100"
-    };
-
-    return (
-        <div className="p-8 bg-white border border-slate-200 rounded-[2.5rem] shadow-xl h-full flex flex-col items-center text-center">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${colorClasses[color]}`}>
-                <Icon className="w-8 h-8" />
-            </div>
-            <h4 className="text-xl font-black text-slate-900 mb-4">{title}</h4>
-            <p className="text-slate-500 font-medium text-sm leading-relaxed">{desc}</p>
-        </div>
     );
 }

@@ -1,285 +1,169 @@
 "use client";
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import {
-    Search,
-    Plus,
-    Minus,
-    Droplets,
-    HeartPulse,
-    Hospital,
-    Handshake,
-    Mail,
-    Zap,
     HelpCircle,
+    Building2,
+    Users,
+    Bug,
+    Clock,
+    Mail,
     ArrowRight,
-    SearchCheck,
-    Stethoscope
+    Zap
 } from 'lucide-react';
 
-interface FAQ {
-    question: string;
-    answer: string;
-}
-
-interface FAQSectionProps {
-    title: string;
-    icon: React.ReactNode;
-    faqs: FAQ[];
-    color: string;
-}
-
-const FAQItem = ({ faq }: { faq: FAQ }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className="border-b border-slate-100 last:border-0">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full py-6 flex items-start justify-between gap-4 text-left group"
-            >
-                <span className="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-tight">
-                    {faq.question}
-                </span>
-                <div className={`mt-1 p-1 rounded-lg transition-colors ${isOpen ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                    {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                </div>
-            </button>
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                    >
-                        <p className="pb-8 text-slate-600 font-medium leading-relaxed italic">
-                            {faq.answer}
-                        </p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
+const fadeIn = {
+    initial: { opacity: 0, y: 20 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true }
 };
 
-const FAQSection = ({ title, icon, faqs, color }: FAQSectionProps) => (
-    <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mb-16 last:mb-0"
-    >
-        <div className="flex items-center gap-4 mb-8">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${color}`}>
+interface SupportCardProps {
+    icon: React.ReactNode;
+    iconBg: string;
+    title: string;
+    body: string;
+    email: string;
+}
+
+function SupportCard({ icon, iconBg, title, body, email }: SupportCardProps) {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col h-full hover:border-blue-100 hover:shadow-2xl transition-all duration-500"
+        >
+            <div className={`w-14 h-14 ${iconBg} rounded-2xl flex items-center justify-center text-white mb-8 shadow-lg`}>
                 {icon}
             </div>
-            <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight uppercase">
-                {title}
-            </h2>
-        </div>
-        <div className="bg-white rounded-[32px] p-6 md:p-12 shadow-xl shadow-slate-200/50 border border-slate-50">
-            {faqs.map((faq, index) => (
-                <FAQItem key={index} faq={faq} />
-            ))}
-        </div>
-    </motion.div>
-);
+            <h2 className="text-xl font-black text-slate-900 mb-4 tracking-tight">{title}</h2>
+            <p className="text-slate-500 font-medium leading-relaxed mb-8 flex-1">{body}</p>
+            <a
+                href={`mailto:${email}`}
+                className="inline-flex items-center gap-2 text-blue-600 font-black text-sm hover:gap-3 transition-all"
+            >
+                {email} <ArrowRight className="w-4 h-4" />
+            </a>
+        </motion.div>
+    );
+}
 
-export default function HelpCenterPage() {
-    const bloodDonorFAQs: FAQ[] = [
-        {
-            question: "How do I register as a blood donor?",
-            answer: "Visit the Blood Connect section and fill in your Full Name, Blood Group, Age, Gender, Phone Number, City, Area, and Full Address. Once submitted, your profile is added to our donor network."
-        },
-        {
-            question: "When will my contact details be shared?",
-            answer: "Your name and phone number are only shared when a KYC-verified recipient in your nearest area needs blood that matches your blood group. Your details are never shared without a verified match."
-        },
-        {
-            question: "Can I remove myself from the donor network?",
-            answer: "Yes. Contact us at help@pillora.in and we will remove your profile from the network promptly."
-        },
-        {
-            question: "Is there any cost to register as a donor?",
-            answer: "No. Registering as a donor on Pillora is completely free."
-        }
-    ];
-
-    const bloodRecipientFAQs: FAQ[] = [
-        {
-            question: "How do I request blood?",
-            answer: "Go to the Blood Connect section and submit a request with — Patient Name, Age, Blood Group Needed, Units Needed, Hospital Name & Address, City, Area/Locality, and Contact Person Number."
-        },
-        {
-            question: "Why is KYC verification mandatory?",
-            answer: "KYC verification protects donors from fraud and misuse. Every recipient must verify their identity via Aadhaar card before any donor contact details are shared with them."
-        },
-        {
-            question: "How does the Aadhaar verification work?",
-            answer: "Upload a clear photo of your Aadhaar card on the platform. Our AI-powered system verifies it automatically. Once approved, you will receive an SMS confirmation on your registered contact number."
-        },
-        {
-            question: "Is my Aadhaar number stored safely?",
-            answer: "Yes. Your Aadhaar number is never stored in full. It is masked and saved as **** **** **XX — only the last 2 digits are visible in our admin panel."
-        },
-        {
-            question: "How long does it take to find a matching donor?",
-            answer: "Matching is automated and happens instantly once your KYC is verified. If a donor with your required blood group is available in your area, their details are shared with you immediately."
-        },
-        {
-            question: "What if no donor is found in my area?",
-            answer: "If no match is found in your immediate area, we recommend also contacting your nearest licensed Blood Connect or hospital blood storage facility directly."
-        }
-    ];
-
-    const hospitalFAQs: FAQ[] = [
-        {
-            question: "How do I search for a hospital on Pillora?",
-            answer: "Go to the Hospitals section and search by city, area, specialty, or doctor name. You can compare hospitals based on doctors, pricing, facilities, and government schemes accepted."
-        },
-        {
-            question: "Is the hospital information on Pillora verified?",
-            answer: "Yes. All hospital data is verified before being listed on the platform and updated regularly in coordination with our hospital partners."
-        },
-        {
-            question: "What information is available for each hospital?",
-            answer: "For every listed hospital we provide — doctor profiles with specializations and experience, consultation availability schedules, pricing for consultations and treatments, government schemes accepted (Ayushman Bharat, state schemes, and others), and facilities & departments available."
-        },
-        {
-            question: "Can I book an appointment through Pillora?",
-            answer: "Currently Pillora provides hospital and doctor information to help you make informed decisions. For appointments, you can directly contact the hospital using the details provided on their profile."
-        }
-    ];
-
-    const partnerFAQs: FAQ[] = [
-        {
-            question: "How can my hospital get listed on Pillora?",
-            answer: "Visit our Partners page and click &quot;Become a Partner&quot; under the Hospitals & Clinics section. Fill in your facility details and our team will contact you shortly."
-        },
-        {
-            question: "We are an NGO with a donor database. How do we partner?",
-            answer: "Visit our Partners page and click &quot;Become a Partner&quot; under the NGO & Blood Donor Organizations section. Share details about your donor database and our team will contact you shortly."
-        }
-    ];
-
+export default function HelpPage() {
     return (
-        <main className="min-h-screen bg-slate-50 font-sans pb-32">
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-24 px-6 overflow-hidden bg-slate-900 text-white">
+        <main className="min-h-screen bg-slate-50 font-sans pb-24">
+
+            {/* Hero */}
+            <section className="relative pt-24 pb-20 px-6 overflow-hidden bg-slate-900 text-white">
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[120px] -mr-48 -mt-48" />
                 <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[100px] -ml-24 -mb-24" />
-                
+
                 <div className="max-w-5xl mx-auto text-center relative z-10">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-blue-500/20"
                     >
-                        <HelpCircle className="w-10 h-10 text-white" />
+                        <HelpCircle className="w-10 h-10" />
                     </motion.div>
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-5xl md:text-7xl font-black mb-8 tracking-tighter leading-tight"
+                        className="text-5xl md:text-7xl font-black mb-6 tracking-tighter leading-tight"
                     >
-                        Help Center — <span className="text-blue-500 italic">Pillora</span>
+                        We&apos;re Here to <span className="text-blue-400 italic">Help</span>
                     </motion.h1>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 }}
-                        className="text-2xl text-slate-400 font-medium mb-12 italic"
+                        className="text-xl text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed"
                     >
-                        How can we help you?
+                        Pillora is currently in its prototype phase and our full documentation and self-serve help portal is being built alongside the product. In the meantime, our team personally handles every query.
                     </motion.p>
+                </div>
+            </section>
 
-                    {/* Search Bar */}
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="max-w-2xl mx-auto relative group"
-                    >
-                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                            <Search className="w-6 h-6" />
-                        </div>
-                        <input 
-                            type="text" 
-                            placeholder="Search for answers..."
-                            className="w-full pl-16 pr-8 py-6 bg-white/10 border border-white/20 rounded-[32px] backdrop-blur-md text-white text-lg font-medium placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:bg-white/15 transition-all shadow-2xl"
+            {/* Support Cards */}
+            <section className="py-24 px-6">
+                <div className="max-w-6xl mx-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <SupportCard
+                            icon={<Building2 className="w-7 h-7" />}
+                            iconBg="bg-blue-600"
+                            title="For Hospitals & Partners"
+                            body="If you're onboarding your hospital, facing issues with your profile, or have questions about how listings work — email us and we'll get back to you within 24 hours."
+                            email="support@pillora.com"
                         />
+                        <SupportCard
+                            icon={<Users className="w-7 h-7" />}
+                            iconBg="bg-slate-700"
+                            title="For Patients"
+                            body="If you're having trouble finding a hospital, booking an appointment, or accessing the platform — reach out with a brief description of your issue and we'll resolve it promptly."
+                            email="support@pillora.com"
+                        />
+                        <SupportCard
+                            icon={<Bug className="w-7 h-7" />}
+                            iconBg="bg-rose-600"
+                            title="For Technical Issues"
+                            body="If you encounter a bug or something on the platform isn't working as expected, email us with a screenshot and a description of the issue. Your report directly helps us improve."
+                            email="tech@pillora.com"
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* Response Times */}
+            <section className="px-6">
+                <div className="max-w-6xl mx-auto">
+                    <motion.div
+                        {...fadeIn}
+                        className="bg-white rounded-[3rem] p-10 md:p-16 border border-slate-100 shadow-xl shadow-slate-200/50"
+                    >
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+                            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 flex-shrink-0">
+                                <Clock className="w-8 h-8" />
+                            </div>
+                            <div className="flex-1">
+                                <h2 className="text-2xl font-black text-slate-900 mb-3">Response Times</h2>
+                                <p className="text-lg text-slate-500 font-medium leading-relaxed">
+                                    We are a small team and we take every message seriously. Expect a response within{" "}
+                                    <span className="text-slate-900 font-black">24 hours on weekdays.</span>
+                                </p>
+                            </div>
+                            <div className="flex-shrink-0 px-8 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm flex items-center gap-2 shadow-lg shadow-blue-200">
+                                <Zap className="w-4 h-4 fill-current" /> Within 24 Hours
+                            </div>
+                        </div>
                     </motion.div>
                 </div>
             </section>
 
-            {/* FAQ Sections */}
-            <section className="py-24 px-6">
-                <div className="max-w-4xl mx-auto">
-                    <FAQSection 
-                        title="Blood Connect — Donor FAQs" 
-                        icon={<Droplets className="w-6 h-6" />} 
-                        faqs={bloodDonorFAQs} 
-                        color="bg-red-600 shadow-red-200" 
-                    />
-                    
-                    <FAQSection 
-                        title="Blood Connect — Recipient FAQs" 
-                        icon={<HeartPulse className="w-6 h-6" />} 
-                        faqs={bloodRecipientFAQs} 
-                        color="bg-red-500 shadow-red-100" 
-                    />
-
-                    <FAQSection 
-                        title="Hospital Information — FAQs" 
-                        icon={<Hospital className="w-6 h-6" />} 
-                        faqs={hospitalFAQs} 
-                        color="bg-blue-600 shadow-blue-200" 
-                    />
-
-                    <FAQSection 
-                        title="Partner FAQs" 
-                        icon={<Handshake className="w-6 h-6" />} 
-                        faqs={partnerFAQs} 
-                        color="bg-slate-900 shadow-slate-200" 
-                    />
-                </div>
-            </section>
-
-            {/* Contact CTA */}
-            <section className="px-6">
-                <motion.div 
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="max-w-5xl mx-auto bg-blue-600 rounded-[40px] p-8 md:p-16 text-center text-white relative overflow-hidden shadow-2xl shadow-blue-200"
+            {/* CTA */}
+            <section className="px-6 pt-16">
+                <motion.div
+                    {...fadeIn}
+                    className="max-w-5xl mx-auto bg-blue-600 rounded-[3rem] p-8 md:p-16 text-center text-white relative overflow-hidden shadow-2xl shadow-blue-200"
                 >
-                    <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-[100px] -ml-48 -mt-48" />
-                    
+                    <div className="absolute top-0 left-0 w-80 h-80 bg-white/10 rounded-full blur-[100px] -ml-40 -mt-40" />
                     <div className="relative z-10">
-                        <div className="w-20 h-20 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-10 backdrop-blur-sm">
-                            <Mail className="w-10 h-10" />
+                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm">
+                            <Mail className="w-8 h-8" />
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight">Still Need Help?</h2>
-                        <p className="text-xl text-blue-100 mb-12 font-medium max-w-2xl mx-auto italic">
-                            Can&apos;t find what you&apos;re looking for? Reach out to us directly. Our team is here to assist you.
+                        <h2 className="text-3xl md:text-4xl font-black mb-4 tracking-tight">Still Need Help?</h2>
+                        <p className="text-xl text-blue-100 mb-10 font-medium max-w-xl mx-auto">
+                            Can&apos;t find what you&apos;re looking for? Reach out — our team personally reads and responds to every message.
                         </p>
-
-                        <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-                            <a 
-                                href="mailto:help@pillora.in"
-                                className="w-full md:w-auto px-10 py-6 bg-white text-blue-600 font-black rounded-3xl hover:bg-slate-100 transition-all shadow-xl uppercase tracking-widest text-sm flex items-center justify-center gap-3"
-                            >
-                                help@pillora.in <ArrowRight className="w-4 h-4" />
-                            </a>
-                            <div className="px-10 py-6 bg-blue-700/50 border border-white/20 rounded-3xl font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                                Response Time: Within 24 hours <Zap className="w-3 h-3 fill-current" />
-                            </div>
-                        </div>
+                        <a
+                            href="mailto:support@pillora.com"
+                            className="inline-flex items-center gap-3 px-10 py-5 bg-white text-blue-600 font-black rounded-[2rem] hover:bg-slate-100 transition-all shadow-xl text-lg"
+                        >
+                            support@pillora.com <ArrowRight className="w-5 h-5" />
+                        </a>
                     </div>
                 </motion.div>
             </section>
+
         </main>
     );
 }
