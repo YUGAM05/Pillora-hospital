@@ -115,7 +115,6 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
                         </button>
                     ))}
                 </div>
-                </div>
             </div>
             </div>
 
