@@ -95,7 +95,7 @@ export default function HospitalPortalHome() {
 
             {/* Security Section */}
             <section className="max-w-7xl mx-auto px-6 py-20">
-                <div className="bg-slate-900 rounded-[3rem] p-10 md:p-20 text-white flex flex-col md:flex-row items-center justify-between gap-12 overflow-hidden relative">
+                <div className="bg-slate-900 rounded-[3rem] p-8 md:p-20 text-white flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 overflow-hidden relative">
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] -z-0" />
                     
                     <div className="relative z-10 max-w-xl">
@@ -118,14 +118,14 @@ export default function HospitalPortalHome() {
                         </div>
                     </div>
                     
-                    <div className="relative z-10 grid grid-cols-2 gap-4 shrink-0">
-                        <div className="w-40 h-40 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col items-center justify-center p-6 text-center">
-                            <Building2 className="w-10 h-10 text-blue-400 mb-3" />
+                    <div className="relative z-10 flex gap-4 shrink-0 w-full md:w-auto">
+                        <div className="flex-1 min-w-0 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col items-center justify-center p-6 text-center aspect-square">
+                            <Building2 className="w-8 h-8 md:w-10 md:h-10 text-blue-400 mb-3" />
                             <p className="text-xs font-black uppercase tracking-widest text-blue-400">Trusted by</p>
                             <p className="text-sm font-bold">500+ Hospitals</p>
                         </div>
-                        <div className="w-40 h-40 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col items-center justify-center p-6 text-center mt-8">
-                            <Clock className="w-10 h-10 text-emerald-400 mb-3" />
+                        <div className="flex-1 min-w-0 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex flex-col items-center justify-center p-6 text-center aspect-square md:mt-8">
+                            <Clock className="w-8 h-8 md:w-10 md:h-10 text-emerald-400 mb-3" />
                             <p className="text-xs font-black uppercase tracking-widest text-emerald-400">24/7</p>
                             <p className="text-sm font-bold">Live Support</p>
                         </div>
