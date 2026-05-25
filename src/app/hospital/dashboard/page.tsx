@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -54,7 +55,7 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients">("appointments");
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
@@ -634,28 +635,42 @@ export default function HospitalDashboard() {
                 </div>
 
                 {/* Main Action Tabs */}
-                <div className="bg-slate-50 p-2 rounded-[2rem] border border-slate-100 flex max-w-md shadow-sm">
+                <div className="bg-slate-50 p-2 rounded-[2rem] border border-slate-100 flex flex-col md:flex-row max-w-3xl shadow-sm gap-2">
                     <button 
                         onClick={() => setActiveMainTab("appointments")}
-                        className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                             activeMainTab === "appointments" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600"
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                         }`}
                     >
                         Appointments & Analytics
                     </button>
                     <button 
                         onClick={() => setActiveMainTab("slots")}
-                        className={`flex-1 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                             activeMainTab === "slots" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600"
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                         }`}
                     >
                         Slot Management
                     </button>
+                    <button 
+                        onClick={() => setActiveMainTab("patients")}
+                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activeMainTab === "patients" 
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        Patient Records
+                    </button>
                 </div>
+
+                {activeMainTab === "patients" && (
+                    <PatientSearchAdmin />
+                )}
 
                 {activeMainTab === "appointments" ? (
                     <>
