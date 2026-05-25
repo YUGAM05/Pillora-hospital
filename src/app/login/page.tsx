@@ -20,7 +20,7 @@ export default function HospitalLoginPage() {
         const user = getUser();
         const token = getToken();
         if (user && token && user.role === 'hospital') {
-            router.push("/hospital/dashboard");
+            window.location.replace("/hospital/dashboard");
         }
     }, [router]);
 
@@ -55,11 +55,11 @@ export default function HospitalLoginPage() {
             window.dispatchEvent(new Event('storage'));
 
             if (data.isPasswordResetRequired) {
-                router.push("/auth/change-password");
+                window.location.replace("/auth/change-password");
                 return;
             }
 
-            router.push("/hospital/dashboard");
+            window.location.replace("/hospital/dashboard");
 
         } catch (err: any) {
             if (!err.response) {

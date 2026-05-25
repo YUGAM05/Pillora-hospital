@@ -272,7 +272,7 @@ export default function HospitalDashboard() {
         try {
             const token = getToken();
             if (!token) {
-                router.replace("/login");
+                window.location.replace("/login");
                 return;
             }
 
@@ -321,7 +321,7 @@ export default function HospitalDashboard() {
     useEffect(() => {
         const u = getUser();
         if (u && u.role !== 'hospital') {
-            router.replace("/");
+            window.location.replace("/");
             return;
         }
         setUser(u);
