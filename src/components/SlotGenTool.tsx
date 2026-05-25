@@ -70,7 +70,7 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
                 />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                         <Clock className="w-3 h-3" /> Start
@@ -105,7 +105,7 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
                             key={mins}
                             type="button"
                             onClick={() => setFormData({...formData, duration: mins.toString()})}
-                            className={`py-3 rounded-xl text-xs font-black transition-all border ${
+                            className={`py-3.5 sm:py-3 rounded-xl text-xs font-black transition-all border min-h-[44px] flex items-center justify-center ${
                                 formData.duration === mins.toString()
                                 ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200'
                                 : 'bg-white text-slate-400 border-slate-100 hover:border-blue-200 hover:text-blue-600'

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, Menu, X, Activity, LayoutDashboard, Users, Calendar, Settings } from "lucide-react";
+import { LogOut, Menu, X, Activity, LayoutDashboard, Users, Calendar, Settings, Bell } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -12,6 +12,13 @@ export default function Navbar() {
     const [user, setUser] = useState<any>(null);
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+
+    const mockNotifications = [
+        { id: 1, text: "New booking confirmed for Dr. Verma", time: "10 mins ago" },
+        { id: 2, text: "Prescription uploaded for Patient Rahul", time: "1 hr ago" },
+        { id: 3, text: "Emergency cancellation: Dr. Patel slots reset", time: "3 hrs ago" }
+    ];
 
     useEffect(() => {
         setMounted(true);
@@ -48,7 +55,7 @@ export default function Navbar() {
                     
                     {/* Mobile Menu Button (Left) */}
                     <div className="flex items-center lg:hidden gap-2">
-                        <button onClick={() => setIsOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors">
+                        <button onClick={() => setIsOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
                             <Menu className="w-6 h-6" />
                         </button>
                         
@@ -95,25 +102,60 @@ export default function Navbar() {
 
                         {user ? (
                             <div className="flex items-center gap-4 border-l border-slate-100 pl-8">
+                                <button onClick={() => setShowNotifications(!showNotifications)} className="p-2.5 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+                                    <Bell className="w-5 h-5" />
+                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                                </button>
+
                                 <div className="flex flex-col items-end">
                                     <p className="text-sm font-black text-slate-900 leading-none">{user.name}</p>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-tighter">Hospital Management</p>
                                 </div>
-                                <button onClick={handleLogout} className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors shadow-sm shadow-rose-100">
+                                <button onClick={handleLogout} className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors shadow-sm shadow-rose-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
                                     <LogOut className="w-5 h-5" />
                                 </button>
                             </div>
                         ) : (
-                            <Link href="/login" className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95">
+                            <Link href="/login" className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 min-h-[44px] flex items-center justify-center">
                                 Partner Login
                             </Link>
                         )}
                     </div>
 
-                    {/* Empty div for mobile flex balance if needed, or notification bell could go here */}
-                    <div className="lg:hidden w-8"></div>
+                    {/* Mobile Notification Bell */}
+                    <div className="lg:hidden relative">
+                        <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-slate-500 hover:text-slate-900 transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+                            <Bell className="w-6 h-6" />
+                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            {/* Notification Dropdown */}
+            <AnimatePresence>
+                {showNotifications && (
+                    <>
+                        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowNotifications(false)} />
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="absolute left-0 right-0 lg:left-auto lg:right-6 top-20 w-full lg:w-80 bg-white border-b lg:border border-slate-100 lg:rounded-2xl shadow-2xl z-50 p-4"
+                        >
+                            <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-3 pb-2 border-b border-slate-100">Notifications</h4>
+                            <div className="space-y-3">
+                                {mockNotifications.map(notif => (
+                                    <div key={notif.id} className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer flex flex-col gap-0.5">
+                                        <p className="text-xs font-bold text-slate-800 leading-snug">{notif.text}</p>
+                                        <span className="text-[9px] font-semibold text-slate-400">{notif.time}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
@@ -143,7 +185,7 @@ export default function Navbar() {
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Hospital</span>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 transition-colors">
+                                <button onClick={() => setIsOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>

@@ -149,7 +149,7 @@ export default function PatientSearchAdmin() {
                     <button 
                         type="submit"
                         disabled={loading || !searchQuery.trim()}
-                        className="px-8 py-4 bg-primary text-white font-black rounded-2xl transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                        className="w-full md:w-auto px-8 py-4 bg-primary text-white font-black rounded-2xl transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
                     >
                         {loading ? "Searching..." : "Search"}
                     </button>
@@ -169,7 +169,7 @@ export default function PatientSearchAdmin() {
                         <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center shrink-0 border border-blue-100 shadow-inner">
                             <User className="w-10 h-10" />
                         </div>
-                        <div className="flex-1 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Patient Name</p>
                                 <p className="text-lg font-bold text-slate-900">{result.patientInfo.name}</p>
@@ -401,7 +401,8 @@ export default function PatientSearchAdmin() {
                                                         <p className="font-bold text-slate-900 break-all">{prescriptionFile.name}</p>
                                                     ) : (
                                                         <>
-                                                            <p className="font-bold text-slate-700">Click or drag file to upload</p>
+                                                            <p className="font-bold text-slate-700 hidden sm:block">Click or drag file to upload</p>
+                                                            <p className="font-bold text-slate-700 block sm:hidden">Tap to select file</p>
                                                             <p className="text-xs text-slate-400 font-semibold mt-1">PDF format up to 5MB</p>
                                                         </>
                                                     )}

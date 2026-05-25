@@ -603,7 +603,7 @@ export default function HospitalDashboard() {
                             </div>
                             <button
                                 onClick={() => setShowManualBooking(true)}
-                                className="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/10 active:scale-95 shrink-0"
+                                className="w-full md:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/10 active:scale-95 shrink-0"
                             >
                                 <Plus className="w-4 h-4" /> Book Walk-In Appointment
                             </button>
@@ -631,7 +631,9 @@ export default function HospitalDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                     <StatCard label="Total Doctors" value={stats?.stats?.doctors} icon={<Stethoscope className="text-blue-500" />} />
                     <StatCard label="Total Bookings" value={stats?.stats?.appointments} icon={<Calendar className="text-emerald-500" />} />
-                    <StatCard label="Pending Review" value={stats?.stats?.pending} icon={<Clock className="text-amber-500" />} />
+                    <div className="col-span-2 md:col-span-1">
+                        <StatCard label="Pending Review" value={stats?.stats?.pending} icon={<Clock className="text-amber-500" />} />
+                    </div>
                 </div>
 
                 {/* Main Action Tabs */}
@@ -1020,7 +1022,7 @@ export default function HospitalDashboard() {
 
                                 <div className="bg-white rounded-[2rem] border border-slate-100 shadow-md overflow-hidden">
                                     {/* Desktop Table View */}
-                                    <div className="hidden sm:block overflow-x-auto">
+                                    <div className="hidden md:block overflow-x-auto">
                                         <table className="w-full text-left border-collapse">
                                             <thead>
                                                 <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
@@ -1125,7 +1127,7 @@ export default function HospitalDashboard() {
                                     </div>
 
                                     {/* Mobile Card List View */}
-                                    <div className="block sm:hidden divide-y divide-slate-100">
+                                    <div className="block md:hidden divide-y divide-slate-100">
                                         {filteredAppointments.map((app: any, idx: number) => (
                                             <div key={app._id} className="p-5 space-y-4">
                                                 <div className="flex justify-between items-start">
@@ -1178,7 +1180,7 @@ export default function HospitalDashboard() {
                                                 <div className="pt-3 border-t border-slate-50 space-y-2">
                                                     {(app.status === 'pending' || app.status === 'confirmed') && (
                                                         <select
-                                                            className="w-full py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none text-center hover:border-slate-300 transition-colors"
+                                                            className="w-full min-h-[44px] py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none text-center hover:border-slate-300 transition-colors"
                                                             value={app.doctor?._id || ""}
                                                             onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
                                                         >
@@ -1282,7 +1284,7 @@ export default function HospitalDashboard() {
                         {/* Slot Table Layout */}
                         <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
                             {/* Desktop Table View */}
-                            <div className="hidden sm:block overflow-x-auto">
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
@@ -1390,7 +1392,7 @@ export default function HospitalDashboard() {
                             </div>
 
                             {/* Mobile Card List View */}
-                            <div className="block sm:hidden divide-y divide-slate-100">
+                            <div className="block md:hidden divide-y divide-slate-100">
                                 {slots
                                     .filter((slot: any) => {
                                         const isCancelled = slot.status === 'cancelled';
@@ -1461,7 +1463,7 @@ export default function HospitalDashboard() {
                                                                 type="button"
                                                                 disabled={!isCancellable}
                                                                 onClick={() => setShowCancelSlotModal(slot)}
-                                                                className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border ${
+                                                                className={`flex-1 min-h-[44px] py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border ${
                                                                     isCancellable 
                                                                         ? "bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white" 
                                                                         : "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
@@ -1473,7 +1475,7 @@ export default function HospitalDashboard() {
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteSlot(slot._id)}
-                                                            className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
+                                                            className="flex-1 min-h-[44px] py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
                                                         >
                                                             Delete Slot
                                                         </button>
@@ -1562,7 +1564,7 @@ export default function HospitalDashboard() {
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
                                 <input required type="text" placeholder="e.g. Department of Cardiac Sciences" value={groupDept} onChange={e => setGroupDept(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Fee (₹)</label>
                                     <input required type="number" value={groupFee} onChange={e => setGroupFee(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
@@ -1579,7 +1581,7 @@ export default function HospitalDashboard() {
                             
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Availability Schedule</label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="block text-[8px] font-bold text-slate-400 uppercase ml-0.5">Start Time</label>
                                         <input type="time" value={groupStartTime} onChange={e => setGroupStartTime(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
@@ -1649,7 +1651,7 @@ export default function HospitalDashboard() {
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
                                 <input required type="date" min={new Date().toISOString().split("T")[0]} value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Time</label>
                                     <input required type="time" value={addSlotStartTime} onChange={e => setAddSlotStartTime(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
