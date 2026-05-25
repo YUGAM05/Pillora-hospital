@@ -628,14 +628,14 @@ export default function HospitalDashboard() {
                 )}
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                     <StatCard label="Total Doctors" value={stats?.stats?.doctors} icon={<Stethoscope className="text-blue-500" />} />
                     <StatCard label="Total Bookings" value={stats?.stats?.appointments} icon={<Calendar className="text-emerald-500" />} />
                     <StatCard label="Pending Review" value={stats?.stats?.pending} icon={<Clock className="text-amber-500" />} />
                 </div>
 
                 {/* Main Action Tabs */}
-                <div className="bg-slate-50 p-2 rounded-[2rem] border border-slate-100 flex flex-col md:flex-row max-w-3xl shadow-sm gap-2">
+                <div className="bg-slate-50 p-2 rounded-[2rem] border border-slate-100 flex overflow-x-auto custom-scrollbar md:max-w-3xl shadow-sm gap-2 whitespace-nowrap">
                     <button 
                         onClick={() => setActiveMainTab("appointments")}
                         className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
@@ -872,14 +872,14 @@ export default function HospitalDashboard() {
                                                 </div>
                                             )}
 
-                                            <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
-                                                <span className="text-xs font-black text-emerald-600">₹{doc.fee} / Visit</span>
-                                                <div className="flex items-center gap-3">
+                                            <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+                                                <span className="text-sm font-black text-emerald-600 text-center sm:text-left">₹{doc.fee} / Visit</span>
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
                                                     {isSelfManaged && (
                                                         <>
                                                             <button 
                                                                 onClick={() => toggleDoctorStatus(doc)} 
-                                                                className={`text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded ${
+                                                                className={`flex-1 min-h-[44px] sm:min-h-0 text-[10px] font-black uppercase tracking-wider px-4 py-2 sm:px-2 sm:py-1 rounded-xl sm:rounded ${
                                                                     doc.is_active 
                                                                         ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' 
                                                                         : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
@@ -888,13 +888,13 @@ export default function HospitalDashboard() {
                                                                 {doc.is_active ? 'Deactivate' : 'Activate'}
                                                             </button>
                                                             {doc.is_active && (
-                                                                <button onClick={() => setShowSlotGen(doc)} className="text-[10px] font-black uppercase text-primary hover:underline">
+                                                                <button onClick={() => setShowSlotGen(doc)} className="flex-1 min-h-[44px] sm:min-h-0 bg-blue-50 text-blue-600 sm:bg-transparent sm:text-primary sm:hover:underline rounded-xl sm:rounded-none px-4 py-2 sm:p-0 text-[10px] font-black uppercase text-center">
                                                                     Slots
                                                                 </button>
                                                             )}
                                                             <button 
                                                                 onClick={() => handleDeleteDoctor(doc)} 
-                                                                className="text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 text-rose-500 hover:bg-rose-100/50"
+                                                                className="flex-1 min-h-[44px] sm:min-h-0 text-[10px] font-black uppercase tracking-wider px-4 py-2 sm:px-2 sm:py-1 rounded-xl sm:rounded bg-slate-50 text-rose-500 hover:bg-rose-100/50"
                                                             >
                                                                 Delete
                                                             </button>
@@ -1187,33 +1187,33 @@ export default function HospitalDashboard() {
                                                         </select>
                                                     )}
                                                     {app.status === 'pending' ? (
-                                                        <div className="flex gap-2 w-full">
-                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="flex-1 py-2 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-1.5 border border-emerald-100 active:scale-95 transition-all shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Confirm</button>
-                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="flex-1 py-2 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl hover:bg-blue-100 flex items-center justify-center gap-1.5 border border-blue-100 active:scale-95 transition-all shadow-sm"><User className="w-3.5 h-3.5" /> Check-in</button>
-                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="flex-1 py-2 bg-rose-50 text-rose-600 font-black text-[10px] uppercase rounded-xl hover:bg-rose-100 flex items-center justify-center gap-1.5 border border-rose-100 active:scale-95 transition-all shadow-sm"><XCircle className="w-3.5 h-3.5" /> Cancel</button>
+                                                        <div className="flex flex-col gap-2 w-full">
+                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-1.5 border border-emerald-100 active:scale-95 transition-all shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Confirm</button>
+                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="w-full min-h-[44px] bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl hover:bg-blue-100 flex items-center justify-center gap-1.5 border border-blue-100 active:scale-95 transition-all shadow-sm"><User className="w-3.5 h-3.5" /> Check-in</button>
+                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="w-full min-h-[44px] bg-rose-50 text-rose-600 font-black text-[10px] uppercase rounded-xl hover:bg-rose-100 flex items-center justify-center gap-1.5 border border-rose-100 active:scale-95 transition-all shadow-sm"><XCircle className="w-3.5 h-3.5" /> Cancel</button>
                                                         </div>
                                                     ) : app.status === 'checked-in' ? (
-                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="w-full py-2.5 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 flex items-center justify-center gap-2 border border-amber-100 active:scale-95 transition-all">
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="w-full min-h-[44px] bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 flex items-center justify-center gap-2 border border-amber-100 active:scale-95 transition-all">
                                                             <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> Start Consultation
                                                         </button>
                                                     ) : app.status === 'in-consultation' ? (
-                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="w-full py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/15 active:scale-95 transition-all">
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="w-full min-h-[44px] bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/15 active:scale-95 transition-all">
                                                             <CheckCircle2 className="w-3.5 h-3.5" /> Complete Consultation
                                                         </button>
                                                     ) : app.status === 'completed' && (
-                                                        <div className="flex gap-2 w-full">
+                                                        <div className="flex flex-col gap-2 w-full">
                                                             {app.prescriptionUrl ? (
-                                                                <a href={app.prescriptionUrl} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-100 text-center shadow-sm">View Rx</a>
+                                                                <a href={app.prescriptionUrl} target="_blank" rel="noreferrer" className="w-full min-h-[44px] flex items-center justify-center bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-100 text-center shadow-sm">View Rx</a>
                                                             ) : (
-                                                                <label className="flex-1 py-2 bg-slate-50 text-slate-600 font-black text-[10px] uppercase rounded-xl border border-slate-200 text-center cursor-pointer hover:bg-slate-100 shadow-sm">
+                                                                <label className="w-full min-h-[44px] flex items-center justify-center bg-slate-50 text-slate-600 font-black text-[10px] uppercase rounded-xl border border-slate-200 text-center cursor-pointer hover:bg-slate-100 shadow-sm">
                                                                     {uploadingPrescriptionId === app._id ? 'Uploading...' : 'Upload Rx'}
                                                                     <input type="file" className="hidden" onChange={(e) => handlePrescriptionUpload(e, app._id)} accept=".pdf,image/*" disabled={uploadingPrescriptionId === app._id} />
                                                                 </label>
                                                             )}
                                                             {app.invoiceUrl ? (
-                                                                <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl border border-emerald-100 text-center shadow-sm">View Invoice</a>
+                                                                <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="w-full min-h-[44px] flex items-center justify-center bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl border border-emerald-100 text-center shadow-sm">View Invoice</a>
                                                             ) : (
-                                                                <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="flex-1 py-2 bg-slate-900 text-white font-black text-[10px] uppercase rounded-xl shadow-sm hover:bg-slate-800 disabled:opacity-50">
+                                                                <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="w-full min-h-[44px] bg-slate-900 text-white font-black text-[10px] uppercase rounded-xl shadow-sm hover:bg-slate-800 disabled:opacity-50">
                                                                     {generatingInvoiceId === app._id ? 'Generating...' : 'Gen Invoice'}
                                                                 </button>
                                                             )}
@@ -1495,25 +1495,27 @@ export default function HospitalDashboard() {
 
             {/* Modals for Add Doctor and Slot Gen would go here */}
             {showSlotGen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center justify-between mb-8">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="flex items-center justify-between mb-8 shrink-0">
                             <h3 className="text-2xl font-black">Generate Slots</h3>
-                            <button onClick={() => setShowSlotGen(null)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowSlotGen(null)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
-                        <SlotGenTool doctor={showSlotGen} onClose={() => { setShowSlotGen(null); fetchData(); }} />
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <SlotGenTool doctor={showSlotGen} onClose={() => { setShowSlotGen(null); fetchData(); }} />
+                        </div>
                     </motion.div>
                 </div>
             )}
 
             {showAddDoctor && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center justify-between mb-8">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="flex items-center justify-between mb-8 shrink-0">
                             <h3 className="text-2xl font-black text-slate-900">Recruit New Doctor</h3>
-                            <button onClick={() => setShowAddDoctor(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowAddDoctor(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
-                        <form onSubmit={handleAddDoctorSubmit} className="space-y-6">
+                        <form onSubmit={handleAddDoctorSubmit} className="space-y-6 flex-1 flex flex-col justify-between">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doctor Name</label>
                                 <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
@@ -1545,13 +1547,13 @@ export default function HospitalDashboard() {
             )}
 
             {showAddSpecialtyGroup && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center justify-between mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sm:my-8 overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="flex items-center justify-between mb-6 shrink-0">
                             <h3 className="text-2xl font-black">Create Specialty Group</h3>
-                            <button onClick={() => setShowAddSpecialtyGroup(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowAddSpecialtyGroup(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
-                        <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4 pr-2 custom-scrollbar">
+                        <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4 pr-2 flex-1 flex flex-col custom-scrollbar">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty Name</label>
                                 <input required type="text" placeholder="e.g. Cardiology" value={groupName} onChange={e => setGroupName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
@@ -1626,13 +1628,13 @@ export default function HospitalDashboard() {
             )}
 
             {showAddSlot && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center justify-between mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sm:my-8 overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="flex items-center justify-between mb-6 shrink-0">
                             <h3 className="text-2xl font-black text-slate-900">Add New Slot</h3>
-                            <button onClick={() => setShowAddSlot(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowAddSlot(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
-                        <form onSubmit={handleAddSlotSubmit} className="space-y-4 pr-2 custom-scrollbar">
+                        <form onSubmit={handleAddSlotSubmit} className="space-y-4 pr-2 flex-1 flex flex-col custom-scrollbar">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Doctor / Specialty Group</label>
                                 <select required value={addSlotDoctorId} onChange={e => setAddSlotDoctorId(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
@@ -1704,13 +1706,13 @@ export default function HospitalDashboard() {
             )}
 
             {showCancelSlotModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center justify-between mb-8">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="flex items-center justify-between mb-8 shrink-0">
                             <h3 className="text-2xl font-black text-slate-900">Cancel Slot</h3>
-                            <button onClick={() => setShowCancelSlotModal(null)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowCancelSlotModal(null)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
-                        <form onSubmit={handleCancelSlotSubmit} className="space-y-6">
+                        <form onSubmit={handleCancelSlotSubmit} className="space-y-6 flex-1 flex flex-col justify-between">
                             <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl">
                                 <p className="text-xs font-bold text-rose-600">
                                     Warning: Cancelling this slot will automatically cancel all associated appointments for this doctor/specialty group on this date, and the patients will be automatically notified of the emergency cancellation.
@@ -1729,13 +1731,13 @@ export default function HospitalDashboard() {
             )}
 
             {showManualBooking && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl my-8 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <div className="flex items-center justify-between mb-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sm:my-8 overflow-y-auto custom-scrollbar flex flex-col">
+                        <div className="flex items-center justify-between mb-6 shrink-0">
                             <h3 className="text-2xl font-black text-slate-900">Book Walk-In Appointment</h3>
-                            <button onClick={() => setShowManualBooking(false)}><XCircle className="w-6 h-6 text-gray-400" /></button>
+                            <button onClick={() => setShowManualBooking(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
-                        <form onSubmit={handleManualBookingSubmit} className="space-y-4 pr-2 custom-scrollbar">
+                        <form onSubmit={handleManualBookingSubmit} className="space-y-4 pr-2 flex-1 flex flex-col custom-scrollbar">
                             <div className="space-y-1">
                                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Full Name</label>
                                 <input required type="text" placeholder="John Doe" value={manualPatientName} onChange={e => setManualPatientName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
@@ -1830,14 +1832,14 @@ export default function HospitalDashboard() {
             )}
 
             {selectedPatientId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-2xl rounded-[1.5rem] sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl flex flex-col">
                         <div className="flex items-center justify-between mb-6 shrink-0">
                             <div>
                                 <h3 className="text-xl sm:text-2xl font-black text-slate-900">Patient Records</h3>
                                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{selectedPatientName}</p>
                             </div>
-                            <button onClick={() => { setSelectedPatientId(null); setSelectedPatientName(""); setPatientNotes([]); setNewNoteContent(""); }}><XCircle className="w-6 h-6 text-gray-400 hover:text-rose-500 transition-colors" /></button>
+                            <button onClick={() => { setSelectedPatientId(null); setSelectedPatientName(""); setPatientNotes([]); setNewNoteContent(""); }} className="p-2 -mr-2 text-slate-400 hover:text-rose-500 transition-colors"><XCircle className="w-6 h-6" /></button>
                         </div>
                         
                         {/* Notes List */}

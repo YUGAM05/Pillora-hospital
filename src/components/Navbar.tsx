@@ -46,8 +46,25 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex items-center justify-between h-20">
                     
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-3 group">
+                    {/* Mobile Menu Button (Left) */}
+                    <div className="flex items-center lg:hidden gap-2">
+                        <button onClick={() => setIsOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors">
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        
+                        {/* Mobile Logo */}
+                        <Link href="/" className="flex items-center gap-2 group">
+                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                                <Activity className="w-5 h-5" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-base font-black tracking-tight text-slate-900 leading-none">Pillora</span>
+                            </div>
+                        </Link>
+                    </div>
+
+                    {/* Desktop Logo */}
+                    <Link href="/" className="hidden lg:flex items-center gap-3 group">
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
                             <Activity className="w-6 h-6" />
                         </div>
@@ -93,44 +110,81 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    {/* Mobile Menu Button */}
-                    <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden p-2 text-slate-500">
-                        {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
+                    {/* Empty div for mobile flex balance if needed, or notification bell could go here */}
+                    <div className="lg:hidden w-8"></div>
                 </div>
             </div>
 
-            {/* Mobile Menu */}
+            {/* Mobile Sidebar Overlay */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="lg:hidden bg-white border-t border-slate-100 p-6 space-y-4"
-                    >
-                        {navLinks.map((link) => (
-                            <Link
-                                key={link.label}
-                                href={link.href}
-                                onClick={() => setIsOpen(false)}
-                                className={`flex items-center gap-3 p-4 rounded-2xl font-bold transition-all ${
-                                    pathname === link.href 
-                                    ? 'bg-blue-600 text-white shadow-xl shadow-blue-200' 
-                                    : 'bg-slate-50 text-slate-500'
-                                }`}
-                            >
-                                {link.icon}
-                                {link.label}
-                            </Link>
-                        ))}
-                        {user && (
-                            <button onClick={handleLogout} className="w-full flex items-center gap-3 p-4 bg-rose-50 text-rose-500 rounded-2xl font-bold">
-                                <LogOut className="w-5 h-5" />
-                                Log Out
-                            </button>
-                        )}
-                    </motion.div>
+                    <>
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] lg:hidden"
+                            onClick={() => setIsOpen(false)}
+                        />
+                        <motion.div 
+                            initial={{ x: "-100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "-100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] lg:hidden flex flex-col shadow-2xl"
+                        >
+                            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
+                                        <Activity className="w-6 h-6" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-lg font-black tracking-tight text-slate-900 leading-none">Pillora</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Hospital</span>
+                                    </div>
+                                </div>
+                                <button onClick={() => setIsOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 transition-colors">
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-3 flex-1 overflow-y-auto">
+                                {navLinks.map((link) => (
+                                    <Link
+                                        key={link.label}
+                                        href={link.href}
+                                        onClick={() => setIsOpen(false)}
+                                        className={`flex items-center gap-3 px-4 min-h-[44px] rounded-2xl font-bold transition-all ${
+                                            pathname === link.href 
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
+                                            : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {link.icon}
+                                        {link.label}
+                                    </Link>
+                                ))}
+                            </div>
+
+                            {user && (
+                                <div className="p-6 border-t border-slate-100">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-black">
+                                            {user.name?.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-900 leading-none">{user.name}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{user.email}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 min-h-[44px] bg-rose-50 text-rose-500 rounded-xl font-bold hover:bg-rose-100 transition-colors">
+                                        <LogOut className="w-5 h-5" />
+                                        Log Out
+                                    </button>
+                                </div>
+                            )}
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </nav>

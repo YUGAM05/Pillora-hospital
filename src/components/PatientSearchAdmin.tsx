@@ -169,7 +169,7 @@ export default function PatientSearchAdmin() {
                         <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center shrink-0 border border-blue-100 shadow-inner">
                             <User className="w-10 h-10" />
                         </div>
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="flex-1 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Patient Name</p>
                                 <p className="text-lg font-bold text-slate-900">{result.patientInfo.name}</p>
@@ -206,79 +206,148 @@ export default function PatientSearchAdmin() {
                             <Calendar className="w-5 h-5 text-indigo-500" /> Booking History
                         </h3>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="border-b border-slate-100">
-                                        <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Booking ID</th>
-                                        <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date & Time</th>
-                                        <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Doctor</th>
-                                        <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
-                                        <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Prescription</th>
-                                        <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {result.bookings.map((booking: any) => (
-                                        <tr key={booking._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                            <td className="py-4">
-                                                <span className="text-xs font-bold text-slate-900">{booking._id.slice(-6).toUpperCase()}</span>
-                                            </td>
-                                            <td className="py-4">
-                                                <p className="text-xs font-bold text-slate-900">{formatDate(booking.slotTime || booking.bookingDate)}</p>
-                                                <p className="text-[10px] font-semibold text-slate-500">{formatTime(booking.slotTime || booking.bookingDate)}</p>
-                                            </td>
-                                            <td className="py-4 text-xs font-bold text-slate-700">
-                                                {booking.doctor?.name ? `Dr. ${booking.doctor.name}` : "N/A"}
-                                            </td>
-                                            <td className="py-4">
-                                                <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                                                    booking.status === "completed" ? "bg-emerald-50 text-emerald-600" :
-                                                    booking.status === "cancelled" ? "bg-rose-50 text-rose-600" :
-                                                    "bg-amber-50 text-amber-600"
-                                                }`}>
-                                                    {booking.status}
+                            {/* Desktop Table */}
+                            <div className="hidden md:block">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-slate-100">
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Booking ID</th>
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date & Time</th>
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Doctor</th>
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Prescription</th>
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {result.bookings.map((booking: any) => (
+                                            <tr key={booking._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                                                <td className="py-4">
+                                                    <span className="text-xs font-bold text-slate-900">{booking._id.slice(-6).toUpperCase()}</span>
+                                                </td>
+                                                <td className="py-4">
+                                                    <p className="text-xs font-bold text-slate-900">{formatDate(booking.slotTime || booking.bookingDate)}</p>
+                                                    <p className="text-[10px] font-semibold text-slate-500">{formatTime(booking.slotTime || booking.bookingDate)}</p>
+                                                </td>
+                                                <td className="py-4 text-xs font-bold text-slate-700">
+                                                    {booking.doctor?.name ? `Dr. ${booking.doctor.name}` : "N/A"}
+                                                </td>
+                                                <td className="py-4">
+                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                                                        booking.status === "completed" ? "bg-emerald-50 text-emerald-600" :
+                                                        booking.status === "cancelled" ? "bg-rose-50 text-rose-600" :
+                                                        "bg-amber-50 text-amber-600"
+                                                    }`}>
+                                                        {booking.status}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4">
+                                                    {booking.prescriptionUploadedAt ? (
+                                                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+                                                            <FileCheck className="w-3 h-3" /> Uploaded
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-slate-400">Pending</span>
+                                                    )}
+                                                </td>
+                                                <td className="py-4 flex items-center justify-end gap-2">
+                                                    {!booking.prescriptionUploadedAt ? (
+                                                        <button 
+                                                            onClick={() => handleOpenUploadModal(booking._id)}
+                                                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
+                                                            title="Upload Prescription"
+                                                        >
+                                                            <Upload className="w-4 h-4" />
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => handleViewPrescription(booking._id)}
+                                                            disabled={fetchingPrescription}
+                                                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors disabled:opacity-50"
+                                                            title="View Prescription"
+                                                        >
+                                                            <FileText className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => handleGenerateInvoice(booking._id)}
+                                                        className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
+                                                        title="Generate Invoice"
+                                                    >
+                                                        <FileText className="w-4 h-4" />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {/* Mobile Cards */}
+                            <div className="block md:hidden divide-y divide-slate-100">
+                                {result.bookings.map((booking: any) => (
+                                    <div key={booking._id} className="py-4 space-y-4">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <span className="px-2.5 py-1 bg-slate-900 text-white font-mono text-[9px] rounded-lg font-black tracking-wider">
+                                                    {booking._id.slice(-6).toUpperCase()}
                                                 </span>
-                                            </td>
-                                            <td className="py-4">
+                                                <div className="mt-2">
+                                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Date & Time</span>
+                                                    <span className="font-extrabold text-slate-700">{formatDate(booking.slotTime || booking.bookingDate)}</span>
+                                                    <span className="block text-[9px] text-slate-500 font-black mt-0.5">{formatTime(booking.slotTime || booking.bookingDate)}</span>
+                                                </div>
+                                            </div>
+                                            <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                booking.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : booking.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                                            }`}>
+                                                {booking.status}
+                                            </span>
+                                        </div>
+                                        <div className="pt-3 border-t border-slate-50 flex justify-between text-xs font-bold text-slate-600">
+                                            <div>
+                                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Doctor</span>
+                                                <span className="font-extrabold text-slate-700">{booking.doctor?.name ? `Dr. ${booking.doctor.name}` : "N/A"}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Prescription</span>
                                                 {booking.prescriptionUploadedAt ? (
-                                                    <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
+                                                    <span className="flex items-center justify-end gap-1 font-bold text-emerald-600">
                                                         <FileCheck className="w-3 h-3" /> Uploaded
                                                     </span>
                                                 ) : (
-                                                    <span className="text-xs font-bold text-slate-400">Pending</span>
+                                                    <span className="font-bold text-slate-400">Pending</span>
                                                 )}
-                                            </td>
-                                            <td className="py-4 flex items-center justify-end gap-2">
+                                            </div>
+                                        </div>
+                                        <div className="pt-3 border-t border-slate-50 space-y-2">
+                                            <div className="flex flex-col gap-2 w-full">
                                                 {!booking.prescriptionUploadedAt ? (
                                                     <button 
                                                         onClick={() => handleOpenUploadModal(booking._id)}
-                                                        className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
-                                                        title="Upload Prescription"
+                                                        className="w-full min-h-[44px] bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-blue-100 active:scale-95 transition-all shadow-sm"
                                                     >
-                                                        <Upload className="w-4 h-4" />
+                                                        <Upload className="w-3.5 h-3.5" /> Upload Prescription
                                                     </button>
                                                 ) : (
                                                     <button 
                                                         onClick={() => handleViewPrescription(booking._id)}
                                                         disabled={fetchingPrescription}
-                                                        className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors disabled:opacity-50"
-                                                        title="View Prescription"
+                                                        className="w-full min-h-[44px] bg-indigo-50 text-indigo-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-indigo-100 active:scale-95 transition-all shadow-sm disabled:opacity-50"
                                                     >
-                                                        <FileText className="w-4 h-4" />
+                                                        <FileText className="w-3.5 h-3.5" /> View Prescription
                                                     </button>
                                                 )}
                                                 <button 
                                                     onClick={() => handleGenerateInvoice(booking._id)}
-                                                    className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
-                                                    title="Generate Invoice"
+                                                    className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-emerald-100 active:scale-95 transition-all shadow-sm"
                                                 >
-                                                    <FileText className="w-4 h-4" />
+                                                    <FileText className="w-3.5 h-3.5" /> Generate Invoice
                                                 </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -287,7 +356,7 @@ export default function PatientSearchAdmin() {
             {/* Prescription Upload Modal */}
             <AnimatePresence>
                 {uploadModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
                         <motion.div 
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
@@ -295,57 +364,67 @@ export default function PatientSearchAdmin() {
                         />
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-white rounded-[2.5rem] p-8 max-w-md w-full relative z-10 shadow-2xl"
+                            className="bg-white rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 max-w-md w-full relative z-10 shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col"
                         >
-                            <button 
-                                onClick={() => setUploadModalOpen(false)}
-                                className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                            <h3 className="text-2xl font-black text-slate-900 mb-2">Upload Prescription</h3>
-                            <p className="text-slate-500 text-sm font-medium mb-8">
-                                Please upload the prescription PDF for this booking. The patient will be notified via email.
-                            </p>
-
-                            <form onSubmit={handleUploadSubmit} className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                                        Prescription Document (PDF)
-                                    </label>
-                                    <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-8 hover:bg-slate-50 hover:border-blue-300 transition-all text-center">
-                                        <input 
-                                            type="file" 
-                                            accept="application/pdf"
-                                            onChange={(e) => setPrescriptionFile(e.target.files?.[0] || null)}
-                                            required
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                        />
-                                        <div className="flex flex-col items-center justify-center pointer-events-none">
-                                            <Upload className="w-8 h-8 text-blue-500 mb-3" />
-                                            {prescriptionFile ? (
-                                                <p className="font-bold text-slate-900">{prescriptionFile.name}</p>
-                                            ) : (
-                                                <>
-                                                    <p className="font-bold text-slate-700">Click or drag file to upload</p>
-                                                    <p className="text-xs text-slate-400 font-semibold mt-1">PDF format up to 5MB</p>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="shrink-0 flex items-center justify-between mb-6">
+                                <h3 className="text-2xl font-black text-slate-900">Upload Prescription</h3>
                                 <button 
-                                    type="submit"
-                                    disabled={uploading || !prescriptionFile}
-                                    className="w-full py-4 bg-primary text-white font-black rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    onClick={() => setUploadModalOpen(false)}
+                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors"
                                 >
-                                    {uploading ? (
-                                        <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
-                                    ) : (
-                                        <>Upload & Notify Patient</>
-                                    )}
+                                    <X className="w-6 h-6" />
                                 </button>
-                            </form>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col justify-between">
+                                <div>
+                                    <p className="text-slate-500 text-sm font-medium mb-8">
+                                        Please upload the prescription PDF for this booking. The patient will be notified via email.
+                                    </p>
+
+                                    <form id="prescription-upload-form" onSubmit={handleUploadSubmit} className="space-y-6">
+                                        <div>
+                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
+                                                Prescription Document (PDF)
+                                            </label>
+                                            <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-8 hover:bg-slate-50 hover:border-blue-300 transition-all text-center">
+                                                <input 
+                                                    type="file" 
+                                                    accept="application/pdf"
+                                                    onChange={(e) => setPrescriptionFile(e.target.files?.[0] || null)}
+                                                    required
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                />
+                                                <div className="flex flex-col items-center justify-center pointer-events-none">
+                                                    <Upload className="w-8 h-8 text-blue-500 mb-3" />
+                                                    {prescriptionFile ? (
+                                                        <p className="font-bold text-slate-900 break-all">{prescriptionFile.name}</p>
+                                                    ) : (
+                                                        <>
+                                                            <p className="font-bold text-slate-700">Click or drag file to upload</p>
+                                                            <p className="text-xs text-slate-400 font-semibold mt-1">PDF format up to 5MB</p>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div className="mt-8">
+                                    <button 
+                                        type="submit"
+                                        form="prescription-upload-form"
+                                        disabled={uploading || !prescriptionFile}
+                                        className="w-full py-4 bg-primary text-white font-black rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {uploading ? (
+                                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
+                                        ) : (
+                                            <>Upload & Notify Patient</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                         </motion.div>
                     </div>
                 )}

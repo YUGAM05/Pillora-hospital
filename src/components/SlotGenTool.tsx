@@ -44,7 +44,8 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="h-full flex flex-col">
+            <div className="flex-1 overflow-y-auto space-y-6 pb-6 custom-scrollbar pr-2">
             <div className="bg-blue-50/50 p-4 rounded-2xl flex items-center gap-4 mb-2">
                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
                     <Activity className="w-6 h-6" />
@@ -114,9 +115,12 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
                         </button>
                     ))}
                 </div>
+                </div>
+            </div>
             </div>
 
-            <button 
+            <div className="pt-4 mt-auto border-t border-slate-100 sticky bottom-0 bg-white z-10 shrink-0">
+                <button 
                 disabled={loading} 
                 className="w-full py-5 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl shadow-slate-200 hover:-translate-y-1 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
             >
@@ -125,7 +129,8 @@ export default function SlotGenTool({ doctor, hospitalId, onClose }: SlotGenTool
                 ) : (
                     <>Deploy Smart Slots</>
                 )}
-            </button>
+                </button>
+            </div>
         </form>
     );
 }
