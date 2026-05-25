@@ -2,7 +2,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut, Menu, X, Activity, LayoutDashboard, Users, Calendar, Settings, Bell } from "lucide-react";
+import { createPortal } from "react-dom";
+import { LogOut, Menu, X, Activity, LayoutDashboard, Users, Calendar, Bell } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,6 +14,7 @@ export default function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [isMounted, setIsMounted] = useState(false);
 
     const mockNotifications = [
         { id: 1, text: "New booking confirmed for Dr. Verma", time: "10 mins ago" },
@@ -22,6 +24,7 @@ export default function Navbar() {
 
     useEffect(() => {
         setMounted(true);
+        setIsMounted(true);
         const checkAuth = () => {
             const storedUser = getUser();
             if (storedUser) setUser(storedUser);
@@ -31,6 +34,16 @@ export default function Navbar() {
         window.addEventListener('storage', checkAuth);
         return () => window.removeEventListener('storage', checkAuth);
     }, [pathname]);
+
+    // Lock body scroll when sidebar is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [isOpen]);
 
     const handleLogout = () => {
         clearAuth();
@@ -49,6 +62,7 @@ export default function Navbar() {
     ];
 
     return (
+    <>
         <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
             <div className="max-w-7xl mx-auto px-6">
                 <div className="flex items-center justify-between h-20">
@@ -157,23 +171,30 @@ export default function Navbar() {
                 )}
             </AnimatePresence>
 
-            {/* Mobile Sidebar Overlay */}
+        </nav>
+
+        {/* Mobile Sidebar — portaled to document.body to escape nav's stacking context */}
+        {isMounted && createPortal(
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        <motion.div 
+                        {/* Full-page backdrop — z-[9998] at root level */}
+                        <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] lg:hidden"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                            style={{ zIndex: 9998 }}
                             onClick={() => setIsOpen(false)}
                         />
-                        <motion.div 
+                        {/* Sidebar panel — z-[9999] at root level */}
+                        <motion.div
                             initial={{ x: "-100%" }}
                             animate={{ x: 0 }}
                             exit={{ x: "-100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-[280px] bg-white z-[70] lg:hidden flex flex-col shadow-2xl"
+                            className="fixed inset-y-0 left-0 w-[280px] bg-white flex flex-col shadow-2xl"
+                            style={{ zIndex: 9999 }}
                         >
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
@@ -185,7 +206,10 @@ export default function Navbar() {
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Hospital</span>
                                     </div>
                                 </div>
-                                <button onClick={() => setIsOpen(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
+                                <button
+                                    onClick={() => setIsOpen(false)}
+                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                >
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
@@ -197,9 +221,9 @@ export default function Navbar() {
                                         href={link.href}
                                         onClick={() => setIsOpen(false)}
                                         className={`flex items-center gap-3 px-4 min-h-[44px] rounded-2xl font-bold transition-all ${
-                                            pathname === link.href 
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' 
-                                            : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                                            pathname === link.href
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
+                                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
                                         }`}
                                     >
                                         {link.icon}
@@ -219,7 +243,10 @@ export default function Navbar() {
                                             <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{user.email}</p>
                                         </div>
                                     </div>
-                                    <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 min-h-[44px] bg-rose-50 text-rose-500 rounded-xl font-bold hover:bg-rose-100 transition-colors">
+                                    <button
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center justify-center gap-2 min-h-[44px] bg-rose-50 text-rose-500 rounded-xl font-bold hover:bg-rose-100 transition-colors"
+                                    >
                                         <LogOut className="w-5 h-5" />
                                         Log Out
                                     </button>
@@ -228,7 +255,9 @@ export default function Navbar() {
                         </motion.div>
                     </>
                 )}
-            </AnimatePresence>
-        </nav>
+            </AnimatePresence>,
+            document.body
+        )}
+    </>
     );
 }
