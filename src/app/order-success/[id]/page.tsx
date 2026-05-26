@@ -44,7 +44,7 @@ export default function OrderSuccessPage() {
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
             pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            pdf.save(`ApexCare-Order-${order._id.slice(-8).toUpperCase()}.pdf`);
+            pdf.save(`Pillora-Order-${order._id.slice(-8).toUpperCase()}.pdf`);
         } catch (error) {
             console.error('Error generating PDF:', error);
             alert('Failed to download bill. Please try again.');
@@ -204,7 +204,7 @@ export default function OrderSuccessPage() {
                     {/* Footer */}
                     <div className="border-t border-gray-100 pt-6 text-center">
                         <p className="text-sm text-gray-600 mb-1">Thank you for your business!</p>
-                        <p className="text-xs text-gray-400">If you have any questions, please contact support at support@apexcare.com</p>
+                        <p className="text-xs text-gray-400">If you have any questions, please contact support at support@pillora.in</p>
                     </div>
                 </div>
 
