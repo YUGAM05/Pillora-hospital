@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { Loader2, IndianRupee, CreditCard, Activity, CalendarDays, RefreshCw } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
-    PieChart, Pie, Cell, Donut
+    PieChart, Pie, Cell
 } from "recharts";
 
 export default function PaymentAnalytics() {
