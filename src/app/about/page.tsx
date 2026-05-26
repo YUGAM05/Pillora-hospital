@@ -91,7 +91,7 @@ export default function AboutPage() {
                                 </div>
                                 <h3 className="text-2xl font-black mb-4">Our Mission</h3>
                                 <p className="text-slate-300 leading-relaxed font-medium text-lg italic border-l-4 border-blue-500 pl-6">
-                                    "Eliminate the administrative chaos that hospitals face daily and give patients a seamless, trustworthy experience when they need care the most."
+                                    &quot;Eliminate the administrative chaos that hospitals face daily and give patients a seamless, trustworthy experience when they need care the most.&quot;
                                 </p>
                             </div>
                         </motion.div>

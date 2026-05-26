@@ -301,7 +301,7 @@ export default function HospitalDashboard() {
         } finally {
             setLoading(false);
         }
-    }, [router]);
+    }, []);
 
     const fetchAnalytics = useCallback(async () => {
         try {
