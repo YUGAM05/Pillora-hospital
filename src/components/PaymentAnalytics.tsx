@@ -204,7 +204,7 @@ export default function PaymentAnalytics() {
                                             ))}
                                         </Pie>
                                         <RechartsTooltip 
-                                            formatter={(value: number) => `₹${value.toLocaleString()}`}
+                                            formatter={(value: any) => `₹${Number(value).toLocaleString()}`}
                                             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                         />
                                         <Legend />
