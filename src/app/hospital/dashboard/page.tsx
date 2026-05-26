@@ -14,6 +14,7 @@ import {
 import SlotGenTool from "@/components/SlotGenTool";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import PatientSearchAdmin from "@/components/PatientSearchAdmin";
+import PaymentAnalytics from "@/components/PaymentAnalytics";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -55,7 +56,7 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments">("appointments");
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
@@ -668,10 +669,24 @@ export default function HospitalDashboard() {
                     >
                         Patient Records
                     </button>
+                    <button 
+                        onClick={() => setActiveMainTab("payments")}
+                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activeMainTab === "payments" 
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        Payments
+                    </button>
                 </div>
 
                 {activeMainTab === "patients" && (
                     <PatientSearchAdmin />
+                )}
+
+                {activeMainTab === "payments" && (
+                    <PaymentAnalytics />
                 )}
 
                 {activeMainTab === "appointments" ? (

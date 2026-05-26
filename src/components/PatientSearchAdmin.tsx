@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Search, User, Phone, Mail, Calendar, CreditCard,
     Upload, FileText, Download, Activity, FileCheck, X,
-    Loader2, ChevronDown, Hash
+    Loader2, ChevronDown, Hash, IndianRupee
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -71,6 +71,12 @@ export default function PatientSearchAdmin() {
 
     // View Modal state
     const [fetchingPrescription, setFetchingPrescription] = useState(false);
+
+    // Payment Modal states
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState<number | "">("");
+    const [paymentMode, setPaymentMode] = useState<"online" | "offline">("online");
+    const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
     // ─── Close dropdown on outside click ────────────────────────────────────
 
@@ -267,6 +273,44 @@ export default function PatientSearchAdmin() {
             alert("Invoice generated and sent successfully!");
         } catch (err: any) {
             alert(err.response?.data?.message || "Failed to generate invoice");
+        }
+    };
+
+    const handleOpenPaymentModal = (appointmentId: string) => {
+        const appointment = results.flatMap(r => r.bookings).find(b => b._id === appointmentId);
+        if (appointment?.paymentStatus === 'paid') {
+            if (!confirm("This booking is already marked as paid. Do you want to update the payment?")) return;
+        }
+        setSelectedAppointmentId(appointmentId);
+        setPaymentAmount("");
+        setPaymentMode("online");
+        setPaymentModalOpen(true);
+    };
+
+    const handlePaymentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedAppointmentId || paymentAmount === "" || paymentAmount < 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
+
+        setPaymentSubmitting(true);
+        try {
+            await api.post(`/hospital/dashboard/appointments/${selectedAppointmentId}/payment`, {
+                amount: paymentAmount,
+                mode: paymentMode
+            });
+            alert("Payment recorded successfully!");
+            setPaymentModalOpen(false);
+
+            // refresh search results
+            const queryParam = searchType === "bookingId" ? `bookingId=${searchQuery}` : `name=${searchQuery}`;
+            const res = await api.get(`/hospital/dashboard/patients/search?${queryParam}`);
+            setResults(res.data);
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to record payment");
+        } finally {
+            setPaymentSubmitting(false);
         }
     };
 
@@ -493,6 +537,7 @@ export default function PatientSearchAdmin() {
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Date & Time</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Doctor</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
+                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Payment</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Prescription</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
                                         </tr>
@@ -517,6 +562,14 @@ export default function PatientSearchAdmin() {
                                                         "bg-amber-50 text-amber-600"
                                                     }`}>
                                                         {booking.status}
+                                                    </span>
+                                                </td>
+                                                <td className="py-4">
+                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                                                        booking.paymentStatus === "paid" ? "bg-emerald-50 text-emerald-600" :
+                                                        "bg-rose-50 text-rose-600"
+                                                    }`}>
+                                                        {booking.paymentStatus || 'pending'}
                                                     </span>
                                                 </td>
                                                 <td className="py-4">
@@ -553,6 +606,13 @@ export default function PatientSearchAdmin() {
                                                         title="Generate Invoice"
                                                     >
                                                         <FileText className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleOpenPaymentModal(booking._id)}
+                                                        className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl transition-colors"
+                                                        title="Record Payment"
+                                                    >
+                                                        <IndianRupee className="w-4 h-4" />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -600,6 +660,17 @@ export default function PatientSearchAdmin() {
                                                 )}
                                             </div>
                                         </div>
+                                        <div className="pt-3 border-t border-slate-50 flex justify-between items-center text-xs font-bold text-slate-600">
+                                            <div>
+                                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Payment</span>
+                                                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest inline-block ${
+                                                    booking.paymentStatus === "paid" ? "bg-emerald-50 text-emerald-600" :
+                                                    "bg-rose-50 text-rose-600"
+                                                }`}>
+                                                    {booking.paymentStatus || 'pending'}
+                                                </span>
+                                            </div>
+                                        </div>
                                         <div className="pt-3 border-t border-slate-50 space-y-2">
                                             <div className="flex flex-col gap-2 w-full">
                                                 {!booking.prescriptionUploadedAt ? (
@@ -623,6 +694,12 @@ export default function PatientSearchAdmin() {
                                                     className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-emerald-100 active:scale-95 transition-all shadow-sm"
                                                 >
                                                     <FileText className="w-3.5 h-3.5" /> Generate Invoice
+                                                </button>
+                                                <button
+                                                    onClick={() => handleOpenPaymentModal(booking._id)}
+                                                    className="w-full min-h-[44px] bg-amber-50 text-amber-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-amber-100 active:scale-95 transition-all shadow-sm"
+                                                >
+                                                    <IndianRupee className="w-3.5 h-3.5" /> Record Payment
                                                 </button>
                                             </div>
                                         </div>
@@ -706,6 +783,99 @@ export default function PatientSearchAdmin() {
                                     </button>
                                 </div>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Payment Modal */}
+            <AnimatePresence>
+                {paymentModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setPaymentModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-none sm:rounded-[2.5rem] p-6 sm:p-10 max-w-md w-full relative z-10 shadow-2xl h-[100dvh] sm:h-auto flex flex-col"
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                                    <IndianRupee className="w-6 h-6 text-emerald-500" /> Record Payment
+                                </h3>
+                                <button
+                                    onClick={() => setPaymentModalOpen(false)}
+                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 rounded-full"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handlePaymentSubmit} className="flex-1 flex flex-col justify-between">
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Payment Mode</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPaymentMode("online")}
+                                                className={`p-4 rounded-2xl border-2 font-bold transition-all flex flex-col items-center gap-2 ${
+                                                    paymentMode === "online" 
+                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
+                                                    : "border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                <CreditCard className="w-6 h-6" /> Online
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPaymentMode("offline")}
+                                                className={`p-4 rounded-2xl border-2 font-bold transition-all flex flex-col items-center gap-2 ${
+                                                    paymentMode === "offline" 
+                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
+                                                    : "border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                <IndianRupee className="w-6 h-6" /> Offline (Cash)
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Amount (₹)</label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <span className="text-slate-400 font-bold text-lg">₹</span>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value ? Number(e.target.value) : "")}
+                                                placeholder="0.00"
+                                                className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-xl focus:bg-white focus:border-emerald-200 focus:ring-4 focus:ring-emerald-50 outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-10">
+                                    <button
+                                        type="submit"
+                                        disabled={paymentSubmitting || paymentAmount === ""}
+                                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                                    >
+                                        {paymentSubmitting ? (
+                                            <Loader2 className="w-6 h-6 animate-spin" />
+                                        ) : (
+                                            "Save Payment"
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
                         </motion.div>
                     </div>
                 )}
