@@ -1,12 +1,49 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-    Search, User, Phone, Mail, Calendar, CreditCard, 
-    Upload, FileText, Download, Activity, FileCheck, X
+import {
+    Search, User, Phone, Mail, Calendar, CreditCard,
+    Upload, FileText, Download, Activity, FileCheck, X,
+    Loader2, ChevronDown, Hash
 } from "lucide-react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface NameSuggestion {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+}
+
+interface BookingIdSuggestion {
+    id: string;
+    bookingId: string;
+    patientName: string;
+    date: string;
+}
+
+// ─── Highlight Helper ─────────────────────────────────────────────────────────
+// Wraps matching substring in a styled <mark> element
+
+function HighlightMatch({ text, query }: { text: string; query: string }) {
+    if (!query) return <>{text}</>;
+    const idx = text.toLowerCase().indexOf(query.toLowerCase());
+    if (idx === -1) return <>{text}</>;
+    return (
+        <>
+            {text.slice(0, idx)}
+            <mark className="bg-transparent text-[#e63946] font-black not-italic">
+                {text.slice(idx, idx + query.length)}
+            </mark>
+            {text.slice(idx + query.length)}
+        </>
+    );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function PatientSearchAdmin() {
     const [searchType, setSearchType] = useState<"bookingId" | "name">("bookingId");
@@ -15,26 +52,147 @@ export default function PatientSearchAdmin() {
     const [results, setResults] = useState<any[]>([]);
     const [error, setError] = useState("");
 
+    // Autocomplete state
+    const [nameSuggestions, setNameSuggestions] = useState<NameSuggestion[]>([]);
+    const [bookingIdSuggestions, setBookingIdSuggestions] = useState<BookingIdSuggestion[]>([]);
+    const [acLoading, setAcLoading] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [highlightedIdx, setHighlightedIdx] = useState(-1);
+
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const inputWrapperRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
     // Modal states
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
-    
+
     // View Modal state
-    const [viewPrescriptionUrl, setViewPrescriptionUrl] = useState<string | null>(null);
     const [fetchingPrescription, setFetchingPrescription] = useState(false);
 
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!searchQuery.trim()) return;
+    // ─── Close dropdown on outside click ────────────────────────────────────
 
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (inputWrapperRef.current && !inputWrapperRef.current.contains(e.target as Node)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // ─── Debounced Autocomplete ──────────────────────────────────────────────
+
+    const fetchSuggestions = useCallback(async (value: string) => {
+        if (searchType === "name" && value.length >= 2) {
+            setAcLoading(true);
+            try {
+                const res = await api.get(`/hospital/dashboard/patients/autocomplete?q=${encodeURIComponent(value)}`);
+                setNameSuggestions(res.data);
+                setDropdownOpen(true);
+            } catch {
+                setNameSuggestions([]);
+            } finally {
+                setAcLoading(false);
+            }
+        } else if (searchType === "bookingId" && value.length >= 4) {
+            setAcLoading(true);
+            try {
+                const res = await api.get(`/hospital/dashboard/bookings/autocomplete?q=${encodeURIComponent(value)}`);
+                setBookingIdSuggestions(res.data);
+                setDropdownOpen(true);
+            } catch {
+                setBookingIdSuggestions([]);
+            } finally {
+                setAcLoading(false);
+            }
+        } else {
+            setNameSuggestions([]);
+            setBookingIdSuggestions([]);
+            setDropdownOpen(false);
+        }
+    }, [searchType]);
+
+    const handleInputChange = (value: string) => {
+        setSearchQuery(value);
+        setHighlightedIdx(-1);
+
+        // Clear old suggestions immediately when input is too short
+        const minLength = searchType === "name" ? 2 : 4;
+        if (value.length < minLength) {
+            setNameSuggestions([]);
+            setBookingIdSuggestions([]);
+            setDropdownOpen(false);
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+            return;
+        }
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            fetchSuggestions(value);
+        }, 300);
+    };
+
+    // When search type switches, clear everything
+    const handleSearchTypeChange = (type: "bookingId" | "name") => {
+        setSearchType(type);
+        setSearchQuery("");
+        setNameSuggestions([]);
+        setBookingIdSuggestions([]);
+        setDropdownOpen(false);
+        setHighlightedIdx(-1);
+        setResults([]);
+        setError("");
+    };
+
+    // ─── Keyboard navigation ─────────────────────────────────────────────────
+
+    const suggestions = searchType === "name" ? nameSuggestions : bookingIdSuggestions;
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (!dropdownOpen || suggestions.length === 0) return;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setHighlightedIdx((prev) => Math.min(prev + 1, suggestions.length - 1));
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setHighlightedIdx((prev) => Math.max(prev - 1, 0));
+        } else if (e.key === "Enter" && highlightedIdx >= 0) {
+            e.preventDefault();
+            handleSelectSuggestion(suggestions[highlightedIdx]);
+        } else if (e.key === "Escape") {
+            setDropdownOpen(false);
+            setHighlightedIdx(-1);
+        }
+    };
+
+    // ─── Selecting a suggestion ───────────────────────────────────────────────
+
+    const handleSelectSuggestion = (suggestion: NameSuggestion | BookingIdSuggestion) => {
+        const value = searchType === "name"
+            ? (suggestion as NameSuggestion).name
+            : (suggestion as BookingIdSuggestion).bookingId;
+
+        setSearchQuery(value);
+        setDropdownOpen(false);
+        setHighlightedIdx(-1);
+        // Auto-trigger the full search
+        triggerSearch(value);
+    };
+
+    // ─── Full Search ─────────────────────────────────────────────────────────
+
+    const triggerSearch = async (query: string) => {
+        if (!query.trim()) return;
         setLoading(true);
         setError("");
         setResults([]);
-
         try {
-            const queryParam = searchType === "bookingId" ? `bookingId=${searchQuery}` : `name=${searchQuery}`;
+            const queryParam = searchType === "bookingId" ? `bookingId=${query}` : `name=${query}`;
             const res = await api.get(`/hospital/dashboard/patients/search?${queryParam}`);
             setResults(res.data);
         } catch (err: any) {
@@ -43,6 +201,14 @@ export default function PatientSearchAdmin() {
             setLoading(false);
         }
     };
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setDropdownOpen(false);
+        triggerSearch(searchQuery);
+    };
+
+    // ─── Other handlers ───────────────────────────────────────────────────────
 
     const handleOpenUploadModal = (appointmentId: string) => {
         setSelectedAppointmentId(appointmentId);
@@ -64,8 +230,7 @@ export default function PatientSearchAdmin() {
             });
             alert("Prescription uploaded successfully!");
             setUploadModalOpen(false);
-            
-            // Refresh results
+
             const queryParam = searchType === "bookingId" ? `bookingId=${searchQuery}` : `name=${searchQuery}`;
             const res = await api.get(`/hospital/dashboard/patients/search?${queryParam}`);
             setResults(res.data);
@@ -80,8 +245,8 @@ export default function PatientSearchAdmin() {
         setFetchingPrescription(true);
         try {
             const res = await api.get(`/hospital/dashboard/appointments/${appointmentId}/prescription`);
-            if (res.data.url) {
-                window.open(res.data.url, "_blank");
+            if (res.data.prescriptionUrl) {
+                window.open(res.data.prescriptionUrl, "_blank");
             } else {
                 alert("No prescription found.");
             }
@@ -94,15 +259,10 @@ export default function PatientSearchAdmin() {
 
     const handleGenerateInvoice = async (appointmentId: string) => {
         try {
-            // Wait, we need to pass the amount or assume it is retrieved by backend.
-            // According to backend, it needs `amount`.
             const amountStr = prompt("Enter amount for the invoice (e.g., 500):", "500");
             if (!amountStr) return;
             const amount = parseInt(amountStr, 10);
-            if (isNaN(amount)) {
-                alert("Invalid amount");
-                return;
-            }
+            if (isNaN(amount)) { alert("Invalid amount"); return; }
             await api.post(`/hospital/dashboard/appointments/${appointmentId}/invoice`, { amount });
             alert("Invoice generated and sent successfully!");
         } catch (err: any) {
@@ -110,13 +270,13 @@ export default function PatientSearchAdmin() {
         }
     };
 
-    const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
-    };
+    const formatDate = (dateStr: string) =>
+        new Date(dateStr).toLocaleDateString([], { year: "numeric", month: "short", day: "numeric" });
 
-    const formatTime = (dateStr: string) => {
-        return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-    };
+    const formatTime = (dateStr: string) =>
+        new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+
+    // ─── Render ───────────────────────────────────────────────────────────────
 
     return (
         <div className="space-y-6">
@@ -125,33 +285,150 @@ export default function PatientSearchAdmin() {
                     <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
                         <Search className="w-6 h-6 text-primary" /> Patient Search & Records
                     </h2>
-                    <p className="text-slate-500 text-xs font-semibold mt-1">Search by Booking ID or Name to view patient history and manage prescriptions.</p>
+                    <p className="text-slate-500 text-xs font-semibold mt-1">
+                        Search by Booking ID or Name — start typing to see live suggestions.
+                    </p>
                 </div>
 
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
-                    <select 
+                    {/* Search Type Selector */}
+                    <select
                         value={searchType}
-                        onChange={(e) => setSearchType(e.target.value as "bookingId" | "name")}
+                        onChange={(e) => handleSearchTypeChange(e.target.value as "bookingId" | "name")}
                         className="p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:bg-white focus:border-blue-200 outline-none transition-all w-full md:w-48"
                     >
                         <option value="bookingId">Booking ID</option>
                         <option value="name">Patient Name</option>
                     </select>
 
-                    <input 
-                        type="text"
-                        placeholder={searchType === "bookingId" ? "Enter Booking ID..." : "Enter Patient Name..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-1 p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:bg-white focus:border-blue-200 outline-none transition-all"
-                    />
+                    {/* Search Input with Autocomplete Dropdown */}
+                    <div ref={inputWrapperRef} className="flex-1 relative">
+                        <div className="relative">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                id="patient-search-input"
+                                placeholder={searchType === "bookingId" ? "Enter Booking ID (min 4 chars)..." : "Enter Patient Name (min 2 chars)..."}
+                                value={searchQuery}
+                                onChange={(e) => handleInputChange(e.target.value)}
+                                onFocus={() => {
+                                    const minLen = searchType === "name" ? 2 : 4;
+                                    if (searchQuery.length >= minLen && suggestions.length > 0) setDropdownOpen(true);
+                                }}
+                                onKeyDown={handleKeyDown}
+                                autoComplete="off"
+                                className="w-full p-4 pr-12 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:bg-white focus:border-blue-200 outline-none transition-all"
+                            />
+                            {/* Loading spinner / search icon inside input */}
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                {acLoading ? (
+                                    <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                                ) : (
+                                    <Search className="w-4 h-4 text-slate-300" />
+                                )}
+                            </div>
+                        </div>
 
-                    <button 
+                        {/* ── Autocomplete Dropdown ── */}
+                        <AnimatePresence>
+                            {dropdownOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                                    transition={{ duration: 0.15, ease: "easeOut" }}
+                                    className="absolute z-50 top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl shadow-slate-900/10 border border-slate-100 overflow-hidden"
+                                >
+                                    {suggestions.length === 0 ? (
+                                        <div className="flex items-center gap-3 px-4 py-3.5 text-sm font-semibold text-slate-400">
+                                            <Search className="w-4 h-4 shrink-0" />
+                                            No patients found
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {/* ── Name Suggestions ── */}
+                                            {searchType === "name" &&
+                                                (nameSuggestions as NameSuggestion[]).map((s, idx) => (
+                                                    <button
+                                                        key={s.id}
+                                                        type="button"
+                                                        onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(s); }}
+                                                        onMouseEnter={() => setHighlightedIdx(idx)}
+                                                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                                                            highlightedIdx === idx ? "bg-slate-50" : "hover:bg-slate-50/60"
+                                                        } ${idx !== 0 ? "border-t border-slate-50" : ""}`}
+                                                    >
+                                                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                                            highlightedIdx === idx ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"
+                                                        }`}>
+                                                            <User className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="text-sm font-bold text-slate-900 truncate">
+                                                                <HighlightMatch text={s.name} query={searchQuery} />
+                                                            </p>
+                                                            <p className="text-[11px] text-slate-400 font-semibold truncate">
+                                                                {s.email}{s.phone ? ` · ${s.phone}` : ""}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            }
+
+                                            {/* ── Booking ID Suggestions ── */}
+                                            {searchType === "bookingId" &&
+                                                (bookingIdSuggestions as BookingIdSuggestion[]).map((s, idx) => (
+                                                    <button
+                                                        key={s.id}
+                                                        type="button"
+                                                        onMouseDown={(e) => { e.preventDefault(); handleSelectSuggestion(s); }}
+                                                        onMouseEnter={() => setHighlightedIdx(idx)}
+                                                        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                                                            highlightedIdx === idx ? "bg-slate-50" : "hover:bg-slate-50/60"
+                                                        } ${idx !== 0 ? "border-t border-slate-50" : ""}`}
+                                                    >
+                                                        <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                                            highlightedIdx === idx ? "bg-indigo-50 text-indigo-500" : "bg-slate-100 text-slate-500"
+                                                        }`}>
+                                                            <Hash className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-bold text-slate-900 font-mono truncate">
+                                                                <HighlightMatch text={s.bookingId.slice(-10).toUpperCase()} query={searchQuery.toUpperCase()} />
+                                                            </p>
+                                                            <p className="text-[11px] text-slate-400 font-semibold truncate">
+                                                                {s.patientName}{s.date ? ` · ${s.date}` : ""}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            }
+
+                                            {/* See all results footer hint */}
+                                            {suggestions.length >= 8 && (
+                                                <div className="border-t border-slate-100 px-4 py-2.5 flex items-center gap-2 text-[11px] font-bold text-slate-400">
+                                                    <ChevronDown className="w-3 h-3" />
+                                                    More results — press Search to see all
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Search Button */}
+                    <button
                         type="submit"
                         disabled={loading || !searchQuery.trim()}
-                        className="w-full md:w-auto px-8 py-4 bg-primary text-white font-black rounded-2xl transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50"
+                        className="w-full md:w-auto px-8 py-4 bg-primary text-white font-black rounded-2xl transition-all shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {loading ? "Searching..." : "Search"}
+                        {loading ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Searching...</>
+                        ) : (
+                            "Search"
+                        )}
                     </button>
                 </form>
 
@@ -162,6 +439,7 @@ export default function PatientSearchAdmin() {
                 )}
             </div>
 
+            {/* ── Results ── */}
             {results.map((result, idx) => (
                 <div key={idx} className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-8">
                     {/* Patient Info Card */}
@@ -252,7 +530,7 @@ export default function PatientSearchAdmin() {
                                                 </td>
                                                 <td className="py-4 flex items-center justify-end gap-2">
                                                     {!booking.prescriptionUploadedAt ? (
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleOpenUploadModal(booking._id)}
                                                             className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
                                                             title="Upload Prescription"
@@ -260,7 +538,7 @@ export default function PatientSearchAdmin() {
                                                             <Upload className="w-4 h-4" />
                                                         </button>
                                                     ) : (
-                                                        <button 
+                                                        <button
                                                             onClick={() => handleViewPrescription(booking._id)}
                                                             disabled={fetchingPrescription}
                                                             className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors disabled:opacity-50"
@@ -269,7 +547,7 @@ export default function PatientSearchAdmin() {
                                                             <FileText className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleGenerateInvoice(booking._id)}
                                                         className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
                                                         title="Generate Invoice"
@@ -282,6 +560,7 @@ export default function PatientSearchAdmin() {
                                     </tbody>
                                 </table>
                             </div>
+
                             {/* Mobile Cards */}
                             <div className="block md:hidden divide-y divide-slate-100">
                                 {result.bookings.map((booking: any) => (
@@ -298,7 +577,9 @@ export default function PatientSearchAdmin() {
                                                 </div>
                                             </div>
                                             <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                                booking.status === 'completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : booking.status === 'cancelled' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                                                booking.status === "completed" ? "bg-emerald-50 text-emerald-600 border border-emerald-100" :
+                                                booking.status === "cancelled" ? "bg-rose-50 text-rose-600 border border-rose-100" :
+                                                "bg-amber-50 text-amber-600 border border-amber-100"
                                             }`}>
                                                 {booking.status}
                                             </span>
@@ -322,14 +603,14 @@ export default function PatientSearchAdmin() {
                                         <div className="pt-3 border-t border-slate-50 space-y-2">
                                             <div className="flex flex-col gap-2 w-full">
                                                 {!booking.prescriptionUploadedAt ? (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleOpenUploadModal(booking._id)}
                                                         className="w-full min-h-[44px] bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-blue-100 active:scale-95 transition-all shadow-sm"
                                                     >
                                                         <Upload className="w-3.5 h-3.5" /> Upload Prescription
                                                     </button>
                                                 ) : (
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleViewPrescription(booking._id)}
                                                         disabled={fetchingPrescription}
                                                         className="w-full min-h-[44px] bg-indigo-50 text-indigo-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-indigo-100 active:scale-95 transition-all shadow-sm disabled:opacity-50"
@@ -337,7 +618,7 @@ export default function PatientSearchAdmin() {
                                                         <FileText className="w-3.5 h-3.5" /> View Prescription
                                                     </button>
                                                 )}
-                                                <button 
+                                                <button
                                                     onClick={() => handleGenerateInvoice(booking._id)}
                                                     className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-emerald-100 active:scale-95 transition-all shadow-sm"
                                                 >
@@ -357,39 +638,38 @@ export default function PatientSearchAdmin() {
             <AnimatePresence>
                 {uploadModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-                        <motion.div 
+                        <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                             onClick={() => setUploadModalOpen(false)}
                         />
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
                             className="bg-white rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 max-w-md w-full relative z-10 shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col"
                         >
                             <div className="shrink-0 flex items-center justify-between mb-6">
                                 <h3 className="text-2xl font-black text-slate-900">Upload Prescription</h3>
-                                <button 
+                                <button
                                     onClick={() => setUploadModalOpen(false)}
                                     className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors"
                                 >
                                     <X className="w-6 h-6" />
                                 </button>
                             </div>
-                            
+
                             <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col justify-between">
                                 <div>
                                     <p className="text-slate-500 text-sm font-medium mb-8">
                                         Please upload the prescription PDF for this booking. The patient will be notified via email.
                                     </p>
-
                                     <form id="prescription-upload-form" onSubmit={handleUploadSubmit} className="space-y-6">
                                         <div>
                                             <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
                                                 Prescription Document (PDF)
                                             </label>
                                             <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-8 hover:bg-slate-50 hover:border-blue-300 transition-all text-center">
-                                                <input 
-                                                    type="file" 
+                                                <input
+                                                    type="file"
                                                     accept="application/pdf"
                                                     onChange={(e) => setPrescriptionFile(e.target.files?.[0] || null)}
                                                     required
@@ -412,7 +692,7 @@ export default function PatientSearchAdmin() {
                                     </form>
                                 </div>
                                 <div className="mt-8">
-                                    <button 
+                                    <button
                                         type="submit"
                                         form="prescription-upload-form"
                                         disabled={uploading || !prescriptionFile}
