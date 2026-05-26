@@ -52,6 +52,7 @@ export default function PaymentAnalytics() {
 
     useEffect(() => {
         fetchSummary();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateRange, customFrom, customTo]);
 
     const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444']; // emerald, blue, amber, rose
@@ -94,7 +95,7 @@ export default function PaymentAnalytics() {
                         <Activity className="w-7 h-7 text-emerald-500" /> Payment Analytics
                     </h2>
                     <p className="text-slate-500 font-semibold text-sm mt-1">
-                        Track your hospital's revenue, payment modes, and pending dues.
+                        Track your hospital&apos;s revenue, payment modes, and pending dues.
                     </p>
                 </div>
                 
