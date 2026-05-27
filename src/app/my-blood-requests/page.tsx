@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Siren, Clock, MapPin, CheckCircle, AlertOctagon, ArrowLeft, Loader2, Droplet, User, ShieldCheck } from 'lucide-react';
+import { Siren, Clock, MapPin, CheckCircle, AlertOctagon, ArrowLeft, Loader2, Droplet, User, ShieldCheck, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import api from '../../lib/api';
 
@@ -23,6 +23,23 @@ interface BloodRequest {
 export default function MyBloodRequestsPage() {
     const [requests, setRequests] = useState<BloodRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this blood request?')) {
+            return;
+        }
+        setDeletingId(id);
+        try {
+            await api.delete(`/blood-bank/requests/${id}`);
+            setRequests(prev => prev.filter(req => req._id !== id));
+        } catch (error: any) {
+            const errMsg = error.response?.data?.message || error.message || 'Failed to delete request';
+            alert(`Error: ${errMsg}`);
+        } finally {
+            setDeletingId(null);
+        }
+    };
 
     useEffect(() => {
         const fetchMyRequests = async () => {
@@ -135,10 +152,29 @@ export default function MyBloodRequestsPage() {
                                         )}
                                     </div>
                                 </div>
-                                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center gap-2 text-sm text-gray-600">
-                                    <User className="w-4 h-4 text-gray-400" />
-                                    <span className="font-medium text-gray-900">Hospital:</span>
-                                    <span className="truncate">{request.hospitalAddress}</span>
+                                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between gap-4 text-sm text-gray-600">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <User className="w-4 h-4 text-gray-400 shrink-0" />
+                                        <span className="font-medium text-gray-900 shrink-0">Hospital:</span>
+                                        <span className="truncate">{request.hospitalAddress}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDelete(request._id)}
+                                        disabled={deletingId === request._id}
+                                        className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-bold transition-colors border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-xl disabled:opacity-50 shrink-0"
+                                    >
+                                        {deletingId === request._id ? (
+                                            <>
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                Deleting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Delete
+                                            </>
+                                        )}
+                                    </button>
                                 </div>
                             </motion.div>
                         ))}
