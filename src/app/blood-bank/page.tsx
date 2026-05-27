@@ -1018,6 +1018,8 @@ function RequestForm() {
             setKycStatus(response.data.aiVerificationStatus || 'Pending');
             setKycRemarks(response.data.aiVerificationRemarks || '');
             setSuccess(true);
+            alert('check your mail for your reuqest');
+            console.log('check your mail for your reuqest');
         } catch (error: any) {
             clearTimeout(timeoutId);
             console.error('[BloodRequest] Error details:', {
@@ -1051,7 +1053,7 @@ function RequestForm() {
                 </motion.div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-4">Request Broadcasted</h2>
                 <p className="text-gray-600 max-w-md mx-auto mb-8">
-                    We have notified donors in your vicinity. Our automated system is calling verified donors now.
+                    We have notified donors in your vicinity. Our automated system is calling verified donors now. check your mail for your reuqest
                 </p>
                 {kycStatus === 'Verified' && (
                     <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl mb-8 max-w-lg mx-auto flex items-start gap-4 text-left shadow-sm shadow-green-100/50">
