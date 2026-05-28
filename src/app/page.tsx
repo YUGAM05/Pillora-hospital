@@ -111,10 +111,6 @@ export default function HospitalPortalHome() {
                                 <p className="text-3xl font-black text-white">99.9%</p>
                                 <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Uptime</p>
                             </div>
-                            <div>
-                                <p className="text-3xl font-black text-white">ISO</p>
-                                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Certified</p>
-                            </div>
                         </div>
                     </div>
                     
