@@ -640,9 +640,21 @@ function DonateForm() {
     const certRef = React.useRef<HTMLDivElement>(null);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (errors[e.target.name]) {
-            setErrors({ ...errors, [e.target.name]: '' });
+        let value = e.target.value;
+        if (e.target.name === 'phone') {
+            // Only keep digits and limit to 10 characters
+            value = value.replace(/\D/g, '').slice(0, 10);
+            
+            // Validate standard Indian mobile number format
+            if (value.length > 0 && (value.length !== 10 || !/^[6-9]\d{9}$/.test(value))) {
+                setErrors(prev => ({ ...prev, phone: 'Please enter a valid 10-digit mobile number.' }));
+            } else {
+                setErrors(prev => ({ ...prev, phone: '' }));
+            }
+        }
+        setFormData(prev => ({ ...prev, [e.target.name]: value }));
+        if (e.target.name !== 'phone' && errors[e.target.name]) {
+            setErrors(prev => ({ ...prev, [e.target.name]: '' }));
         }
     };
 
@@ -651,7 +663,11 @@ function DonateForm() {
         if (!formData.name.trim()) newErrors.name = 'Full Name is required';
         if (!formData.age) newErrors.age = 'Age is required';
         else if (Number(formData.age) < 18 || Number(formData.age) > 60) newErrors.age = 'Age must be between 18 and 60';
-        if (!formData.phone.trim()) newErrors.phone = 'Phone Number is required';
+        if (!formData.phone.trim()) {
+            newErrors.phone = 'Phone Number is required';
+        } else if (formData.phone.length !== 10 || !/^[6-9]\d{9}$/.test(formData.phone)) {
+            newErrors.phone = 'Please enter a valid 10-digit mobile number.';
+        }
         if (!formData.area.trim()) newErrors.area = 'Area is required';
         if (!formData.address.trim()) newErrors.address = 'Address is required';
         
@@ -849,8 +865,8 @@ function DonateForm() {
 
             <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+                disabled={loading || (formData.phone.length > 0 && (formData.phone.length !== 10 || !/^[6-9]\d{9}$/.test(formData.phone)))}
+                className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
             >
                 {loading ? 'Processing...' : 'Register as Donor'} <Heart className="w-5 h-5 fill-white" />
             </button>
@@ -874,10 +890,21 @@ function RequestForm() {
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
-        setFormData({ ...formData, [e.target.name]: value });
-        if (errors[e.target.name]) {
-            setErrors({ ...errors, [e.target.name]: '' });
+        const name = e.target.name;
+        let value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
+        
+        if (name === 'contactNumber' && typeof value === 'string') {
+            value = value.replace(/\D/g, '').slice(0, 10);
+            if (value.length > 0 && (value.length !== 10 || !/^[6-9]\d{9}$/.test(value))) {
+                setErrors(prev => ({ ...prev, contactNumber: 'Please enter a valid 10-digit mobile number.' }));
+            } else {
+                setErrors(prev => ({ ...prev, contactNumber: '' }));
+            }
+        }
+
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name !== 'contactNumber' && errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
         }
     };
 
@@ -943,7 +970,11 @@ function RequestForm() {
         if (!formData.units) newErrors.units = 'Units are required';
         if (!formData.hospitalAddress.trim()) newErrors.hospitalAddress = 'Hospital Address is required';
         if (!formData.area.trim()) newErrors.area = 'Area is required';
-        if (!formData.contactNumber.trim()) newErrors.contactNumber = 'Contact Number is required';
+        if (!formData.contactNumber.trim()) {
+            newErrors.contactNumber = 'Contact Number is required';
+        } else if (formData.contactNumber.length !== 10 || !/^[6-9]\d{9}$/.test(formData.contactNumber)) {
+            newErrors.contactNumber = 'Please enter a valid 10-digit mobile number.';
+        }
         if (!formData.kycDocumentId.trim()) newErrors.kycDocumentId = 'Document ID is required';
         
         setErrors(newErrors);
@@ -1257,7 +1288,7 @@ function RequestForm() {
 
             <button
                 type="submit"
-                disabled={loading || isImageProcessing}
+                disabled={loading || isImageProcessing || (formData.contactNumber.length > 0 && (formData.contactNumber.length !== 10 || !/^[6-9]\d{9}$/.test(formData.contactNumber)))}
                 className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2"
             >
                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Siren className="w-5 h-5" />}
