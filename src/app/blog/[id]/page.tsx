@@ -185,9 +185,7 @@ export default function BlogPostDetail() {
                         {blog.description}
                     </p>
 
-                    <div className="whitespace-pre-wrap text-gray-800 leading-loose text-lg font-medium space-y-6">
-                        {blog.content}
-                    </div>
+                    <div className="whitespace-pre-wrap text-gray-800 leading-loose text-lg font-medium space-y-6" dangerouslySetInnerHTML={{ __html: blog.content }} />
                 </motion.div>
 
                 {/* 5. Footer Navigation */}
