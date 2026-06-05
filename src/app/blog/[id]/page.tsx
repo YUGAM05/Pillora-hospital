@@ -179,13 +179,15 @@ export default function BlogPostDetail() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="prose prose-lg max-w-none prose-slate"
+                    className="prose-slate"
                 >
                     <p className="text-xl md:text-2xl text-gray-500 font-medium leading-relaxed mb-12 italic border-l-4 border-blue-600 pl-8">
                         {blog.description}
                     </p>
 
-                    <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+                    <div style={{ padding: 0, margin: 0 }}>
+                        <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+                    </div>
                 </motion.div>
 
                 {/* 5. Footer Navigation */}
