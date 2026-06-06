@@ -36,6 +36,10 @@ const AHMEDABAD_AREAS = [
     "Navrangpura", "Ambawadi", "Paldi", "Naranpura", "Vastrapur", "Satellite", "Jodhpur", "Vejalpur", "Vasna", "Nava Vadaj", "Bodakdev", "Thaltej", "Sola", "Gota", "Science City Road", "Shilaj", "Bopal & South Bopal", "Ambli", "Sindhu Bhavan Road (SBR)", "Shahibaug", "Sabarmati", "Motera", "Chandkheda", "Meghani Nagar", "Asarwa", "Kalupur", "Khadia", "Dariapur", "Shahpur", "Jamalpur", "Lal Darwaja", "Astodia", "Gita Mandir", "Maninagar", "Kankaria (Lakefront area)", "Danilimda", "Behrampura", "Isanpur", "Ghodasar", "Vatva", "Bapunagar", "Naroda", "Nikol", "Vastral", "Amraiwadi", "Odhav", "Gomtipur", "Rakhial", "Sarkhej", "Juhapura", "Makarba", "Prahladnagar"
 ];
 
+const SURENDRANAGAR_AREAS = [
+    "Surendranagar"
+];
+
 export default function BloodBankPage() {
     const [activeTab, setActiveTab] = useState<'donate' | 'request'>('donate');
     const [stats, setStats] = useState({ donors: 120, requests: 45, saved: 320 });
@@ -652,7 +656,11 @@ function DonateForm() {
                 setErrors(prev => ({ ...prev, phone: '' }));
             }
         }
-        setFormData(prev => ({ ...prev, [e.target.name]: value }));
+        if (e.target.name === 'city') {
+            setFormData(prev => ({ ...prev, city: value, area: value === 'Surendranagar' ? 'Surendranagar' : '' }));
+        } else {
+            setFormData(prev => ({ ...prev, [e.target.name]: value }));
+        }
         if (e.target.name !== 'phone' && errors[e.target.name]) {
             setErrors(prev => ({ ...prev, [e.target.name]: '' }));
         }
@@ -821,6 +829,7 @@ function DonateForm() {
                     <div className="relative">
                         <select name="city" required onChange={handleChange} value={formData.city} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none appearance-none">
                             <option value="Ahmedabad">Ahmedabad</option>
+                            <option value="Surendranagar">Surendranagar</option>
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -832,9 +841,15 @@ function DonateForm() {
                     <div className="relative">
                         <select name="area" required onChange={handleChange} value={formData.area} className={`w-full px-4 py-3 bg-white border ${errors.area ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none appearance-none`}>
                             <option value="">Select Area</option>
-                            {AHMEDABAD_AREAS.map(area => (
-                                <option key={area} value={area}>{area}</option>
-                            ))}
+                            {formData.city === 'Surendranagar' ? (
+                                SURENDRANAGAR_AREAS.map(area => (
+                                    <option key={area} value={area}>{area}</option>
+                                ))
+                            ) : (
+                                AHMEDABAD_AREAS.map(area => (
+                                    <option key={area} value={area}>{area}</option>
+                                ))
+                            )}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -902,7 +917,12 @@ function RequestForm() {
             }
         }
 
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'city') {
+            setFormData(prev => ({ ...prev, city: value as string, area: value === 'Surendranagar' ? 'Surendranagar' : '' }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+
         if (name !== 'contactNumber' && errors[name]) {
             setErrors(prev => ({ ...prev, [name]: '' }));
         }
@@ -1199,6 +1219,7 @@ function RequestForm() {
                     <div className="relative">
                         <select name="city" required onChange={handleChange} value={formData.city} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none appearance-none">
                             <option value="Ahmedabad">Ahmedabad</option>
+                            <option value="Surendranagar">Surendranagar</option>
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -1210,9 +1231,15 @@ function RequestForm() {
                     <div className="relative">
                         <select name="area" required value={formData.area} onChange={handleChange} className={`w-full px-4 py-3 bg-white border ${errors.area ? 'border-red-500' : 'border-gray-200'} rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none appearance-none`}>
                             <option value="">Select Area</option>
-                            {AHMEDABAD_AREAS.map(area => (
-                                <option key={area} value={area}>{area}</option>
-                            ))}
+                            {formData.city === 'Surendranagar' ? (
+                                SURENDRANAGAR_AREAS.map(area => (
+                                    <option key={area} value={area}>{area}</option>
+                                ))
+                            ) : (
+                                AHMEDABAD_AREAS.map(area => (
+                                    <option key={area} value={area}>{area}</option>
+                                ))
+                            )}
                         </select>
                         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
