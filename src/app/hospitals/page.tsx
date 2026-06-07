@@ -185,8 +185,14 @@ export default function HospitalsPage() {
         h.city.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const phoneList = (h: Hospital) =>
-        (h.phoneNumbers && h.phoneNumbers.length > 0 ? h.phoneNumbers : h.contactNumber ? [h.contactNumber] : []).filter(Boolean);
+    const phoneList = (h: Hospital) => {
+        const list = [];
+        if (h.contactNumber) list.push(h.contactNumber);
+        if (h.phoneNumbers && h.phoneNumbers.length > 0) {
+            list.push(...h.phoneNumbers);
+        }
+        return Array.from(new Set(list)).filter(Boolean);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50">

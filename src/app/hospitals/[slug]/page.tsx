@@ -147,8 +147,14 @@ export default function HospitalDetailPage() {
         return [fallbackImage];
     };
 
-    const phoneList = (h: Hospital) =>
-        (h.phoneNumbers && h.phoneNumbers.length > 0 ? h.phoneNumbers : h.contactNumber ? [h.contactNumber] : []).filter(Boolean);
+    const phoneList = (h: Hospital) => {
+        const list = [];
+        if (h.contactNumber) list.push(h.contactNumber);
+        if (h.phoneNumbers && h.phoneNumbers.length > 0) {
+            list.push(...h.phoneNumbers);
+        }
+        return Array.from(new Set(list)).filter(Boolean);
+    };
 
     const getMapUrl = (h: Hospital) =>
         h.mapLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${h.address}, ${h.city}`)}`;
