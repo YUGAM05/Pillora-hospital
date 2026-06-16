@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { LogOut, Menu, X, Activity, LayoutDashboard, Users, Calendar, Bell } from "lucide-react";
+import { LogOut, Menu, X, LayoutDashboard, Users, Calendar, Bell } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -74,25 +75,44 @@ export default function Navbar() {
                         </button>
                         
                         {/* Mobile Logo */}
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                                <Activity className="w-5 h-5" />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-base font-black tracking-tight text-slate-900 leading-none">Pillora</span>
-                            </div>
+                        <Link href="/" className="flex-shrink-0 flex items-center group">
+                            <Image
+                                src="/logo.png"
+                                alt="Pillora"
+                                width={72}
+                                height={72}
+                                className="w-12 h-12 object-contain object-right"
+                                unoptimized
+                            />
+                            <Image
+                                src="/pillora-text.png"
+                                alt="Pillora"
+                                width={240}
+                                height={80}
+                                className="block h-12 w-auto object-contain object-left -ml-1"
+                                unoptimized
+                            />
                         </Link>
                     </div>
 
                     {/* Desktop Logo */}
-                    <Link href="/" className="hidden lg:flex items-center gap-3 group">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-                            <Activity className="w-6 h-6" />
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-lg font-black tracking-tight text-slate-900 leading-none">Pillora <span className="text-blue-600">Hospital</span></span>
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Partner Portal</span>
-                        </div>
+                    <Link href="/" className="hidden lg:flex-shrink-0 lg:flex items-center group">
+                        <Image
+                            src="/logo.png"
+                            alt="Pillora"
+                            width={72}
+                            height={72}
+                            className="w-14 h-14 xl:w-16 xl:h-16 object-contain object-right"
+                            unoptimized
+                        />
+                        <Image
+                            src="/pillora-text.png"
+                            alt="Pillora"
+                            width={240}
+                            height={80}
+                            className="block h-14 sm:h-16 xl:h-[4.5rem] w-auto object-contain object-left -ml-1 sm:-ml-2 xl:-ml-3"
+                            unoptimized
+                        />
                     </Link>
 
                     {/* Desktop Links */}
@@ -197,14 +217,23 @@ export default function Navbar() {
                             style={{ zIndex: 9999 }}
                         >
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-200">
-                                        <Activity className="w-6 h-6" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-lg font-black tracking-tight text-slate-900 leading-none">Pillora</span>
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Hospital</span>
-                                    </div>
+                                <div className="flex items-center">
+                                    <Image
+                                        src="/logo.png"
+                                        alt="Pillora"
+                                        width={72}
+                                        height={72}
+                                        className="w-12 h-12 object-contain object-right"
+                                        unoptimized
+                                    />
+                                    <Image
+                                        src="/pillora-text.png"
+                                        alt="Pillora"
+                                        width={240}
+                                        height={80}
+                                        className="block h-12 w-auto object-contain object-left -ml-1"
+                                        unoptimized
+                                    />
                                 </div>
                                 <button
                                     onClick={() => setIsOpen(false)}
