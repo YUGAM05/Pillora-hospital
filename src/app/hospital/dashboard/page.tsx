@@ -60,6 +60,8 @@ export default function HospitalDashboard() {
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
+    // Date filter for Proactive Slot Management — persists across sub-tab switches
+    const [slotDateFilter, setSlotDateFilter] = useState<string>("");
 
     // Patient Records States
     const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -1252,28 +1254,63 @@ export default function HospitalDashboard() {
                 ) : (
                     /* SLOT MANAGEMENT SECTION */
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                                    <Clock className="w-6 h-6 text-primary" /> Proactive Slot Management
-                                </h3>
-                                <p className="text-slate-500 text-xs font-semibold mt-1">Schedule new slots, configure recurrence, and cancel upcoming appointments in emergency scenarios.</p>
+                        <div className="flex flex-col gap-4">
+                            {/* Title row */}
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                                        <Clock className="w-6 h-6 text-primary" /> Proactive Slot Management
+                                    </h3>
+                                    <p className="text-slate-500 text-xs font-semibold mt-1">Schedule new slots, configure recurrence, and cancel upcoming appointments in emergency scenarios.</p>
+                                </div>
+                                {isSelfManaged && (
+                                    <button 
+                                        onClick={() => {
+                                            if (doctors.length === 0) {
+                                                alert("Please recruit a doctor or specialty group first before adding slots.");
+                                                return;
+                                            }
+                                            setAddSlotDoctorId(doctors[0]._id);
+                                            setShowAddSlot(true);
+                                        }}
+                                        className="px-5 py-3 bg-primary hover:bg-primary/95 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all shrink-0"
+                                    >
+                                        <Plus className="w-4 h-4" /> Add New Slot
+                                    </button>
+                                )}
                             </div>
-                            {isSelfManaged && (
-                                <button 
-                                    onClick={() => {
-                                        if (doctors.length === 0) {
-                                            alert("Please recruit a doctor or specialty group first before adding slots.");
-                                            return;
-                                        }
-                                        setAddSlotDoctorId(doctors[0]._id);
-                                        setShowAddSlot(true);
-                                    }}
-                                    className="px-5 py-3 bg-primary hover:bg-primary/95 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all"
-                                >
-                                    <Plus className="w-4 h-4" /> Add New Slot
-                                </button>
-                            )}
+
+                            {/* Date filter row */}
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                    <label htmlFor="slot-date-filter" className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
+                                        Filter by Date
+                                    </label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                                        <input
+                                            id="slot-date-filter"
+                                            type="date"
+                                            value={slotDateFilter}
+                                            onChange={e => setSlotDateFilter(e.target.value)}
+                                            className="pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-primary/40 focus:bg-white transition-all"
+                                        />
+                                    </div>
+                                </div>
+                                {slotDateFilter && (
+                                    <button
+                                        onClick={() => setSlotDateFilter("")}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                        <XCircle className="w-3 h-3" /> All Dates
+                                    </button>
+                                )}
+                                {slotDateFilter && (
+                                    <span className="text-[10px] font-bold text-primary bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-lg">
+                                        Showing: {new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Sub Tabs */}
@@ -1315,11 +1352,14 @@ export default function HospitalDashboard() {
                                         {slots
                                             .filter((slot: any) => {
                                                 const isCancelled = slot.status === 'cancelled';
-                                                if (activeSlotSubTab === 'upcoming') {
-                                                    return !isCancelled;
-                                                } else {
-                                                    return isCancelled;
+                                                const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
+                                                if (!tabMatch) return false;
+                                                // Date filter: compare slot's local date (YYYY-MM-DD) against the filter
+                                                if (slotDateFilter) {
+                                                    const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA'); // YYYY-MM-DD
+                                                    if (slotLocalDate !== slotDateFilter) return false;
                                                 }
+                                                return true;
                                             })
                                             .map((slot: any) => {
                                                 const slotDateStr = new Date(slot.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -1395,10 +1435,21 @@ export default function HospitalDashboard() {
                                                     </tr>
                                                 );
                                             })}
-                                        {slots.filter(s => activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled').length === 0 && (
+                                        {slots.filter(s => {
+                                            const tabMatch = activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled';
+                                            if (!tabMatch) return false;
+                                            if (slotDateFilter) {
+                                                const slotLocalDate = new Date(s.startTime).toLocaleDateString('en-CA');
+                                                if (slotLocalDate !== slotDateFilter) return false;
+                                            }
+                                            return true;
+                                        }).length === 0 && (
                                             <tr>
                                                 <td colSpan={6} className="p-12 text-center text-slate-400 font-bold italic">
-                                                    No slots found in this category.
+                                                    {slotDateFilter
+                                                        ? `No slots found for ${new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
+                                                        : 'No slots found in this category.'
+                                                    }
                                                 </td>
                                             </tr>
                                         )}
@@ -1411,11 +1462,13 @@ export default function HospitalDashboard() {
                                 {slots
                                     .filter((slot: any) => {
                                         const isCancelled = slot.status === 'cancelled';
-                                        if (activeSlotSubTab === 'upcoming') {
-                                            return !isCancelled;
-                                        } else {
-                                            return isCancelled;
+                                        const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
+                                        if (!tabMatch) return false;
+                                        if (slotDateFilter) {
+                                            const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA');
+                                            if (slotLocalDate !== slotDateFilter) return false;
                                         }
+                                        return true;
                                     })
                                     .map((slot: any) => {
                                         const slotDateStr = new Date(slot.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
@@ -1499,9 +1552,20 @@ export default function HospitalDashboard() {
                                             </div>
                                         );
                                     })}
-                                {slots.filter(s => activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled').length === 0 && (
+                                {slots.filter(s => {
+                                        const tabMatch = activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled';
+                                        if (!tabMatch) return false;
+                                        if (slotDateFilter) {
+                                            const slotLocalDate = new Date(s.startTime).toLocaleDateString('en-CA');
+                                            if (slotLocalDate !== slotDateFilter) return false;
+                                        }
+                                        return true;
+                                    }).length === 0 && (
                                     <div className="text-center py-12 text-slate-400 font-bold italic text-xs">
-                                        No slots found in this category.
+                                        {slotDateFilter
+                                            ? `No slots found for ${new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
+                                            : 'No slots found in this category.'
+                                        }
                                     </div>
                                 )}
                             </div>
