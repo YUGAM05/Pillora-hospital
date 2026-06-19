@@ -12,7 +12,7 @@ import {
     Download
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+
 import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 import PaymentAnalytics from "@/components/PaymentAnalytics";
 
@@ -26,7 +26,6 @@ export default function HospitalDashboard() {
     const [user, setUser] = useState<any>(null);
     
     // Analytics States
-    const [peakHours, setPeakHours] = useState<any[]>([]);
     const [cancellationRate, setCancellationRate] = useState<any>(null);
 
     // Tabs & Filters
@@ -310,11 +309,7 @@ export default function HospitalDashboard() {
         try {
             const token = getToken();
             if (!token) return;
-            const [hoursRes, rateRes] = await Promise.all([
-                api.get("/hospital/dashboard/analytics/booking-hours"),
-                api.get("/hospital/dashboard/analytics/cancellation-rate")
-            ]);
-            setPeakHours(hoursRes.data);
+            const rateRes = await api.get("/hospital/dashboard/analytics/cancellation-rate");
             setCancellationRate(rateRes.data);
         } catch (err) {
             console.error("Failed to fetch analytics");
@@ -770,47 +765,33 @@ export default function HospitalDashboard() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
-                                {/* Peak Booking Hours (Recharts) */}
-                                <div className="md:col-span-2 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col h-[320px]">
-                                    <h4 className="text-sm font-extrabold text-slate-800 mb-6 uppercase tracking-wider">Peak Booking Hours</h4>
-                                    <div className="flex-1 w-full h-full">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <BarChart data={peakHours}>
-                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                                <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 800 }} />
-                                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 800 }} />
-                                                <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                                <Bar dataKey="count" fill="#4f46e5" radius={[6, 6, 0, 0]} />
-                                            </BarChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-
+                            <div className="mt-8">
                                 {/* Cancellation Rate */}
-                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center h-[320px]">
-                                    <h4 className="text-sm font-extrabold text-slate-800 mb-6 uppercase tracking-wider text-center">Cancellation Rate</h4>
-                                    <div className="relative w-40 h-40 flex items-center justify-center">
-                                        <svg className="w-full h-full transform -rotate-90">
-                                            <circle cx="80" cy="80" r="70" className="stroke-slate-200" strokeWidth="12" fill="none" />
-                                            <motion.circle 
-                                                cx="80" cy="80" r="70" 
-                                                className="stroke-rose-500" 
-                                                strokeWidth="12" 
-                                                fill="none" 
-                                                strokeLinecap="round"
-                                                initial={{ strokeDasharray: "440", strokeDashoffset: "440" }}
-                                                animate={{ strokeDashoffset: 440 - (440 * (cancellationRate?.rate || 0)) / 100 }}
-                                                transition={{ duration: 1.5, ease: "easeOut" }}
-                                            />
-                                        </svg>
-                                        <div className="absolute flex flex-col items-center justify-center">
-                                            <span className="text-3xl font-black text-slate-800">{cancellationRate?.rate || 0}%</span>
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cancellationRate?.cancelled || 0} Cancelled</span>
+                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center h-[220px]">
+                                    <h4 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider text-center">Cancellation Rate</h4>
+                                    <div className="flex items-center gap-10">
+                                        <div className="relative w-36 h-36 flex items-center justify-center">
+                                            <svg className="w-full h-full transform -rotate-90">
+                                                <circle cx="72" cy="72" r="60" className="stroke-slate-200" strokeWidth="12" fill="none" />
+                                                <motion.circle 
+                                                    cx="72" cy="72" r="60" 
+                                                    className="stroke-rose-500" 
+                                                    strokeWidth="12" 
+                                                    fill="none" 
+                                                    strokeLinecap="round"
+                                                    initial={{ strokeDasharray: "377", strokeDashoffset: "377" }}
+                                                    animate={{ strokeDashoffset: 377 - (377 * (cancellationRate?.rate || 0)) / 100 }}
+                                                    transition={{ duration: 1.5, ease: "easeOut" }}
+                                                />
+                                            </svg>
+                                            <div className="absolute flex flex-col items-center justify-center">
+                                                <span className="text-3xl font-black text-slate-800">{cancellationRate?.rate || 0}%</span>
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cancellationRate?.cancelled || 0} Cancelled</span>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="mt-6 text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest">
-                                        Out of {cancellationRate?.total || 0} Total Bookings
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            Out of {cancellationRate?.total || 0} Total Bookings
+                                        </div>
                                     </div>
                                 </div>
                             </div>
