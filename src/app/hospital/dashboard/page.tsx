@@ -72,6 +72,17 @@ export default function HospitalDashboard() {
     const [uploadingPrescriptionId, setUploadingPrescriptionId] = useState<string | null>(null);
     const [generatingInvoiceId, setGeneratingInvoiceId] = useState<string | null>(null);
 
+    // Payment badge states
+    const [paymentUpdatingId, setPaymentUpdatingId] = useState<string | null>(null);
+    const [openPaymentDropdown, setOpenPaymentDropdown] = useState<string | null>(null);
+
+    // Toast notification
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3500);
+    };
+
     const [showAddSlot, setShowAddSlot] = useState(false);
     const [showCancelSlotModal, setShowCancelSlotModal] = useState<any>(null);
     const [cancellationReason, setCancellationReason] = useState("");
@@ -451,26 +462,59 @@ export default function HospitalDashboard() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Client-side validation
+        const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png'];
+        if (!ALLOWED.includes(file.type)) {
+            showToast('Only PDF, JPG, and PNG files are allowed', 'error');
+            e.target.value = '';
+            return;
+        }
+        const MAX_MB = 5;
+        if (file.size > MAX_MB * 1024 * 1024) {
+            showToast(`File too large — maximum size is ${MAX_MB} MB`, 'error');
+            e.target.value = '';
+            return;
+        }
+
         setUploadingPrescriptionId(appointmentId);
         try {
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('prescription', file);
 
-            const uploadRes = await api.post('/upload', formData, {
+            await api.post(`/hospital/dashboard/appointments/${appointmentId}/prescription`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
-            await api.put(`/hospital/dashboard/appointments/${appointmentId}/prescription`, {
-                prescriptionUrl: uploadRes.data.url
-            });
-
             fetchData();
-            alert('Prescription uploaded successfully!');
-        } catch (error) {
-            console.error('Upload error:', error);
-            alert('Failed to upload prescription');
+            showToast('Prescription uploaded successfully!', 'success');
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Failed to upload prescription';
+            showToast(msg, 'error');
         } finally {
             setUploadingPrescriptionId(null);
+            e.target.value = '';
+        }
+    };
+
+    const handlePaymentStatusUpdate = async (appointmentId: string, status: 'unpaid' | 'paid' | 'waived') => {
+        // Optimistic update
+        const prev = appointments.find((a: any) => a._id === appointmentId)?.paymentStatus;
+        setAppointments((prev: any[]) =>
+            prev.map((a: any) => a._id === appointmentId ? { ...a, paymentStatus: status } : a)
+        );
+        setOpenPaymentDropdown(null);
+        setPaymentUpdatingId(appointmentId);
+        try {
+            await api.patch(`/hospital/dashboard/appointments/${appointmentId}/payment-status`, { status });
+            showToast(`Payment marked as ${status}`, 'success');
+        } catch (error: any) {
+            // Rollback
+            setAppointments((cur: any[]) =>
+                cur.map((a: any) => a._id === appointmentId ? { ...a, paymentStatus: prev } : a)
+            );
+            showToast(error.response?.data?.message || 'Failed to update payment status', 'error');
+        } finally {
+            setPaymentUpdatingId(null);
         }
     };
 
@@ -531,7 +575,32 @@ export default function HospitalDashboard() {
     const maxCount = Math.max(...doctorData.map(d => d.count), 1);
 
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans">
+        <div className="min-h-screen bg-white text-slate-900 font-sans" onClick={(e) => {
+            // Close payment dropdown when clicking outside
+            if (openPaymentDropdown && !(e.target as HTMLElement).closest('.payment-dropdown-wrapper')) {
+                setOpenPaymentDropdown(null);
+            }
+        }}>
+            {/* Toast notification */}
+            <AnimatePresence>
+                {toast && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 60, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-bold border ${
+                            toast.type === 'success'
+                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20'
+                                : 'bg-rose-600 text-white border-rose-500 shadow-rose-900/20'
+                        }`}
+                    >
+                        {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                        {toast.message}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                     <div>
@@ -1070,8 +1139,9 @@ export default function HospitalDashboard() {
                                                                 {app.slot ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` : 'N/A'}
                                                             </div>
                                                         </td>
-                                                        <td className="p-4 pr-6 text-right">
-                                                            <div className="flex items-center justify-end gap-2">
+                                                        <td className="p-4 pr-6">
+                                                            <div className="flex flex-col items-end gap-2">
+                                                                {/* Doctor assign — only for pending/confirmed */}
                                                                 {(app.status === 'pending' || app.status === 'confirmed') && (
                                                                     <select
                                                                         className="p-1.5 text-[9px] font-black uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg text-slate-600 outline-none max-w-[100px] hover:border-slate-300 transition-colors"
@@ -1083,6 +1153,7 @@ export default function HospitalDashboard() {
                                                                         {doctors.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                                                                     </select>
                                                                 )}
+                                                                {/* Status progression buttons */}
                                                                 {app.status === 'pending' ? (
                                                                     <div className="flex gap-1">
                                                                         <button title="Confirm" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className={`p-1.5 rounded-lg ${app.status === 'confirmed' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}><CheckCircle2 className="w-4 h-4" /></button>
@@ -1098,24 +1169,86 @@ export default function HospitalDashboard() {
                                                                         <CheckCircle2 className="w-3 h-3" /> Complete
                                                                     </button>
                                                                 ) : app.status === 'completed' && (
-                                                                    <div className="flex flex-col gap-1.5 w-full max-w-[100px]">
-                                                                        {app.prescriptionUrl ? (
-                                                                            <a href={app.prescriptionUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase text-center bg-blue-50 border border-blue-100 text-blue-600 py-1.5 rounded-lg shadow-sm">View Rx</a>
-                                                                        ) : (
-                                                                            <label className="text-[9px] font-black uppercase text-center bg-slate-50 border border-slate-200 text-slate-600 py-1.5 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors shadow-sm">
-                                                                                {uploadingPrescriptionId === app._id ? 'Uploading...' : 'Upload Rx'}
-                                                                                <input type="file" className="hidden" onChange={(e) => handlePrescriptionUpload(e, app._id)} accept=".pdf,image/*" disabled={uploadingPrescriptionId === app._id} />
-                                                                            </label>
-                                                                        )}
+                                                                    <div className="flex flex-col gap-1 w-full items-end">
                                                                         {app.invoiceUrl ? (
-                                                                            <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase text-center bg-emerald-50 border border-emerald-100 text-emerald-600 py-1.5 rounded-lg shadow-sm">View Invoice</a>
+                                                                            <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase text-center bg-emerald-50 border border-emerald-100 text-emerald-600 py-1.5 px-2 rounded-lg shadow-sm">View Invoice</a>
                                                                         ) : (
-                                                                            <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="text-[9px] font-black uppercase text-center bg-slate-900 text-white py-1.5 rounded-lg hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50">
+                                                                            <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="text-[9px] font-black uppercase text-center bg-slate-900 text-white py-1.5 px-2 rounded-lg hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50">
                                                                                 {generatingInvoiceId === app._id ? 'Gen...' : 'Gen Invoice'}
                                                                             </button>
                                                                         )}
                                                                     </div>
                                                                 )}
+
+                                                                {/* Prescription — available for ALL statuses */}
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {app.prescriptionUrl ? (
+                                                                        <a
+                                                                            href={app.prescriptionUrl}
+                                                                            target="_blank"
+                                                                            rel="noreferrer"
+                                                                            title={app.prescriptionUploadedAt ? `Uploaded ${new Date(app.prescriptionUploadedAt).toLocaleString()}` : 'View Prescription'}
+                                                                            className="flex items-center gap-1 text-[9px] font-black uppercase bg-blue-50 border border-blue-100 text-blue-600 py-1.5 px-2 rounded-lg shadow-sm hover:bg-blue-100 transition-colors"
+                                                                        >
+                                                                            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> View Rx
+                                                                        </a>
+                                                                    ) : (
+                                                                        <label className="flex items-center gap-1 text-[9px] font-black uppercase bg-slate-50 border border-slate-200 text-slate-600 py-1.5 px-2 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors shadow-sm">
+                                                                            {uploadingPrescriptionId === app._id ? (
+                                                                                <><RefreshCcw className="w-3 h-3 animate-spin" /> Uploading…</>
+                                                                            ) : (
+                                                                                <>📎 Upload Rx</>
+                                                                            )}
+                                                                            <input
+                                                                                type="file"
+                                                                                className="hidden"
+                                                                                accept=".pdf,.jpg,.jpeg,.png,image/*"
+                                                                                capture="environment"
+                                                                                onChange={(e) => handlePrescriptionUpload(e, app._id)}
+                                                                                disabled={uploadingPrescriptionId === app._id}
+                                                                            />
+                                                                        </label>
+                                                                    )}
+                                                                </div>
+
+                                                                {/* Payment status badge — available for ALL statuses, labeled as manual */}
+                                                                <div className="relative payment-dropdown-wrapper">
+                                                                    <button
+                                                                        onClick={() => setOpenPaymentDropdown(openPaymentDropdown === app._id ? null : app._id)}
+                                                                        disabled={paymentUpdatingId === app._id}
+                                                                        title="Manually recorded — not verified by payment gateway"
+                                                                        className={`flex items-center gap-1 text-[9px] font-black uppercase py-1.5 px-2 rounded-lg border transition-colors disabled:opacity-50 ${
+                                                                            (app.paymentStatus === 'paid')
+                                                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                                                : (app.paymentStatus === 'waived')
+                                                                                ? 'bg-slate-100 border-slate-200 text-slate-500'
+                                                                                : 'bg-rose-50 border-rose-200 text-rose-600'
+                                                                        }`}
+                                                                    >
+                                                                        {paymentUpdatingId === app._id ? (
+                                                                            <RefreshCcw className="w-3 h-3 animate-spin" />
+                                                                        ) : null}
+                                                                        {app.paymentStatus === 'paid' ? '💳 Paid' : app.paymentStatus === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
+                                                                        <span className="text-[7px] opacity-60 ml-0.5">▾</span>
+                                                                    </button>
+                                                                    {openPaymentDropdown === app._id && (
+                                                                        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden min-w-[130px]">
+                                                                            <div className="px-3 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50">Manually Recorded</div>
+                                                                            {(['unpaid', 'paid', 'waived'] as const).map(s => (
+                                                                                <button
+                                                                                    key={s}
+                                                                                    onClick={() => handlePaymentStatusUpdate(app._id, s)}
+                                                                                    className={`w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider hover:bg-slate-50 transition-colors ${
+                                                                                        s === 'paid' ? 'text-emerald-600' : s === 'waived' ? 'text-slate-500' : 'text-rose-500'
+                                                                                    } ${app.paymentStatus === s ? 'bg-slate-50 font-extrabold' : ''}`}
+                                                                                >
+                                                                                    {s === 'paid' ? '💳 Paid' : s === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
+                                                                                    {app.paymentStatus === s && <span className="ml-1 text-[8px]">✓</span>}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1176,6 +1309,7 @@ export default function HospitalDashboard() {
                                                 
                                                 {/* Mobile Actions block */}
                                                 <div className="pt-3 border-t border-slate-50 space-y-2">
+                                                    {/* Doctor assign — only for pending/confirmed */}
                                                     {(app.status === 'pending' || app.status === 'confirmed') && (
                                                         <select
                                                             className="w-full min-h-[44px] py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none text-center hover:border-slate-300 transition-colors"
@@ -1186,6 +1320,7 @@ export default function HospitalDashboard() {
                                                             {doctors.map(d => <option key={d._id} value={d._id}>Dr. {d.name}</option>)}
                                                         </select>
                                                     )}
+                                                    {/* Status progression */}
                                                     {app.status === 'pending' ? (
                                                         <div className="flex flex-col gap-2 w-full">
                                                             <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-1.5 border border-emerald-100 active:scale-95 transition-all shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Confirm</button>
@@ -1202,14 +1337,6 @@ export default function HospitalDashboard() {
                                                         </button>
                                                     ) : app.status === 'completed' && (
                                                         <div className="flex flex-col gap-2 w-full">
-                                                            {app.prescriptionUrl ? (
-                                                                <a href={app.prescriptionUrl} target="_blank" rel="noreferrer" className="w-full min-h-[44px] flex items-center justify-center bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-100 text-center shadow-sm">View Rx</a>
-                                                            ) : (
-                                                                <label className="w-full min-h-[44px] flex items-center justify-center bg-slate-50 text-slate-600 font-black text-[10px] uppercase rounded-xl border border-slate-200 text-center cursor-pointer hover:bg-slate-100 shadow-sm">
-                                                                    {uploadingPrescriptionId === app._id ? 'Uploading...' : 'Upload Rx'}
-                                                                    <input type="file" className="hidden" onChange={(e) => handlePrescriptionUpload(e, app._id)} accept=".pdf,image/*" disabled={uploadingPrescriptionId === app._id} />
-                                                                </label>
-                                                            )}
                                                             {app.invoiceUrl ? (
                                                                 <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="w-full min-h-[44px] flex items-center justify-center bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl border border-emerald-100 text-center shadow-sm">View Invoice</a>
                                                             ) : (
@@ -1219,6 +1346,72 @@ export default function HospitalDashboard() {
                                                             )}
                                                         </div>
                                                     )}
+
+                                                    {/* Prescription upload — ALL statuses */}
+                                                    {app.prescriptionUrl ? (
+                                                        <a
+                                                            href={app.prescriptionUrl}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            title={app.prescriptionUploadedAt ? `Uploaded ${new Date(app.prescriptionUploadedAt).toLocaleString()}` : 'View Prescription'}
+                                                            className="w-full min-h-[44px] flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-100 shadow-sm"
+                                                        >
+                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> View Rx
+                                                        </a>
+                                                    ) : (
+                                                        <label className="w-full min-h-[44px] flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-black text-[10px] uppercase rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 shadow-sm">
+                                                            {uploadingPrescriptionId === app._id ? (
+                                                                <><RefreshCcw className="w-3.5 h-3.5 animate-spin" /> Uploading…</>
+                                                            ) : (
+                                                                <>📎 Upload Prescription</>
+                                                            )}
+                                                            <input
+                                                                type="file"
+                                                                className="hidden"
+                                                                accept=".pdf,.jpg,.jpeg,.png,image/*"
+                                                                capture="environment"
+                                                                onChange={(e) => handlePrescriptionUpload(e, app._id)}
+                                                                disabled={uploadingPrescriptionId === app._id}
+                                                            />
+                                                        </label>
+                                                    )}
+
+                                                    {/* Payment status badge + dropdown — ALL statuses */}
+                                                    <div className="relative payment-dropdown-wrapper">
+                                                        <button
+                                                            onClick={() => setOpenPaymentDropdown(openPaymentDropdown === app._id ? null : app._id)}
+                                                            disabled={paymentUpdatingId === app._id}
+                                                            title="Manually recorded — not verified by payment gateway"
+                                                            className={`w-full min-h-[44px] flex items-center justify-center gap-2 font-black text-[10px] uppercase rounded-xl border transition-colors disabled:opacity-50 ${
+                                                                app.paymentStatus === 'paid'
+                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                                    : app.paymentStatus === 'waived'
+                                                                    ? 'bg-slate-100 border-slate-200 text-slate-500'
+                                                                    : 'bg-rose-50 border-rose-200 text-rose-600'
+                                                            }`}
+                                                        >
+                                                            {paymentUpdatingId === app._id && <RefreshCcw className="w-3.5 h-3.5 animate-spin" />}
+                                                            {app.paymentStatus === 'paid' ? '💳 Paid' : app.paymentStatus === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
+                                                            <span className="text-[9px] opacity-60">▾ Change</span>
+                                                        </button>
+                                                        {openPaymentDropdown === app._id && (
+                                                            <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+                                                                <div className="px-3 py-2 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50">Manually Recorded</div>
+                                                                {(['unpaid', 'paid', 'waived'] as const).map(s => (
+                                                                    <button
+                                                                        key={s}
+                                                                        onClick={() => handlePaymentStatusUpdate(app._id, s)}
+                                                                        className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider hover:bg-slate-50 transition-colors ${
+                                                                            s === 'paid' ? 'text-emerald-600' : s === 'waived' ? 'text-slate-500' : 'text-rose-500'
+                                                                        } ${app.paymentStatus === s ? 'bg-slate-50' : ''}`}
+                                                                    >
+                                                                        {s === 'paid' ? '💳 Paid' : s === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
+                                                                        {app.paymentStatus === s && <span className="ml-1">✓</span>}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ))}
