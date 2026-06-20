@@ -1,7 +1,7 @@
 "use client";
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getToken } from '@/lib/tokenStorage';
+import api from '@/lib/api';
 import {
     CreditCard,
     XCircle,
@@ -190,28 +190,18 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const token = getToken();
-            const response = await fetch('http://localhost:5000/api/support', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    subject,
-                    message,
-                    type: 'Refund Inquiry'
-                })
+            await api.post('/support', {
+                subject,
+                message,
+                type: 'Refund Inquiry'
             });
 
-            if (response.ok) {
-                setSuccess(true);
-                setTimeout(() => {
-                    onClose();
-                    setSuccess(false);
-                    setMessage('');
-                }, 2000);
-            }
+            setSuccess(true);
+            setTimeout(() => {
+                onClose();
+                setSuccess(false);
+                setMessage('');
+            }, 2000);
         } catch (error) {
             console.error('Support submission error:', error);
         } finally {

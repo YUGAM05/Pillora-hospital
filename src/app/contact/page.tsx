@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
 import { motion } from 'framer-motion';
+import api from '@/lib/api';
 import { 
     Mail, 
     Phone, 
@@ -34,34 +35,24 @@ export default function ContactPage() {
         setIsSubmitting(true);
         setError('');
         try {
-            const response = await fetch('http://localhost:5000/api/support/guest', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    phone,
-                    subject,
-                    message
-                })
+            await api.post('/support/guest', {
+                name,
+                email,
+                phone,
+                subject,
+                message
             });
 
-            if (response.ok) {
-                setSuccess(true);
-                setName('');
-                setEmail('');
-                setPhone('');
-                setSubject('Appointment Issue');
-                setMessage('');
-            } else {
-                const data = await response.json();
-                setError(data.message || 'Failed to submit form');
-            }
-        } catch (err) {
+            setSuccess(true);
+            setName('');
+            setEmail('');
+            setPhone('');
+            setSubject('Appointment Issue');
+            setMessage('');
+        } catch (err: any) {
             console.error('Contact form submission error:', err);
-            setError('Connection failed. Please check your internet connection.');
+            const errMsg = err.response?.data?.message || err.message || 'Connection failed. Please check your internet connection.';
+            setError(errMsg);
         } finally {
             setIsSubmitting(false);
         }

@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import axios from 'axios';
-import { getToken } from '@/lib/tokenStorage';
-import io from 'socket.io-client';
+import api from '@/lib/api';
+import { socket } from '@/lib/socket';
 import {
     CheckCircle2,
     Circle,
@@ -26,10 +25,7 @@ export default function TrackOrderPage() {
 
     const fetchOrder = useCallback(async () => {
         try {
-            const token = getToken();
-            const res = await axios.get(`http://localhost:5000/api/orders/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get(`/orders/${id}`);
             setOrder(res.data);
         } catch (error) {
             console.error('Error fetching order:', error);
@@ -41,18 +37,21 @@ export default function TrackOrderPage() {
     useEffect(() => {
         fetchOrder();
 
-        const socket = io('http://localhost:5000');
+        socket.connect();
         socket.emit('join_order', id);
 
-        socket.on('order_status_updated', (updatedOrder: any) => {
+        const handleStatusUpdate = (updatedOrder: any) => {
             if (updatedOrder._id === id) {
                 setOrder(updatedOrder);
                 // Also optionally refresh from API to get populates
                 fetchOrder();
             }
-        });
+        };
+
+        socket.on('order_status_updated', handleStatusUpdate);
 
         return () => {
+            socket.off('order_status_updated', handleStatusUpdate);
             socket.disconnect();
         };
     }, [id, fetchOrder]);
