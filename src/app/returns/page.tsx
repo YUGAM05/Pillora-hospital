@@ -3,17 +3,18 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getToken } from '@/lib/tokenStorage';
 import {
-    ShieldCheck,
+    CreditCard,
+    XCircle,
+    ShieldAlert,
+    Activity,
+    RefreshCw,
+    Calendar,
     AlertCircle,
     Clock,
-    CreditCard,
-    CheckCircle2,
-    XCircle,
-    Package,
+    Mail,
     ArrowRight,
-    Info,
-    History,
-    ShieldAlert
+    CheckCircle2,
+    Lock
 } from 'lucide-react';
 
 const fadeIn = {
@@ -30,14 +31,80 @@ const staggerContainer = {
     }
 };
 
-export default function ReturnPolicyPage() {
+export default function RefundPolicyPage() {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
 
+    const policies = [
+        {
+            num: "1",
+            title: "Advance Payment",
+            desc: "Booking an appointment requires an advance payment of 20% of the doctor's consultation fee, collected at the time of booking to confirm the slot.",
+            icon: CreditCard,
+            color: "text-blue-600 bg-blue-50 border-blue-100"
+        },
+        {
+            num: "2",
+            title: "User-Initiated Cancellation",
+            desc: "If you cancel the appointment, the advance payment is non-refundable, regardless of the reason for cancellation.",
+            icon: XCircle,
+            color: "text-red-600 bg-red-50 border-red-100"
+        },
+        {
+            num: "3",
+            title: "No-Show",
+            desc: "If you fail to show up for the appointment without prior cancellation, the advance payment will be forfeited.",
+            icon: ShieldAlert,
+            color: "text-amber-600 bg-amber-50 border-amber-100"
+        },
+        {
+            num: "4",
+            title: "Partial or Incomplete Consultation",
+            desc: "Once a consultation has commenced, the advance payment is non-refundable, irrespective of the consultation's duration.",
+            icon: Activity,
+            color: "text-purple-600 bg-purple-50 border-purple-100"
+        },
+        {
+            num: "5",
+            title: "Doctor/Hospital Cancellation",
+            desc: "If the appointment is cancelled by the doctor or hospital — including in cases where no replacement doctor is available — the full advance payment will be refunded to the original payment method within 42 hours of cancellation.",
+            icon: RefreshCw,
+            color: "text-emerald-600 bg-emerald-50 border-emerald-100"
+        },
+        {
+            num: "6",
+            title: "Rescheduling",
+            desc: "If the doctor reschedules the appointment, you may accept the new slot or cancel for a full refund within 42 hours.",
+            icon: Calendar,
+            color: "text-blue-600 bg-blue-50 border-blue-100"
+        },
+        {
+            num: "7",
+            title: "Payment Gateway Failure",
+            desc: "If payment is deducted but the booking is not confirmed due to a technical or gateway failure, the amount will be auto-refunded to the original payment method.",
+            icon: AlertCircle,
+            color: "text-yellow-600 bg-yellow-50 border-yellow-100"
+        },
+        {
+            num: "8",
+            title: "Refund Mode and Timeline",
+            desc: "All refunds are processed to the original source of payment within 42 hours of approval. Additional processing time may apply depending on your bank or payment provider.",
+            icon: Clock,
+            color: "text-indigo-600 bg-indigo-50 border-indigo-100"
+        },
+        {
+            num: "9",
+            title: "Support Desk",
+            desc: "For payment-related queries, refund delays, or disputes, contact us at team@pillora.in.",
+            icon: Mail,
+            color: "text-slate-600 bg-slate-50 border-slate-100"
+        }
+    ];
+
     return (
-        <main className="min-h-screen bg-white">
+        <main className="min-h-screen bg-white selection:bg-blue-100 selection:text-blue-900 font-sans">
             {/* Hero Section */}
-            <section className="relative py-24 px-6 overflow-hidden bg-slate-50 border-b border-gray-100">
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/50 rounded-full blur-[100px] -mr-48 -mt-48 opacity-40" />
+            <section className="relative py-24 px-6 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50 via-white to-transparent border-b border-gray-100">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-100/30 rounded-full blur-[120px] -mr-48 -mt-48 opacity-75" />
 
                 <div className="max-w-7xl mx-auto relative z-10">
                     <motion.div
@@ -46,14 +113,16 @@ export default function ReturnPolicyPage() {
                         variants={fadeIn}
                         className="text-center max-w-4xl mx-auto"
                     >
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 text-sm font-bold tracking-widest text-blue-600 uppercase bg-blue-100 rounded-full">
-                            Customer Protection
+                        <div className="inline-flex items-center gap-2 px-5 py-2 mb-6 text-xs font-black tracking-[0.2em] text-blue-700 uppercase bg-blue-600/10 border border-blue-600/20 rounded-full backdrop-blur-md">
+                            <Lock className="w-4 h-4" />
+                            Billing & Protection
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-black text-gray-900 mb-8 leading-tight">
-                            Pillora <span className="text-blue-600">Return & Refund</span> Policy
+                        <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-8 leading-tight tracking-tighter">
+                            Refund & <br />
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-700">Cancellation Policy</span>
                         </h1>
-                        <p className="text-xl text-gray-600 leading-relaxed font-medium">
-                            Transparent guidelines to ensure your medical safety and satisfaction with every order.
+                        <p className="text-xl text-slate-600 leading-relaxed font-medium max-w-2xl mx-auto">
+                            Clear, transparent, and fair guidelines for appointment payments and cancellations.
                         </p>
                     </motion.div>
                 </div>
@@ -61,138 +130,33 @@ export default function ReturnPolicyPage() {
 
             {/* Main Content */}
             <section className="py-24 px-6">
-                <div className="max-w-5xl mx-auto">
+                <div className="max-w-7xl mx-auto">
                     <motion.div
                         variants={staggerContainer}
                         initial="initial"
                         whileInView="animate"
                         viewport={{ once: true }}
-                        className="space-y-16"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
                     >
-                        {/* 1. The Safety First Rule */}
-                        <motion.div variants={fadeIn} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 md:p-12 hover:shadow-xl transition-all">
-                            <div className="flex flex-col md:flex-row gap-8">
-                                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
-                                    <ShieldCheck className="w-9 h-9" />
-                                </div>
+                        {policies.map((item) => (
+                            <motion.div
+                                key={item.num}
+                                variants={fadeIn}
+                                whileHover={{ y: -5 }}
+                                className="bg-white rounded-[2rem] border border-slate-200 p-8 shadow-sm hover:shadow-xl transition-all flex flex-col justify-between"
+                            >
                                 <div>
-                                    <h2 className="text-3xl font-black text-gray-900 mb-6 uppercase tracking-tight">1. The &quot;Safety First&quot; Rule</h2>
-                                    <p className="text-gray-500 text-lg font-medium mb-8 leading-relaxed">
-                                        To maintain the highest medical standards, Pillora only accepts returns for items that are:
-                                    </p>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        {[
-                                            { title: "Damaged Transit", desc: "Broken bottle or tampered seal upon arrival.", icon: <ShieldAlert className="w-5 h-5" /> },
-                                            { title: "Incorrect Delivery", desc: "Medicine doesn't match prescription or order.", icon: <AlertCircle className="w-5 h-5" /> },
-                                            { title: "Expired Item", desc: "Medicine passed its expiry date upon delivery.", icon: <History className="w-5 h-5" /> }
-                                        ].map((item, idx) => (
-                                            <div key={idx} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 hover:border-blue-200 transition-colors">
-                                                <div className="text-blue-600 mb-3">{item.icon}</div>
-                                                <h4 className="font-bold text-gray-900 mb-2">{item.title}</h4>
-                                                <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-8 p-6 bg-amber-50 rounded-3xl border border-amber-100 flex gap-4 items-start">
-                                        <Info className="w-6 h-6 text-amber-600 shrink-0 mt-1" />
-                                        <p className="text-sm text-amber-800 font-bold leading-relaxed">
-                                            Note: We cannot accept returns for medicines that were correctly delivered but are no longer needed (e.g., if a doctor changes a prescription after the order is fulfilled).
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* 2. Non-Returnable Categories */}
-                        <motion.div variants={fadeIn} className="bg-rose-50 rounded-[2.5rem] p-8 md:p-12 text-gray-900 relative overflow-hidden border border-rose-100 shadow-sm">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-rose-200/20 rounded-full blur-[80px] -mr-32 -mt-32" />
-                            <div className="relative z-10">
-                                <div className="flex flex-col md:flex-row gap-8 mb-12">
-                                    <div className="w-16 h-16 bg-rose-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-rose-200">
-                                        <XCircle className="w-9 h-9" />
-                                    </div>
-                                    <div>
-                                        <h2 className="text-3xl font-black mb-4 uppercase tracking-tight text-gray-900">2. Non-Returnable Categories</h2>
-                                        <p className="text-gray-600 text-lg font-medium leading-relaxed">
-                                            Due to health and hygiene regulations, the following categories are strictly Non-Returnable:
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {[
-                                        { title: "Temperature-Sensitive", desc: "Insulin, injections, vaccines, and Cold Chain specialized medicines." },
-                                        { title: "Opened/Used Items", desc: "Partially consumed strips, opened syrups, or tampered vials." },
-                                        { title: "Personal Care & Hygiene", desc: "Wellness products, baby care (diapers), and sexual wellness products." },
-                                        { title: "Surgicals & Monitors", desc: "Glucometers, BP monitors, and thermometers (unless manufacturing defect)." }
-                                    ].map((item, idx) => (
-                                        <div key={idx} className="bg-white p-6 rounded-3xl border border-rose-100 hover:border-rose-300 transition-colors shadow-sm">
-                                            <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                                <div className="w-1.5 h-1.5 bg-rose-500 rounded-full" /> {item.title}
-                                            </h4>
-                                            <p className="text-sm text-gray-500 leading-relaxed font-medium">{item.desc}</p>
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color}`}>
+                                            <item.icon className="w-6 h-6" />
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* 3. The 48-Hour Window */}
-                        <motion.div variants={fadeIn} className="bg-amber-50 rounded-[2.5rem] border border-amber-100 shadow-sm p-8 md:p-12 hover:shadow-xl transition-all relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-200/20 rounded-full blur-[80px] -mr-32 -mt-32" />
-                            <div className="flex flex-col md:flex-row gap-8 relative z-10">
-                                <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-amber-200">
-                                    <Clock className="w-9 h-9" />
-                                </div>
-                                <div className="flex-1">
-                                    <h2 className="text-3xl font-black text-gray-900 mb-6 uppercase tracking-tight">3. The 48-Hour Window</h2>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm hover:border-amber-300 transition-colors">
-                                            <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white shrink-0 font-black mb-4 shadow-sm">1</div>
-                                            <p className="font-black text-gray-900 uppercase tracking-widest text-xs mb-2">Timeline</p>
-                                            <p className="text-gray-600 text-sm leading-relaxed font-bold">All return requests must be raised within 48 hours of delivery.</p>
-                                        </div>
-                                        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm hover:border-amber-300 transition-colors">
-                                            <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white shrink-0 font-black mb-4 shadow-sm">2</div>
-                                            <p className="font-black text-gray-900 uppercase tracking-widest text-xs mb-2">Evidence</p>
-                                            <p className="text-gray-600 text-sm leading-relaxed font-bold">Upload a photo or &quot;unboxing video&quot; through the app to initiate the process.</p>
-                                        </div>
-                                        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm hover:border-amber-300 transition-colors">
-                                            <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white shrink-0 font-black mb-4 shadow-sm">3</div>
-                                            <p className="font-black text-gray-900 uppercase tracking-widest text-xs mb-2">Condition</p>
-                                            <p className="text-gray-600 text-sm leading-relaxed font-bold">Items must be in original packaging with all labels and barcodes intact.</p>
-                                        </div>
+                                        <span className="text-slate-300 font-black text-3xl">0{item.num}</span>
                                     </div>
+                                    <h3 className="text-xl font-black text-slate-900 mb-3">{item.title}</h3>
+                                    <p className="text-slate-600 text-sm font-semibold leading-relaxed">{item.desc}</p>
                                 </div>
-                            </div>
-                        </motion.div>
-
-                        {/* 4. Refund Process */}
-                        <motion.div variants={fadeIn} className="bg-blue-50 rounded-[2.5rem] p-8 md:p-12 text-gray-900 shadow-sm border border-blue-100 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200/20 rounded-full blur-[80px] -mr-32 -mt-32" />
-                            <div className="flex flex-col md:flex-row gap-8 items-center mb-10 relative z-10">
-                                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
-                                    <CreditCard className="w-9 h-9" />
-                                </div>
-                                <h2 className="text-3xl font-black uppercase tracking-tight text-gray-900">4. Refund Process</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-                                <div className="relative group p-6 bg-white rounded-3xl border border-blue-100 shadow-sm">
-                                    <p className="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] mb-3">01. Verification</p>
-                                    <p className="text-gray-900 font-bold text-lg mb-2">Internal Check</p>
-                                    <p className="text-gray-500 text-sm leading-relaxed font-medium">Takes 24–72 hours after the item reaches our facility for quality check.</p>
-                                </div>
-                                <div className="relative group p-6 bg-white rounded-3xl border border-blue-100 shadow-sm">
-                                    <p className="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] mb-3">02. Issuance</p>
-                                    <p className="text-gray-900 font-bold text-lg mb-2">Original Method</p>
-                                    <p className="text-gray-500 text-sm leading-relaxed font-medium">Refunds are processed back to the original payment method (UPI, Bank, or Card).</p>
-                                </div>
-                                <div className="relative group p-6 bg-white rounded-3xl border border-blue-100 shadow-sm">
-                                    <p className="text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] mb-3">03. Reflection</p>
-                                    <p className="text-gray-900 font-bold text-lg mb-2">Bank Timeframe</p>
-                                    <p className="text-gray-500 text-sm leading-relaxed font-medium">Expect the amount to reflect in your account within 5–7 business days.</p>
-                                </div>
-                            </div>
-                        </motion.div>
+                            </motion.div>
+                        ))}
                     </motion.div>
 
                     {/* Bottom CTA */}
@@ -201,12 +165,12 @@ export default function ReturnPolicyPage() {
                         whileInView={{ opacity: 1 }}
                         className="mt-20 text-center"
                     >
-                        <p className="text-gray-500 font-medium mb-6">Have questions about your specific return?</p>
+                        <p className="text-slate-500 font-medium mb-6">Have questions or disputes regarding a refund?</p>
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-10 py-5 bg-gray-900 text-white font-black rounded-2xl hover:bg-blue-600 hover:scale-105 transition-all shadow-xl text-sm uppercase tracking-widest"
+                            className="inline-flex items-center gap-2 px-10 py-5 bg-slate-900 text-white font-black rounded-2xl hover:bg-blue-600 hover:scale-105 transition-all shadow-xl text-sm uppercase tracking-widest"
                         >
-                            Contact Support Center <ArrowRight className="w-5 h-5" />
+                            Submit Support Ticket <ArrowRight className="w-5 h-5" />
                         </button>
                     </motion.div>
                 </div>
@@ -217,7 +181,7 @@ export default function ReturnPolicyPage() {
 }
 
 function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-    const [subject, setSubject] = React.useState('Return Inquiry');
+    const [subject, setSubject] = React.useState('Refund Request / Inquiry');
     const [message, setMessage] = React.useState('');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [success, setSuccess] = React.useState(false);
@@ -236,7 +200,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                 body: JSON.stringify({
                     subject,
                     message,
-                    type: 'Return Inquiry'
+                    type: 'Refund Inquiry'
                 })
             });
 
@@ -274,7 +238,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                     >
                         <div className="p-8 md:p-12">
                             <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Contact Support</h3>
+                                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Contact Billing Support</h3>
                                 <button onClick={onClose} className="text-gray-400 hover:text-gray-900 transition-colors">
                                     <XCircle className="w-8 h-8" />
                                 </button>
@@ -285,8 +249,8 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                                     <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
                                         <CheckCircle2 className="w-10 h-10" />
                                     </div>
-                                    <h4 className="text-2xl font-black text-gray-900 mb-2">Request Received!</h4>
-                                    <p className="text-gray-500 font-medium">Our support team will review your inquiry shortly.</p>
+                                    <h4 className="text-2xl font-black text-gray-900 mb-2">Ticket Submitted!</h4>
+                                    <p className="text-gray-500 font-medium">Our billing desk will review your inquiry shortly.</p>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -300,13 +264,13 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">How can we help?</label>
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Please describe your query</label>
                                         <textarea
                                             required
                                             rows={4}
                                             value={message}
                                             onChange={(e) => setMessage(e.target.value)}
-                                            placeholder="Please describe your return issue or question..."
+                                            placeholder="Detail the issue, appointment ID, or refund timeline delay..."
                                             className="w-full bg-slate-50 border border-gray-100 rounded-2xl py-4 px-6 text-gray-900 font-medium focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 transition-all resize-none"
                                         />
                                     </div>
@@ -314,7 +278,7 @@ function SupportModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                                         disabled={isSubmitting}
                                         className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                                     >
-                                        {isSubmitting ? 'Sending Request...' : 'Send Inquiry'} <ArrowRight className="w-5 h-5" />
+                                        {isSubmitting ? 'Submitting Ticket...' : 'Submit Refund Ticket'} <ArrowRight className="w-5 h-5" />
                                     </button>
                                 </form>
                             )}
