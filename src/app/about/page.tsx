@@ -245,6 +245,44 @@ export default function AboutPage() {
                 </div>
             </section>
 
+            {/* Office Location / Contact Info */}
+            <section className="py-24 px-6 bg-white relative overflow-hidden">
+                <div className="max-w-6xl mx-auto">
+                    <div className="text-center mb-16">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            className="inline-flex items-center gap-2 px-5 py-2 mb-8 text-xs font-black tracking-[0.3em] text-blue-700 uppercase bg-blue-600/10 border border-blue-600/20 rounded-full"
+                        >
+                            <MapPin className="w-4 h-4" />
+                            Our Office
+                        </motion.div>
+                        <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4">
+                            Registered Business Address
+                        </h2>
+                        <div className="h-1.5 w-20 bg-blue-600 mx-auto rounded-full" />
+                    </div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        className="max-w-3xl mx-auto bg-slate-50 border border-slate-200/60 p-8 md:p-12 rounded-[2.5rem] shadow-lg relative overflow-hidden text-center group"
+                    >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16 blur-xl" />
+                        <div className="w-16 h-16 rounded-2xl bg-blue-600/10 flex items-center justify-center mx-auto mb-6 text-blue-600">
+                            <Building2 className="w-8 h-8" />
+                        </div>
+                        <p className="text-xl text-slate-700 leading-relaxed font-semibold max-w-xl mx-auto">
+                            4 Pansheel Society, Jintan Road,<br />
+                            Infront of Ultra Vision School,<br />
+                            Surendranagar - 363002, Gujarat, India
+                        </p>
+                    </motion.div>
+                </div>
+            </section>
+
         </main>
     );
 }
