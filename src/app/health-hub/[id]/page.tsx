@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Calendar, Loader2, ArrowLeft, Share2, Clock } from 'lucide-react';
+import { Calendar, Loader2, ArrowLeft, Share2, Clock, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -11,7 +11,10 @@ interface HealthTip {
     title: string;
     description: string;
     date: string;
+    mediaType?: 'image' | 'video' | 'url';
     imageUrl?: string;
+    videoUrl?: string;
+    linkUrl?: string;
 }
 
 export default function HealthTipDetailPage() {
@@ -56,6 +59,8 @@ export default function HealthTipDetailPage() {
         );
     }
 
+    const showTitleBelow = tip.mediaType === 'video' || tip.mediaType === 'url' || !tip.imageUrl;
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto">
@@ -65,7 +70,15 @@ export default function HealthTipDetailPage() {
                 </Link>
 
                 <article className="bg-white rounded-[2rem] shadow-xl shadow-gray-200/50 overflow-hidden border border-gray-100">
-                    {tip.imageUrl && (
+                    {tip.mediaType === 'video' && tip.videoUrl ? (
+                        <div className="relative w-full bg-black flex items-center justify-center border-b border-gray-100">
+                            <video
+                                src={tip.videoUrl}
+                                controls
+                                className="w-full max-h-[480px] object-contain"
+                            />
+                        </div>
+                    ) : tip.imageUrl ? (
                         <div className="relative h-[400px] w-full">
                             <Image
                                 src={tip.imageUrl}
@@ -95,14 +108,14 @@ export default function HealthTipDetailPage() {
                                 </div>
                             </div>
                         </div>
-                    )}
+                    ) : null}
 
-                    {!tip.imageUrl && (
+                    {showTitleBelow && (
                         <div className="p-8 md:p-12 border-b border-gray-100">
                             <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight mb-6 leading-tight">
                                 {tip.title}
                             </h1>
-                            <div className="flex items-center gap-6 text-sm font-medium text-gray-500">
+                            <div className="flex items-center gap-6 text-sm font-medium text-gray-500 flex-wrap">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-blue-600" />
                                     {new Date(tip.date).toLocaleDateString(undefined, {
@@ -115,15 +128,17 @@ export default function HealthTipDetailPage() {
                                     <Clock className="w-4 h-4 text-blue-600" />
                                     Around 5 min read
                                 </div>
+                                {tip.mediaType === 'url' && tip.linkUrl && (
+                                    <a href={tip.linkUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-bold ml-2">
+                                        <ExternalLink className="w-4 h-4" /> Visit External Link
+                                    </a>
+                                )}
                             </div>
                         </div>
                     )}
 
                     <div className="p-8 md:p-12">
                         <div className="prose prose-lg prose-blue max-w-none text-gray-600 leading-relaxed space-y-6">
-                            {/* Assuming description is plain text but we want paragraphs. 
-                               If it's HTML, we'd use dangerouslySetInnerHTML, but let's assume text with newlines for now.
-                               Or just display it blocks if it's long text. */}
                             {tip.description.split('\n').map((paragraph, idx) => (
                                 <p key={idx}>{paragraph}</p>
                             ))}
