@@ -11,17 +11,14 @@ import { ThemeProvider } from "@/components/theme-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: {
-        default: "Pillora | Blood Donors & Hospital Information India",
-        template: "%s | Pillora"
-    },
+    title: "Pillora | Hospital Portal",
     description: "Find verified blood donors in India, check hospital charges, and explore government health schemes. Pillora is your complete health-tech platform.",
     keywords: ["blood donor", "hospital information", "find blood donor India", "hospital charges", "government health schemes India"],
     alternates: {
         canonical: "https://www.pillora.in"
     },
     openGraph: {
-        title: "Pillora | Blood Donors & Hospital Information India",
+        title: "Pillora | Hospital Portal",
         description: "Find verified blood donors in India, check hospital charges, and explore government health schemes. Pillora is your complete health-tech platform.",
         url: "https://www.pillora.in",
         siteName: "Pillora",
@@ -29,7 +26,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: "summary_large_image",
-        title: "Pillora | Blood Donors & Hospital Information India",
+        title: "Pillora | Hospital Portal",
         description: "Find verified blood donors in India, check hospital charges, and explore government health schemes.",
     },
     icons: {

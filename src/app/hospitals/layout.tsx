@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Hospital Information & Charges | Pillora',
+  title: 'Pillora | Hospital Portal',
   description: 'Get complete hospital information, verify hospital charges, and check your eligibility for government health schemes in India with Pillora.',
   alternates: {
     canonical: 'https://www.pillora.in/hospitals',
