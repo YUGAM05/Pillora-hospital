@@ -9,7 +9,7 @@ import {
     Users, Activity, Calendar, Clock, Plus, Settings, 
     LogOut, User, Stethoscope, ChevronRight, CheckCircle2, 
     XCircle, AlertCircle, Info, RefreshCcw, LayoutDashboard,
-    Download
+    Download, CreditCard, IndianRupee
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 
@@ -75,6 +75,13 @@ export default function HospitalDashboard() {
     // Payment badge states
     const [paymentUpdatingId, setPaymentUpdatingId] = useState<string | null>(null);
     const [openPaymentDropdown, setOpenPaymentDropdown] = useState<string | null>(null);
+
+    // Payment Modal states
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState<number | "">("");
+    const [paymentMode, setPaymentMode] = useState<"online" | "offline">("offline");
+    const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
     // Toast notification
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -497,24 +504,72 @@ export default function HospitalDashboard() {
     };
 
     const handlePaymentStatusUpdate = async (appointmentId: string, status: 'unpaid' | 'paid' | 'waived') => {
-        // Optimistic update
-        const prev = appointments.find((a: any) => a._id === appointmentId)?.paymentStatus;
-        setAppointments((prev: any[]) =>
-            prev.map((a: any) => a._id === appointmentId ? { ...a, paymentStatus: status } : a)
-        );
         setOpenPaymentDropdown(null);
+        const app = appointments.find((a: any) => a._id === appointmentId);
+        const prev = app?.paymentStatus;
+
+        if (status === 'paid') {
+            if (prev === 'paid') {
+                if (!confirm("This booking is already marked as paid. Do you want to update the payment?")) return;
+            }
+            setSelectedAppointmentId(appointmentId);
+            setPaymentAmount(app?.paymentDetails?.amount || app?.doctor?.fee || 500);
+            setPaymentMode(app?.paymentDetails?.mode || "offline");
+            setPaymentModalOpen(true);
+            return;
+        }
+
+        // Optimistic update for unpaid/waived
+        setAppointments((prevArr: any[]) =>
+            prevArr.map((a: any) => a._id === appointmentId ? { ...a, paymentStatus: status, paymentDetails: null } : a)
+        );
         setPaymentUpdatingId(appointmentId);
         try {
             await api.patch(`/hospital/dashboard/appointments/${appointmentId}/payment-status`, { status });
-            showToast(`Payment marked as ${status}`, 'success');
+            showToast(`Payment marked as ${status === 'waived' ? 'revoked' : status}`, 'success');
         } catch (error: any) {
             // Rollback
             setAppointments((cur: any[]) =>
-                cur.map((a: any) => a._id === appointmentId ? { ...a, paymentStatus: prev } : a)
+                cur.map((a: any) => a._id === appointmentId ? { ...a, paymentStatus: prev, paymentDetails: app?.paymentDetails } : a)
             );
             showToast(error.response?.data?.message || 'Failed to update payment status', 'error');
         } finally {
             setPaymentUpdatingId(null);
+        }
+    };
+
+    const handlePaymentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedAppointmentId || paymentAmount === "" || paymentAmount < 0) {
+            alert("Please enter a valid amount.");
+            return;
+        }
+
+        setPaymentSubmitting(true);
+        try {
+            await api.post(`/hospital/dashboard/appointments/${selectedAppointmentId}/payment`, {
+                amount: Number(paymentAmount),
+                mode: paymentMode
+            });
+            showToast("Payment recorded successfully!", "success");
+            setPaymentModalOpen(false);
+            
+            // Update local state for appointment payment status and details
+            setAppointments((prevArr: any[]) =>
+                prevArr.map((a: any) =>
+                    a._id === selectedAppointmentId
+                        ? {
+                              ...a,
+                              paymentStatus: 'paid',
+                              paymentDetails: { amount: Number(paymentAmount), mode: paymentMode }
+                          }
+                        : a
+                )
+            );
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to record payment");
+        } finally {
+            setPaymentSubmitting(false);
         }
     };
 
@@ -1228,7 +1283,7 @@ export default function HospitalDashboard() {
                                                                         {paymentUpdatingId === app._id ? (
                                                                             <RefreshCcw className="w-3 h-3 animate-spin" />
                                                                         ) : null}
-                                                                        {app.paymentStatus === 'paid' ? '💳 Paid' : app.paymentStatus === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
+                                                                        {app.paymentStatus === 'paid' ? '💳 Paid' : app.paymentStatus === 'waived' ? '✦ Revoked' : '⚠ Unpaid'}
                                                                         <span className="text-[7px] opacity-60 ml-0.5">▾</span>
                                                                     </button>
                                                                     {openPaymentDropdown === app._id && (
@@ -1242,7 +1297,7 @@ export default function HospitalDashboard() {
                                                                                         s === 'paid' ? 'text-emerald-600' : s === 'waived' ? 'text-slate-500' : 'text-rose-500'
                                                                                     } ${app.paymentStatus === s ? 'bg-slate-50 font-extrabold' : ''}`}
                                                                                 >
-                                                                                    {s === 'paid' ? '💳 Paid' : s === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
+                                                                                    {s === 'paid' ? '💳 Paid' : s === 'waived' ? '✦ Revoke' : '⚠ Unpaid'}
                                                                                     {app.paymentStatus === s && <span className="ml-1 text-[8px]">✓</span>}
                                                                                 </button>
                                                                             ))}
@@ -1393,7 +1448,7 @@ export default function HospitalDashboard() {
                                                         >
                                                             <option value="unpaid">⚠ Unpaid</option>
                                                             <option value="paid">💳 Paid</option>
-                                                            <option value="waived">✦ Waived</option>
+                                                            <option value="waived">✦ Revoke</option>
                                                         </select>
                                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] opacity-60">
                                                             ▼
@@ -2122,6 +2177,99 @@ export default function HospitalDashboard() {
                     </motion.div>
                 </div>
             )}
+
+            {/* Payment Modal */}
+            <AnimatePresence>
+                {paymentModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                            onClick={() => setPaymentModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-white rounded-none sm:rounded-[2.5rem] p-6 sm:p-10 max-w-md w-full relative z-10 shadow-2xl h-[100dvh] sm:h-auto flex flex-col"
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                                    <IndianRupee className="w-6 h-6 text-emerald-500" /> Record Payment
+                                </h3>
+                                <button
+                                    onClick={() => setPaymentModalOpen(false)}
+                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 rounded-full"
+                                >
+                                    <XCircle className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handlePaymentSubmit} className="flex-1 flex flex-col justify-between">
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Payment Mode</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => setPaymentMode("online")}
+                                                className={`p-4 rounded-2xl border-2 font-bold transition-all flex flex-col items-center gap-2 ${
+                                                    paymentMode === "online" 
+                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
+                                                    : "border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                <CreditCard className="w-6 h-6" /> Online
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPaymentMode("offline")}
+                                                className={`p-4 rounded-2xl border-2 font-bold transition-all flex flex-col items-center gap-2 ${
+                                                    paymentMode === "offline" 
+                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
+                                                    : "border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
+                                                }`}
+                                            >
+                                                <IndianRupee className="w-6 h-6" /> Offline (Cash)
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Amount (₹)</label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <span className="text-slate-400 font-bold text-lg">₹</span>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value ? Number(e.target.value) : "")}
+                                                placeholder="0.00"
+                                                className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-xl focus:bg-white focus:border-emerald-200 focus:ring-4 focus:ring-emerald-50 outline-none transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-10">
+                                    <button
+                                        type="submit"
+                                        disabled={paymentSubmitting || paymentAmount === ""}
+                                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                                    >
+                                        {paymentSubmitting ? (
+                                            <RefreshCcw className="w-6 h-6 animate-spin" />
+                                        ) : (
+                                            "Save Payment"
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
