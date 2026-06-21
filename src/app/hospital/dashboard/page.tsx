@@ -1212,7 +1212,7 @@ export default function HospitalDashboard() {
                                                                 </div>
 
                                                                 {/* Payment status badge — available for ALL statuses, labeled as manual */}
-                                                                <div className="relative payment-dropdown-wrapper">
+                                                                <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
                                                                     <button
                                                                         onClick={() => setOpenPaymentDropdown(openPaymentDropdown === app._id ? null : app._id)}
                                                                         disabled={paymentUpdatingId === app._id}
@@ -1377,12 +1377,13 @@ export default function HospitalDashboard() {
                                                     )}
 
                                                     {/* Payment status badge + dropdown — ALL statuses */}
-                                                    <div className="relative payment-dropdown-wrapper">
-                                                        <button
-                                                            onClick={() => setOpenPaymentDropdown(openPaymentDropdown === app._id ? null : app._id)}
+                                                    <div className="relative">
+                                                        <select
+                                                            value={app.paymentStatus || 'unpaid'}
                                                             disabled={paymentUpdatingId === app._id}
+                                                            onChange={(e) => handlePaymentStatusUpdate(app._id, e.target.value as any)}
                                                             title="Manually recorded — not verified by payment gateway"
-                                                            className={`w-full min-h-[44px] flex items-center justify-center gap-2 font-black text-[10px] uppercase rounded-xl border transition-colors disabled:opacity-50 ${
+                                                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border font-black text-[10px] uppercase outline-none text-center appearance-none cursor-pointer transition-colors disabled:opacity-50 ${
                                                                 app.paymentStatus === 'paid'
                                                                     ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                                                                     : app.paymentStatus === 'waived'
@@ -1390,27 +1391,13 @@ export default function HospitalDashboard() {
                                                                     : 'bg-rose-50 border-rose-200 text-rose-600'
                                                             }`}
                                                         >
-                                                            {paymentUpdatingId === app._id && <RefreshCcw className="w-3.5 h-3.5 animate-spin" />}
-                                                            {app.paymentStatus === 'paid' ? '💳 Paid' : app.paymentStatus === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
-                                                            <span className="text-[9px] opacity-60">▾ Change</span>
-                                                        </button>
-                                                        {openPaymentDropdown === app._id && (
-                                                            <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
-                                                                <div className="px-3 py-2 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50">Manually Recorded</div>
-                                                                {(['unpaid', 'paid', 'waived'] as const).map(s => (
-                                                                    <button
-                                                                        key={s}
-                                                                        onClick={() => handlePaymentStatusUpdate(app._id, s)}
-                                                                        className={`w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-wider hover:bg-slate-50 transition-colors ${
-                                                                            s === 'paid' ? 'text-emerald-600' : s === 'waived' ? 'text-slate-500' : 'text-rose-500'
-                                                                        } ${app.paymentStatus === s ? 'bg-slate-50' : ''}`}
-                                                                    >
-                                                                        {s === 'paid' ? '💳 Paid' : s === 'waived' ? '✦ Waived' : '⚠ Unpaid'}
-                                                                        {app.paymentStatus === s && <span className="ml-1">✓</span>}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        )}
+                                                            <option value="unpaid">⚠ Unpaid</option>
+                                                            <option value="paid">💳 Paid</option>
+                                                            <option value="waived">✦ Waived</option>
+                                                        </select>
+                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] opacity-60">
+                                                            ▼
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
