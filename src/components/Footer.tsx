@@ -1,7 +1,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
     return (
@@ -33,7 +33,6 @@ export default function Footer() {
                         </p>
                         <div className="flex gap-4 pt-2">
                             <SocialIcon icon={<Facebook className="w-4 h-4" />} href="https://www.facebook.com/share/1LPeKutMEw/" />
-                            <SocialIcon icon={<Twitter className="w-4 h-4" />} />
                             <SocialIcon 
                                 icon={<Instagram className="w-4 h-4" />} 
                                 href="https://www.instagram.com/pillora_official?igsh=MnBpemU0MW40bW5m" 
