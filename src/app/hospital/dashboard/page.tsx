@@ -15,6 +15,7 @@ import SlotGenTool from "@/components/SlotGenTool";
 
 import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 import PaymentAnalytics from "@/components/PaymentAnalytics";
+import HospitalSettlements from "@/components/HospitalSettlements";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -55,7 +56,7 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements">("appointments");
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
@@ -800,6 +801,16 @@ export default function HospitalDashboard() {
                     >
                         Payments
                     </button>
+                    <button 
+                        onClick={() => setActiveMainTab("settlements")}
+                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activeMainTab === "settlements" 
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        Settlements
+                    </button>
                 </div>
 
                 {activeMainTab === "patients" && (
@@ -808,6 +819,10 @@ export default function HospitalDashboard() {
 
                 {activeMainTab === "payments" && (
                     <PaymentAnalytics />
+                )}
+
+                {activeMainTab === "settlements" && (
+                    <HospitalSettlements hospitalId={stats?.hospital?._id} trialEndDate={stats?.hospital?.trialEndDate} />
                 )}
 
                 {activeMainTab === "appointments" ? (
