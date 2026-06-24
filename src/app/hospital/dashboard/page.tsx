@@ -92,6 +92,53 @@ export default function HospitalDashboard() {
         setTimeout(() => setToast(null), 3500);
     };
 
+    // Push Notification Diagnostic States
+    const [pushStatus, setPushStatus] = useState<string>("Checking...");
+
+    const checkPushPermission = useCallback(async () => {
+        if (typeof window === 'undefined') return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            setPushStatus("Not Supported");
+            return;
+        }
+
+        if (Notification.permission === 'denied') {
+            setPushStatus("Blocked");
+            return;
+        }
+
+        if (Notification.permission === 'default') {
+            setPushStatus("Setup Required");
+            return;
+        }
+
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+            if (subscription) {
+                setPushStatus("Active");
+            } else {
+                setPushStatus("Setup Required");
+            }
+        } catch (err) {
+            setPushStatus("Inactive");
+        }
+    }, []);
+
+    const handleEnableNotifications = async () => {
+        if (!stats?.stats?.hospital?._id) return;
+        setPushStatus("Enabling...");
+        try {
+            await initWebPush(stats.stats.hospital._id);
+            await checkPushPermission();
+            showToast("Real-time notifications enabled!", "success");
+        } catch (err: any) {
+            console.error('[EnablePushError]', err.message);
+            showToast(err.message || "Failed to subscribe.", "error");
+            await checkPushPermission();
+        }
+    };
+
     const [showAddSlot, setShowAddSlot] = useState(false);
     const [showCancelSlotModal, setShowCancelSlotModal] = useState<any>(null);
     const [cancellationReason, setCancellationReason] = useState("");
@@ -355,9 +402,15 @@ export default function HospitalDashboard() {
 
     useEffect(() => {
         if (stats?.stats?.hospital?._id) {
-            initWebPush(stats.stats.hospital._id);
+            checkPushPermission();
+            // Silent init sync if permission is already granted
+            if (Notification.permission === 'granted') {
+                initWebPush(stats.stats.hospital._id)
+                    .then(() => checkPushPermission())
+                    .catch((err) => console.warn('Silent push sync failed:', err.message));
+            }
         }
-    }, [stats]);
+    }, [stats, checkPushPermission]);
 
     const filteredAppointments = appointments.filter((app: any) => {
         const appDateStr = app.slotTime ? new Date(app.slotTime).toISOString().split('T')[0] : "";
@@ -677,6 +730,22 @@ export default function HospitalDashboard() {
                         <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
                             System Online
                         </div>
+                        <button
+                            onClick={handleEnableNotifications}
+                            disabled={pushStatus === "Active" || pushStatus === "Checking..." || pushStatus === "Not Supported"}
+                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm transition-all flex items-center gap-1.5 ${
+                                pushStatus === "Active"
+                                    ? "bg-green-50 text-green-600 border-green-100 cursor-default"
+                                    : pushStatus === "Checking..."
+                                    ? "bg-slate-50 text-slate-400 border-slate-100 cursor-default"
+                                    : pushStatus === "Blocked"
+                                    ? "bg-rose-50 text-rose-600 border-rose-100 cursor-not-allowed"
+                                    : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 cursor-pointer animate-pulse"
+                            }`}
+                        >
+                            <span className={`w-1.5 h-1.5 rounded-full ${pushStatus === "Active" ? "bg-green-500" : pushStatus === "Blocked" ? "bg-red-500" : "bg-amber-500"}`}></span>
+                            Notifications: {pushStatus}
+                        </button>
                     </div>
                 </div>
 
