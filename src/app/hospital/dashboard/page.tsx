@@ -16,6 +16,7 @@ import SlotGenTool from "@/components/SlotGenTool";
 import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 import PaymentAnalytics from "@/components/PaymentAnalytics";
 import HospitalSettlements from "@/components/HospitalSettlements";
+import { initWebPush } from "@/lib/webPush";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -351,6 +352,12 @@ export default function HospitalDashboard() {
 
         return () => clearInterval(interval);
     }, [fetchData, fetchAnalytics, router]);
+
+    useEffect(() => {
+        if (stats?.stats?.hospital?._id) {
+            initWebPush(stats.stats.hospital._id);
+        }
+    }, [stats]);
 
     const filteredAppointments = appointments.filter((app: any) => {
         const appDateStr = app.slotTime ? new Date(app.slotTime).toISOString().split('T')[0] : "";
