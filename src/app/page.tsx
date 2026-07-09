@@ -1,6 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getUser } from "@/lib/tokenStorage";
 import { 
     LayoutDashboard, 
     Calendar, 
@@ -18,6 +20,14 @@ import PartnerRequestModal from "@/components/PartnerRequestModal";
 
 export default function HospitalPortalHome() {
     const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+    const router = useRouter();
+
+    useEffect(() => {
+        const user = getUser();
+        if (user && (user.role === 'hospital' || user.role === 'admin')) {
+            window.location.replace("/hospital/dashboard");
+        }
+    }, [router]);
 
     return (
         <main className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-100 selection:text-blue-700">

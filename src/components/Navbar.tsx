@@ -7,6 +7,20 @@ import { createPortal } from "react-dom";
 import { LogOut, Menu, X, LayoutDashboard, Users, Calendar, Bell } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
 import { motion, AnimatePresence } from "framer-motion";
+import api from "@/lib/api";
+
+function formatTimeAgo(dateString: string) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
 
 export default function Navbar() {
     const router = useRouter();
@@ -17,11 +31,36 @@ export default function Navbar() {
     const [showNotifications, setShowNotifications] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
 
-    const mockNotifications = [
-        { id: 1, text: "New booking confirmed for Dr. Verma", time: "10 mins ago" },
-        { id: 2, text: "Prescription uploaded for Patient Rahul", time: "1 hr ago" },
-        { id: 3, text: "Emergency cancellation: Dr. Patel slots reset", time: "3 hrs ago" }
-    ];
+    const [notifications, setNotifications] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (!user) {
+            setNotifications([]);
+            return;
+        }
+
+        const fetchNotifications = async () => {
+            try {
+                const res = await api.get("/notifications");
+                setNotifications(res.data || []);
+            } catch (err) {
+                console.error("Failed to fetch notifications:", err);
+            }
+        };
+
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 15000); // Poll every 15s
+        return () => clearInterval(interval);
+    }, [user]);
+
+    const handleMarkAsRead = async (id: string) => {
+        try {
+            await api.put(`/notifications/${id}/read`);
+            setNotifications(prev => prev.map(n => n._id === id ? { ...n, read: true } : n));
+        } catch (err) {
+            console.error("Failed to mark notification as read:", err);
+        }
+    };
 
     useEffect(() => {
         setMounted(true);
@@ -117,28 +156,32 @@ export default function Navbar() {
 
                     {/* Desktop Links */}
                     <div className="hidden lg:flex items-center gap-8">
-                        <div className="flex items-center gap-2">
-                            {navLinks.map((link) => (
-                                <Link
-                                    key={link.label}
-                                    href={link.href}
-                                    className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                                        pathname === link.href 
-                                        ? 'bg-blue-50 text-blue-600 shadow-sm shadow-blue-100' 
-                                        : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50'
-                                    }`}
-                                >
-                                    {link.icon}
-                                    {link.label}
-                                </Link>
-                            ))}
-                        </div>
+                        {user && (
+                            <div className="flex items-center gap-2">
+                                {navLinks.map((link) => (
+                                    <Link
+                                        key={link.label}
+                                        href={link.href}
+                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+                                            pathname === link.href 
+                                            ? 'bg-blue-50 text-blue-600 shadow-sm shadow-blue-100' 
+                                            : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        {link.icon}
+                                        {link.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
 
                         {user ? (
                             <div className="flex items-center gap-4 border-l border-slate-100 pl-8">
                                 <button onClick={() => setShowNotifications(!showNotifications)} className="p-2.5 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
                                     <Bell className="w-5 h-5" />
-                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                                    {notifications.some(n => !n.read) && (
+                                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                                    )}
                                 </button>
 
                                 <div className="flex flex-col items-end">
@@ -157,12 +200,16 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile Notification Bell */}
-                    <div className="lg:hidden relative">
-                        <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-slate-500 hover:text-slate-900 transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
-                            <Bell className="w-6 h-6" />
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
-                        </button>
-                    </div>
+                    {user && (
+                        <div className="lg:hidden relative">
+                            <button onClick={() => setShowNotifications(!showNotifications)} className="p-2 text-slate-500 hover:text-slate-900 transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
+                                <Bell className="w-6 h-6" />
+                                {notifications.some(n => !n.read) && (
+                                    <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-white"></span>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -177,14 +224,41 @@ export default function Navbar() {
                             exit={{ opacity: 0, y: 10 }}
                             className="absolute left-0 right-0 lg:left-auto lg:right-6 top-20 w-full lg:w-80 bg-white border-b lg:border border-slate-100 lg:rounded-2xl shadow-2xl z-50 p-4"
                         >
-                            <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest mb-3 pb-2 border-b border-slate-100">Notifications</h4>
-                            <div className="space-y-3">
-                                {mockNotifications.map(notif => (
-                                    <div key={notif.id} className="p-2.5 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer flex flex-col gap-0.5">
-                                        <p className="text-xs font-bold text-slate-800 leading-snug">{notif.text}</p>
-                                        <span className="text-[9px] font-semibold text-slate-400">{notif.time}</span>
-                                    </div>
-                                ))}
+                            <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+                                <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest">Notifications</h4>
+                                {notifications.some(n => !n.read) && (
+                                    <button 
+                                        onClick={async () => {
+                                            try {
+                                                await api.put('/notifications/read-all');
+                                                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                                            } catch (err) {
+                                                console.error("Failed to mark all as read:", err);
+                                            }
+                                        }}
+                                        className="text-[10px] text-blue-600 hover:text-blue-800 font-extrabold cursor-pointer"
+                                    >
+                                        Mark all read
+                                    </button>
+                                )}
+                            </div>
+                            <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
+                                {notifications.length > 0 ? (
+                                    notifications.map(notif => (
+                                        <div 
+                                            key={notif._id} 
+                                            onClick={() => handleMarkAsRead(notif._id)}
+                                            className={`p-2.5 rounded-xl transition-colors cursor-pointer flex flex-col gap-0.5 text-left ${
+                                                notif.read ? 'hover:bg-slate-50 opacity-70' : 'bg-blue-50/50 hover:bg-blue-50 font-bold border-l-2 border-blue-500 pl-2'
+                                            }`}
+                                        >
+                                            <p className="text-xs text-slate-800 leading-snug">{notif.message}</p>
+                                            <span className="text-[9px] font-semibold text-slate-400">{formatTimeAgo(notif.createdAt)}</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-xs text-slate-400 text-center py-4">No notifications yet</p>
+                                )}
                             </div>
                         </motion.div>
                     </>
@@ -244,7 +318,7 @@ export default function Navbar() {
                             </div>
 
                             <div className="p-6 space-y-3 flex-1 overflow-y-auto">
-                                {navLinks.map((link) => (
+                                {user && navLinks.map((link) => (
                                     <Link
                                         key={link.label}
                                         href={link.href}
