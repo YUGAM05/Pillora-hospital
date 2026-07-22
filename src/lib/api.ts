@@ -33,17 +33,19 @@ api.interceptors.response.use(
     (error) => {
         if (typeof window !== 'undefined' && !isRedirecting) {
             if (error.response?.status === 401) {
-                // Prevent any further API error handling from showing error screens
-                isRedirecting = true;
-                clearAuth();
-                window.location.replace('/login');
-                // Return a promise that never resolves — stops all downstream catch blocks
-                return new Promise(() => {});
+                if (!window.location.pathname.startsWith('/login')) {
+                    isRedirecting = true;
+                    clearAuth();
+                    window.location.replace('/login');
+                    return new Promise(() => {});
+                }
             }
             if (error.response?.status === 403 && error.response?.data?.code === 'PASSWORD_RESET_REQUIRED') {
-                isRedirecting = true;
-                window.location.replace('/auth/change-password');
-                return new Promise(() => {});
+                if (!window.location.pathname.startsWith('/auth/change-password')) {
+                    isRedirecting = true;
+                    window.location.replace('/auth/change-password');
+                    return new Promise(() => {});
+                }
             }
         }
         return Promise.reject(error);

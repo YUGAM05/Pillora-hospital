@@ -34,7 +34,7 @@ export default function Navbar() {
     const [notifications, setNotifications] = useState<any[]>([]);
 
     useEffect(() => {
-        if (!user) {
+        if (!user || pathname === '/login' || pathname === '/register' || pathname === '/auth/change-password') {
             setNotifications([]);
             return;
         }
@@ -51,7 +51,7 @@ export default function Navbar() {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 15000); // Poll every 15s
         return () => clearInterval(interval);
-    }, [user]);
+    }, [user, pathname]);
 
     const handleMarkAsRead = async (id: string) => {
         try {
