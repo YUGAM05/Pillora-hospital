@@ -4,7 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import {
     MapPin, Phone, Clock, CreditCard, Ambulance, ShieldCheck,
     Star, ChevronLeft, ChevronRight, User, CheckCircle, XCircle,
-    Building, ArrowLeft, ExternalLink, Share2
+    Building, ArrowLeft, ExternalLink, Share2, Calendar, BedDouble,
+    Building2
 } from 'lucide-react';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -37,6 +38,143 @@ interface Hospital {
     description: string;
     rating: number;
     doctors?: Doctor[];
+}
+
+function stripHtml(str: string): string {
+    if (!str) return '';
+    return str
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+interface ParsedHospitalDetails {
+    facts: {
+        hospitalName?: string;
+        type?: string;
+        location?: string;
+        established?: string;
+        bedCapacity?: string;
+    };
+    description: string;
+}
+
+function parseHospitalDescription(rawDesc: string): ParsedHospitalDetails {
+    if (!rawDesc || typeof rawDesc !== 'string') {
+        return { facts: {}, description: '' };
+    }
+
+    const labelDefs = [
+        { key: 'hospitalName', label: 'Hospital Name', pattern: /Hospital\s+Name/i },
+        { key: 'type', label: 'Type', pattern: /Type/i },
+        { key: 'location', label: 'Location', pattern: /Location/i },
+        { key: 'established', label: 'Established', pattern: /Established/i },
+        { key: 'bedCapacity', label: 'Bed Capacity', pattern: /Bed\s+Capacity/i },
+    ];
+
+    const globalLabelRegex = /(?:<p[^>]*>|<div[^>]*>|<span[^>]*>|<b>|<strong>|<br\s*\/?>|\s)*(Hospital\s+Name|Bed\s+Capacity|Established|Location|Type)(?:<\/b>|<\/strong>|<\/span>|<\/p>|<\/div>|\s)*:\s*/gi;
+
+    let match: RegExpExecArray | null;
+    const matches: { key: string; labelName: string; index: number; valueStartIndex: number }[] = [];
+
+    while ((match = globalLabelRegex.exec(rawDesc)) !== null) {
+        const matchedText = match[0];
+        const matchedLabelName = match[1];
+        
+        const def = labelDefs.find(d => d.pattern.test(matchedLabelName));
+        if (def) {
+            matches.push({
+                key: def.key,
+                labelName: def.label,
+                index: match.index,
+                valueStartIndex: match.index + matchedText.length
+            });
+        }
+    }
+
+    if (matches.length === 0) {
+        return {
+            facts: {},
+            description: rawDesc.trim()
+        };
+    }
+
+    matches.sort((a, b) => a.index - b.index);
+
+    const facts: Record<string, string> = {};
+
+    for (let i = 0; i < matches.length - 1; i++) {
+        const currentMatch = matches[i];
+        const nextMatch = matches[i + 1];
+        
+        const rawValueSegment = rawDesc.substring(currentMatch.valueStartIndex, nextMatch.index);
+        const cleanVal = stripHtml(rawValueSegment);
+        if (cleanVal) {
+            facts[currentMatch.key] = cleanVal;
+        }
+    }
+
+    const lastMatch = matches[matches.length - 1];
+    const rawRestSegment = rawDesc.substring(lastMatch.valueStartIndex);
+
+    let lastFactValue = '';
+    let remainingDesc = '';
+
+    const blockBoundaryMatch = /(<\/p>|<p[^>]*>|<\/div>|<div[^>]*>|<br\s*\/?>|\r?\n){1,}/i.exec(rawRestSegment);
+
+    if (blockBoundaryMatch) {
+        const boundaryIndex = blockBoundaryMatch.index;
+        const boundaryTag = blockBoundaryMatch[0];
+        lastFactValue = stripHtml(rawRestSegment.substring(0, boundaryIndex));
+
+        if (/^<p[^>]*>/i.test(boundaryTag) || /^<div[^>]*>/i.test(boundaryTag)) {
+            remainingDesc = rawRestSegment.substring(boundaryIndex).trim();
+        } else {
+            remainingDesc = rawRestSegment.substring(boundaryIndex + boundaryTag.length).trim();
+        }
+    } else {
+        const sentenceBoundary = /\.\s+(?=[A-Z0-9<])/.exec(rawRestSegment);
+        if (sentenceBoundary) {
+            const boundaryIndex = sentenceBoundary.index;
+            lastFactValue = stripHtml(rawRestSegment.substring(0, boundaryIndex));
+            remainingDesc = rawRestSegment.substring(boundaryIndex + sentenceBoundary[0].length).trim();
+        } else {
+            const cleanRest = stripHtml(rawRestSegment);
+            if (cleanRest.length <= 50) {
+                lastFactValue = cleanRest;
+                remainingDesc = '';
+            } else {
+                const numUnitMatch = /^(\d+\+?\s*(?:beds?|years?)?|[A-Za-z0-9\-]+(?:\s+[A-Za-z0-9\-]+){0,2})/i.exec(cleanRest);
+                if (numUnitMatch && numUnitMatch[0].length < cleanRest.length) {
+                    lastFactValue = numUnitMatch[0];
+                    remainingDesc = cleanRest.substring(numUnitMatch[0].length).trim();
+                } else {
+                    lastFactValue = cleanRest;
+                    remainingDesc = '';
+                }
+            }
+        }
+    }
+
+    if (lastFactValue) {
+        facts[lastMatch.key] = lastFactValue;
+    }
+
+    remainingDesc = remainingDesc
+        .replace(/^(<\/(p|div|span|b|strong)>|<br\s*\/?>|\s|&nbsp;|<p><\/p>)+/gi, '')
+        .replace(/(<br\s*\/?>|\s|&nbsp;|<p><\/p>)+$/gi, '');
+
+    return {
+        facts: {
+            hospitalName: facts.hospitalName,
+            type: facts.type,
+            location: facts.location,
+            established: facts.established,
+            bedCapacity: facts.bedCapacity,
+        },
+        description: remainingDesc
+    };
 }
 
 // ─── Slideshow ─────────────────────────────────────────────────────────────────
@@ -205,20 +343,24 @@ export default function HospitalDetailPage() {
     const imgs = getImages(hospital);
     const phones = phoneList(hospital);
 
-    const processedDesc = hospital.description
-        ? hospital.description
-            // Normalise tags
-            .replace(/<strong>/gi, '<b>').replace(/<\/strong>/gi, '</b>')
-            .replace(/<em>/gi, '<i>').replace(/<\/em>/gi, '</i>')
-            // Strip inline styles so our CSS controls appearance
-            .replace(/ style="[^"]*"/gi, '')
-            .replace(/ style='[^']*'/gi, '')
-            // Ensure proper spacing between bold segments
-            .replace(/<\/b>(\s*:)/gi, '</b>$1<br/>')
-            .replace(/([^>])\s*<b>/gi, '$1<br/><b>')
-            // Remove consecutive empty <br> spam
-            .replace(/(<br\s*\/?>(\s*)){3,}/gi, '<br/><br/>')
-        : '';
+    const parsedDesc = React.useMemo(() => {
+        return parseHospitalDescription(hospital.description || '');
+    }, [hospital.description]);
+
+    const factConfig = [
+        { key: 'hospitalName', label: 'Hospital Name', icon: Building2 },
+        { key: 'type', label: 'Type', icon: Building },
+        { key: 'location', label: 'Location', icon: MapPin },
+        { key: 'established', label: 'Established', icon: Calendar },
+        { key: 'bedCapacity', label: 'Bed Capacity', icon: BedDouble },
+    ];
+
+    const activeFacts = factConfig
+        .map(cfg => ({
+            ...cfg,
+            value: parsedDesc.facts[cfg.key as keyof typeof parsedDesc.facts]
+        }))
+        .filter((item): item is typeof item & { value: string } => Boolean(item.value));
 
     return (
         <div className="min-h-screen bg-gray-50 pb-16">
@@ -405,11 +547,11 @@ export default function HospitalDetailPage() {
                             </div>
                         )}
 
-                        {/* Description */}
-                        {processedDesc && (
+                        {/* Description / About Section */}
+                        {(activeFacts.length > 0 || parsedDesc.description) && (
                             <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100">
                                 {/* Section header */}
-                                <div className="flex items-center gap-3 mb-5 pb-4 border-b border-gray-100">
+                                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
                                     <div className="p-2.5 bg-blue-50 rounded-xl shrink-0">
                                         <Building className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                                     </div>
@@ -419,37 +561,63 @@ export default function HospitalDetailPage() {
                                     </div>
                                 </div>
 
-                                {/* Description body */}
-                                <style>{`
-                                    .hosp-desc { font-size: 14px; line-height: 1.8; color: #374151; }
-                                    @media (min-width: 640px) { .hosp-desc { font-size: 15px; } }
-                                    .hosp-desc b, .hosp-desc strong {
-                                        font-weight: 700;
-                                        color: #1d4ed8;
-                                        display: block;
-                                        margin-top: 12px;
-                                        margin-bottom: 2px;
-                                        font-size: 13px;
-                                        text-transform: uppercase;
-                                        letter-spacing: 0.04em;
-                                    }
-                                    .hosp-desc b:first-child, .hosp-desc strong:first-child { margin-top: 0; }
-                                    .hosp-desc i, .hosp-desc em { font-style: italic; color: #6b7280; }
-                                    .hosp-desc u { text-decoration: underline; text-underline-offset: 3px; }
-                                    .hosp-desc p { margin-bottom: 10px; }
-                                    .hosp-desc p:last-child { margin-bottom: 0; }
-                                    .hosp-desc br { display: block; margin-bottom: 4px; content: ''; }
-                                    .hosp-desc ul { list-style: disc; padding-left: 20px; margin-bottom: 12px; }
-                                    .hosp-desc ol { list-style: decimal; padding-left: 20px; margin-bottom: 12px; }
-                                    .hosp-desc li { margin-bottom: 4px; color: #4b5563; }
-                                    .hosp-desc h1, .hosp-desc h2 { font-weight: 700; color: #111827; margin: 12px 0 6px; }
-                                    .hosp-desc h1 { font-size: 16px; } 
-                                    .hosp-desc h2 { font-size: 14px; }
-                                `}</style>
-                                <div
-                                    className="hosp-desc"
-                                    dangerouslySetInnerHTML={{ __html: processedDesc }}
-                                />
+                                {/* Key Facts Grid */}
+                                {activeFacts.length > 0 && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+                                        {activeFacts.map((item) => {
+                                            const IconComp = item.icon;
+                                            return (
+                                                <div
+                                                    key={item.key}
+                                                    className="flex items-start gap-3 p-3.5 sm:p-4 rounded-xl bg-gray-50/80 border border-gray-100 transition-all hover:bg-gray-50"
+                                                >
+                                                    <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 shrink-0 mt-0.5 border border-blue-100/60">
+                                                        <IconComp className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider block">
+                                                            {item.label}
+                                                        </span>
+                                                        <span className="text-xs sm:text-sm font-bold text-gray-800 mt-0.5 block break-words leading-snug">
+                                                            {item.value}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* Visual Divider */}
+                                {activeFacts.length > 0 && parsedDesc.description && (
+                                    <div className="my-6 border-t border-gray-100" />
+                                )}
+
+                                {/* Free-text Description Block */}
+                                {parsedDesc.description && (
+                                    <div className="max-w-[70ch]">
+                                        <style>{`
+                                            .hosp-desc { font-size: 14px; line-height: 1.75; color: #4b5563; font-weight: 400; }
+                                            @media (min-width: 640px) { .hosp-desc { font-size: 15px; } }
+                                            .hosp-desc b, .hosp-desc strong { font-weight: 700; color: #111827; }
+                                            .hosp-desc i, .hosp-desc em { font-style: italic; color: #6b7280; }
+                                            .hosp-desc u { text-decoration: underline; text-underline-offset: 3px; }
+                                            .hosp-desc p { margin-bottom: 12px; }
+                                            .hosp-desc p:last-child { margin-bottom: 0; }
+                                            .hosp-desc br { display: block; margin-bottom: 4px; content: ''; }
+                                            .hosp-desc ul { list-style: disc; padding-left: 20px; margin-bottom: 12px; }
+                                            .hosp-desc ol { list-style: decimal; padding-left: 20px; margin-bottom: 12px; }
+                                            .hosp-desc li { margin-bottom: 4px; color: #4b5563; }
+                                            .hosp-desc h1, .hosp-desc h2 { font-weight: 700; color: #111827; margin: 16px 0 8px; }
+                                            .hosp-desc h1 { font-size: 18px; } 
+                                            .hosp-desc h2 { font-size: 16px; }
+                                        `}</style>
+                                        <div
+                                            className="hosp-desc"
+                                            dangerouslySetInnerHTML={{ __html: parsedDesc.description }}
+                                        />
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
