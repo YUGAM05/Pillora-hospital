@@ -4,7 +4,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { LogOut, Menu, X, LayoutDashboard, Users, Calendar, Bell } from "lucide-react";
+import { LogOut, Menu, X, Bell } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/lib/api";
@@ -95,12 +95,6 @@ export default function Navbar() {
     // Don't show navbar on login/register pages
     if (pathname === '/login' || pathname === '/register' || pathname === '/auth/change-password') return null;
 
-    const navLinks = [
-        { href: "/hospital/dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-        { href: "/hospital/dashboard", label: "Doctors", icon: <Users className="w-4 h-4" /> },
-        { href: "/hospital/dashboard", label: "Appointments", icon: <Calendar className="w-4 h-4" /> },
-    ];
-
     return (
     <>
         <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50">
@@ -156,27 +150,8 @@ export default function Navbar() {
 
                     {/* Desktop Links */}
                     <div className="hidden lg:flex items-center gap-8">
-                        {user && (
-                            <div className="flex items-center gap-2">
-                                {navLinks.map((link) => (
-                                    <Link
-                                        key={link.label}
-                                        href={link.href}
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
-                                            pathname === link.href 
-                                            ? 'bg-blue-50 text-blue-600 shadow-sm shadow-blue-100' 
-                                            : 'text-slate-500 hover:text-blue-600 hover:bg-slate-50'
-                                        }`}
-                                    >
-                                        {link.icon}
-                                        {link.label}
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-
                         {user ? (
-                            <div className="flex items-center gap-4 border-l border-slate-100 pl-8">
+                            <div className="flex items-center gap-4">
                                 <button onClick={() => setShowNotifications(!showNotifications)} className="p-2.5 bg-slate-50 text-slate-500 rounded-xl hover:bg-slate-100 transition-colors relative min-h-[44px] min-w-[44px] flex items-center justify-center">
                                     <Bell className="w-5 h-5" />
                                     {notifications.some(n => !n.read) && (
@@ -318,21 +293,6 @@ export default function Navbar() {
                             </div>
 
                             <div className="p-6 space-y-3 flex-1 overflow-y-auto">
-                                {user && navLinks.map((link) => (
-                                    <Link
-                                        key={link.label}
-                                        href={link.href}
-                                        onClick={() => setIsOpen(false)}
-                                        className={`flex items-center gap-3 px-4 min-h-[44px] rounded-2xl font-bold transition-all ${
-                                            pathname === link.href
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
-                                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-                                        }`}
-                                    >
-                                        {link.icon}
-                                        {link.label}
-                                    </Link>
-                                ))}
                             </div>
 
                             {user && (
