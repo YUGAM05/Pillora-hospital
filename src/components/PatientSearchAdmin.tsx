@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Search, User, Phone, Mail, Calendar, CreditCard,
-    Upload, FileText, Download, Activity, FileCheck, X,
+    FileText, Download, Activity, FileCheck, X,
     Loader2, ChevronDown, Hash, IndianRupee
 } from "lucide-react";
 
@@ -64,10 +64,7 @@ export default function PatientSearchAdmin() {
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Modal states
-    const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-    const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
 
     // View Modal state
     const [fetchingPrescription, setFetchingPrescription] = useState(false);
@@ -215,37 +212,6 @@ export default function PatientSearchAdmin() {
     };
 
     // ─── Other handlers ───────────────────────────────────────────────────────
-
-    const handleOpenUploadModal = (appointmentId: string) => {
-        setSelectedAppointmentId(appointmentId);
-        setPrescriptionFile(null);
-        setUploadModalOpen(true);
-    };
-
-    const handleUploadSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!prescriptionFile || !selectedAppointmentId) return;
-
-        setUploading(true);
-        const formData = new FormData();
-        formData.append("prescription", prescriptionFile);
-
-        try {
-            await api.post(`/hospital/dashboard/appointments/${selectedAppointmentId}/prescription`, formData, {
-                headers: { "Content-Type": "multipart/form-data" }
-            });
-            alert("Prescription uploaded successfully!");
-            setUploadModalOpen(false);
-
-            const queryParam = searchType === "bookingId" ? `bookingId=${searchQuery}` : `name=${searchQuery}`;
-            const res = await api.get(`/hospital/dashboard/patients/search?${queryParam}`);
-            setResults(res.data);
-        } catch (err: any) {
-            alert(err.response?.data?.message || "Failed to upload prescription");
-        } finally {
-            setUploading(false);
-        }
-    };
 
     const handleViewPrescription = async (appointmentId: string) => {
         setFetchingPrescription(true);
@@ -582,15 +548,7 @@ export default function PatientSearchAdmin() {
                                                     )}
                                                 </td>
                                                 <td className="py-4 flex items-center justify-end gap-2">
-                                                    {!booking.prescriptionUploadedAt ? (
-                                                        <button
-                                                            onClick={() => handleOpenUploadModal(booking._id)}
-                                                            className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
-                                                            title="Upload Prescription"
-                                                        >
-                                                            <Upload className="w-4 h-4" />
-                                                        </button>
-                                                    ) : (
+                                                    {booking.prescriptionUploadedAt && (
                                                         <button
                                                             onClick={() => handleViewPrescription(booking._id)}
                                                             disabled={fetchingPrescription}
@@ -673,14 +631,7 @@ export default function PatientSearchAdmin() {
                                         </div>
                                         <div className="pt-3 border-t border-slate-50 space-y-2">
                                             <div className="flex flex-col gap-2 w-full">
-                                                {!booking.prescriptionUploadedAt ? (
-                                                    <button
-                                                        onClick={() => handleOpenUploadModal(booking._id)}
-                                                        className="w-full min-h-[44px] bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-blue-100 active:scale-95 transition-all shadow-sm"
-                                                    >
-                                                        <Upload className="w-3.5 h-3.5" /> Upload Prescription
-                                                    </button>
-                                                ) : (
+                                                {booking.prescriptionUploadedAt && (
                                                     <button
                                                         onClick={() => handleViewPrescription(booking._id)}
                                                         disabled={fetchingPrescription}
@@ -710,83 +661,6 @@ export default function PatientSearchAdmin() {
                     </div>
                 </div>
             ))}
-
-            {/* Prescription Upload Modal */}
-            <AnimatePresence>
-                {uploadModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                            onClick={() => setUploadModalOpen(false)}
-                        />
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-white rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 max-w-md w-full relative z-10 shadow-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col"
-                        >
-                            <div className="shrink-0 flex items-center justify-between mb-6">
-                                <h3 className="text-2xl font-black text-slate-900">Upload Prescription</h3>
-                                <button
-                                    onClick={() => setUploadModalOpen(false)}
-                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col justify-between">
-                                <div>
-                                    <p className="text-slate-500 text-sm font-medium mb-8">
-                                        Please upload the prescription PDF for this booking. The patient will be notified via email.
-                                    </p>
-                                    <form id="prescription-upload-form" onSubmit={handleUploadSubmit} className="space-y-6">
-                                        <div>
-                                            <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                                                Prescription Document (PDF)
-                                            </label>
-                                            <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-8 hover:bg-slate-50 hover:border-blue-300 transition-all text-center">
-                                                <input
-                                                    type="file"
-                                                    accept="application/pdf"
-                                                    onChange={(e) => setPrescriptionFile(e.target.files?.[0] || null)}
-                                                    required
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                />
-                                                <div className="flex flex-col items-center justify-center pointer-events-none">
-                                                    <Upload className="w-8 h-8 text-blue-500 mb-3" />
-                                                    {prescriptionFile ? (
-                                                        <p className="font-bold text-slate-900 break-all">{prescriptionFile.name}</p>
-                                                    ) : (
-                                                        <>
-                                                            <p className="font-bold text-slate-700 hidden sm:block">Click or drag file to upload</p>
-                                                            <p className="font-bold text-slate-700 block sm:hidden">Tap to select file</p>
-                                                            <p className="text-xs text-slate-400 font-semibold mt-1">PDF format up to 5MB</p>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                                <div className="mt-8">
-                                    <button
-                                        type="submit"
-                                        form="prescription-upload-form"
-                                        disabled={uploading || !prescriptionFile}
-                                        className="w-full py-4 bg-primary text-white font-black rounded-2xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                    >
-                                        {uploading ? (
-                                            <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full" />
-                                        ) : (
-                                            <>Upload & Notify Patient</>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             {/* Payment Modal */}
             <AnimatePresence>

@@ -70,8 +70,7 @@ export default function HospitalDashboard() {
     const [patientNotes, setPatientNotes] = useState<any[]>([]);
     const [newNoteContent, setNewNoteContent] = useState("");
 
-    // Prescription & Invoice States
-    const [uploadingPrescriptionId, setUploadingPrescriptionId] = useState<string | null>(null);
+    // Invoice States
     const [generatingInvoiceId, setGeneratingInvoiceId] = useState<string | null>(null);
 
     // Payment badge states
@@ -523,44 +522,6 @@ export default function HospitalDashboard() {
             setNewNoteContent("");
         } catch (err) {
             alert("Failed to add note");
-        }
-    };
-
-    const handlePrescriptionUpload = async (e: React.ChangeEvent<HTMLInputElement>, appointmentId: string) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Client-side validation
-        const ALLOWED = ['application/pdf', 'image/jpeg', 'image/png'];
-        if (!ALLOWED.includes(file.type)) {
-            showToast('Only PDF, JPG, and PNG files are allowed', 'error');
-            e.target.value = '';
-            return;
-        }
-        const MAX_MB = 5;
-        if (file.size > MAX_MB * 1024 * 1024) {
-            showToast(`File too large — maximum size is ${MAX_MB} MB`, 'error');
-            e.target.value = '';
-            return;
-        }
-
-        setUploadingPrescriptionId(appointmentId);
-        try {
-            const formData = new FormData();
-            formData.append('prescription', file);
-
-            await api.post(`/hospital/dashboard/appointments/${appointmentId}/prescription`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            fetchData();
-            showToast('Prescription uploaded successfully!', 'success');
-        } catch (error: any) {
-            const msg = error.response?.data?.message || 'Failed to upload prescription';
-            showToast(msg, 'error');
-        } finally {
-            setUploadingPrescriptionId(null);
-            e.target.value = '';
         }
     };
 
@@ -1326,9 +1287,9 @@ export default function HospitalDashboard() {
                                                                     </div>
                                                                 )}
 
-                                                                {/* Prescription — available for ALL statuses */}
-                                                                <div className="flex items-center gap-1.5">
-                                                                    {app.prescriptionUrl ? (
+                                                                {/* Prescription — available if uploaded */}
+                                                                {app.prescriptionUrl && (
+                                                                    <div className="flex items-center gap-1.5">
                                                                         <a
                                                                             href={app.prescriptionUrl}
                                                                             target="_blank"
@@ -1338,24 +1299,8 @@ export default function HospitalDashboard() {
                                                                         >
                                                                             <CheckCircle2 className="w-3 h-3 text-emerald-500" /> View Rx
                                                                         </a>
-                                                                    ) : (
-                                                                        <label className="flex items-center gap-1 text-[9px] font-black uppercase bg-slate-50 border border-slate-200 text-slate-600 py-1.5 px-2 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors shadow-sm">
-                                                                            {uploadingPrescriptionId === app._id ? (
-                                                                                <><RefreshCcw className="w-3 h-3 animate-spin" /> Uploading…</>
-                                                                            ) : (
-                                                                                <>📎 Upload Rx</>
-                                                                            )}
-                                                                            <input
-                                                                                type="file"
-                                                                                className="hidden"
-                                                                                accept=".pdf,.jpg,.jpeg,.png,image/*"
-                                                                                capture="environment"
-                                                                                onChange={(e) => handlePrescriptionUpload(e, app._id)}
-                                                                                disabled={uploadingPrescriptionId === app._id}
-                                                                            />
-                                                                        </label>
-                                                                    )}
-                                                                </div>
+                                                                    </div>
+                                                                )}
 
                                                                 {/* Payment status badge — available for ALL statuses, labeled as manual */}
                                                                 <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
@@ -1493,8 +1438,8 @@ export default function HospitalDashboard() {
                                                         </div>
                                                     )}
 
-                                                    {/* Prescription upload — ALL statuses */}
-                                                    {app.prescriptionUrl ? (
+                                                    {/* Prescription — available if uploaded */}
+                                                    {app.prescriptionUrl && (
                                                         <a
                                                             href={app.prescriptionUrl}
                                                             target="_blank"
@@ -1504,22 +1449,6 @@ export default function HospitalDashboard() {
                                                         >
                                                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> View Rx
                                                         </a>
-                                                    ) : (
-                                                        <label className="w-full min-h-[44px] flex items-center justify-center gap-1.5 bg-slate-50 text-slate-600 font-black text-[10px] uppercase rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-100 shadow-sm">
-                                                            {uploadingPrescriptionId === app._id ? (
-                                                                <><RefreshCcw className="w-3.5 h-3.5 animate-spin" /> Uploading…</>
-                                                            ) : (
-                                                                <>📎 Upload Prescription</>
-                                                            )}
-                                                            <input
-                                                                type="file"
-                                                                className="hidden"
-                                                                accept=".pdf,.jpg,.jpeg,.png,image/*"
-                                                                capture="environment"
-                                                                onChange={(e) => handlePrescriptionUpload(e, app._id)}
-                                                                disabled={uploadingPrescriptionId === app._id}
-                                                            />
-                                                        </label>
                                                     )}
 
                                                     {/* Payment status badge + dropdown — ALL statuses */}
