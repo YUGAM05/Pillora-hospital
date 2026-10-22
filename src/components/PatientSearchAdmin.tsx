@@ -6,8 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Search, User, Phone, Mail, Calendar, CreditCard,
     FileText, Download, Activity, X,
-    Loader2, ChevronDown, Hash, IndianRupee
+    Loader2, ChevronDown, Hash, IndianRupee, Bell
 } from "lucide-react";
+import FollowUpRemindersAdmin from "./FollowUpRemindersAdmin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,9 @@ export default function PatientSearchAdmin() {
     const [paymentAmount, setPaymentAmount] = useState<number | "">("");
     const [paymentMode, setPaymentMode] = useState<"online" | "offline">("online");
     const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+
+    // Follow-up reminder state
+    const [followUpBooking, setFollowUpBooking] = useState<any>(null);
 
     // ─── Close dropdown on outside click ────────────────────────────────────
 
@@ -520,6 +524,13 @@ export default function PatientSearchAdmin() {
                                                 </td>
                                                 <td className="py-4 flex items-center justify-end gap-2">
                                                     <button
+                                                        onClick={() => setFollowUpBooking({ ...booking, patientInfo: result.patientInfo })}
+                                                        className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors"
+                                                        title="Schedule Follow-Up Reminder"
+                                                    >
+                                                        <Bell className="w-4 h-4" />
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleGenerateInvoice(booking._id)}
                                                         className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
                                                         title="Generate Invoice"
@@ -582,6 +593,12 @@ export default function PatientSearchAdmin() {
                                         </div>
                                         <div className="pt-3 border-t border-slate-50 space-y-2">
                                             <div className="flex flex-col gap-2 w-full">
+                                                <button
+                                                    onClick={() => setFollowUpBooking({ ...booking, patientInfo: result.patientInfo })}
+                                                    className="w-full min-h-[44px] bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-blue-100 active:scale-95 transition-all shadow-sm"
+                                                >
+                                                    <Bell className="w-3.5 h-3.5" /> Schedule Follow-Up
+                                                </button>
                                                 <button
                                                     onClick={() => handleGenerateInvoice(booking._id)}
                                                     className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-emerald-100 active:scale-95 transition-all shadow-sm"
@@ -696,6 +713,21 @@ export default function PatientSearchAdmin() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* Follow-Up Reminder Modal */}
+            {followUpBooking && (
+                <FollowUpRemindersAdmin
+                    prefillData={{
+                        patientName: followUpBooking.patientInfo?.name || followUpBooking.patient?.name || followUpBooking.patientName || '',
+                        patientPhone: followUpBooking.patientInfo?.phone || followUpBooking.patient?.phone || followUpBooking.patientPhone || '',
+                        patientEmail: followUpBooking.patientInfo?.email || followUpBooking.patient?.email || followUpBooking.patientEmail || '',
+                        originalAppointmentId: followUpBooking._id,
+                        doctorId: followUpBooking.doctor?._id || '',
+                        doctorName: followUpBooking.doctor?.name || '',
+                        department: followUpBooking.doctor?.specialty || ''
+                    }}
+                    onClosePrefillModal={() => setFollowUpBooking(null)}
+                />
+            )}
         </div>
     );
 }

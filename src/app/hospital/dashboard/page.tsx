@@ -9,13 +9,14 @@ import {
     Users, Activity, Calendar, Clock, Plus, Settings, 
     LogOut, User, Stethoscope, ChevronRight, CheckCircle2, 
     XCircle, AlertCircle, Info, RefreshCcw, LayoutDashboard,
-    Download, CreditCard, IndianRupee
+    Download, CreditCard, IndianRupee, Bell
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 
 import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 import PaymentAnalytics from "@/components/PaymentAnalytics";
 import HospitalSettlements from "@/components/HospitalSettlements";
+import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
 import { initWebPush } from "@/lib/webPush";
 
 export default function HospitalDashboard() {
@@ -57,7 +58,8 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups">("appointments");
+    const [followUpPrefillData, setFollowUpPrefillData] = useState<any>(null);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
     const [activeSlotSubTab, setActiveSlotSubTab] = useState<"upcoming" | "cancelled">("upcoming");
@@ -205,6 +207,19 @@ export default function HospitalDashboard() {
         } catch (err: any) {
             alert(err.response?.data?.message || "Failed to cancel slot");
         }
+    };
+
+    const handleScheduleFollowUpFromAppointment = (app: any) => {
+        setFollowUpPrefillData({
+            patientName: app.patient?.name || app.patientName || '',
+            patientPhone: app.patient?.phone || app.patientPhone || '',
+            patientEmail: app.patient?.email || app.patientEmail || '',
+            originalAppointmentId: app._id,
+            doctorId: app.doctor?._id || '',
+            doctorName: app.doctor?.name || '',
+            department: app.doctor?.specialty || app.doctor?.department || ''
+        });
+        setActiveMainTab("followups");
     };
 
     const handleDeleteSlot = async (slotId: string) => {
@@ -848,6 +863,16 @@ export default function HospitalDashboard() {
                     >
                         Settlements
                     </button>
+                    <button 
+                        onClick={() => setActiveMainTab("followups")}
+                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activeMainTab === "followups" 
+                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        Follow-Up Reminders
+                    </button>
                 </div>
 
                 {activeMainTab === "patients" && (
@@ -860,6 +885,14 @@ export default function HospitalDashboard() {
 
                 {activeMainTab === "settlements" && (
                     <HospitalSettlements hospitalId={stats?.hospital?._id} trialEndDate={stats?.hospital?.trialEndDate} />
+                )}
+
+                {activeMainTab === "followups" && (
+                    <FollowUpRemindersAdmin
+                        doctors={doctors}
+                        prefillData={followUpPrefillData}
+                        onClosePrefillModal={() => setFollowUpPrefillData(null)}
+                    />
                 )}
 
                 {activeMainTab === "appointments" ? (
@@ -1287,6 +1320,15 @@ export default function HospitalDashboard() {
                                                                     </div>
                                                                 )}
 
+                                                                {/* Schedule Follow-Up Reminder */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleScheduleFollowUpFromAppointment(app)}
+                                                                    title="Schedule Patient Follow-Up Reminder"
+                                                                    className="flex items-center gap-1 text-[9px] font-black uppercase bg-blue-50 border border-blue-200 text-blue-600 py-1.5 px-2 rounded-lg shadow-sm hover:bg-blue-100 transition-colors"
+                                                                >
+                                                                    <Bell className="w-3 h-3 text-blue-600" /> Follow-Up
+                                                                </button>
 
                                                                 {/* Payment status badge — available for ALL statuses, labeled as manual */}
                                                                 <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
@@ -1424,6 +1466,14 @@ export default function HospitalDashboard() {
                                                         </div>
                                                     )}
 
+                                                    {/* Schedule Follow-Up Reminder — Mobile */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleScheduleFollowUpFromAppointment(app)}
+                                                        className="w-full min-h-[44px] flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-200 hover:bg-blue-100 shadow-sm transition-colors"
+                                                    >
+                                                        <Bell className="w-3.5 h-3.5 text-blue-600" /> Schedule Follow-Up
+                                                    </button>
 
                                                     {/* Payment status badge + dropdown — ALL statuses */}
                                                     <div className="relative">
