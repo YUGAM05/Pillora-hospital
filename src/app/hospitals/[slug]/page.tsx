@@ -311,6 +311,10 @@ export default function HospitalDetailPage() {
         if (params.slug) fetchHospital();
     }, [params.slug]);
 
+    const parsedDesc = React.useMemo(() => {
+        return parseHospitalDescription(hospital?.description || '');
+    }, [hospital?.description]);
+
     // Loading skeleton
     if (loading) {
         return (
@@ -342,10 +346,6 @@ export default function HospitalDetailPage() {
 
     const imgs = getImages(hospital);
     const phones = phoneList(hospital);
-
-    const parsedDesc = React.useMemo(() => {
-        return parseHospitalDescription(hospital.description || '');
-    }, [hospital.description]);
 
     const factConfig = [
         { key: 'hospitalName', label: 'Hospital Name', icon: Building2 },

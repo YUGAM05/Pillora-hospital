@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Search, User, Phone, Mail, Calendar, CreditCard,
-    FileText, Download, Activity, FileCheck, X,
+    FileText, Download, Activity, X,
     Loader2, ChevronDown, Hash, IndianRupee
 } from "lucide-react";
 
@@ -65,9 +65,6 @@ export default function PatientSearchAdmin() {
 
     // Modal states
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-
-    // View Modal state
-    const [fetchingPrescription, setFetchingPrescription] = useState(false);
 
     // Payment Modal states
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -212,22 +209,6 @@ export default function PatientSearchAdmin() {
     };
 
     // ─── Other handlers ───────────────────────────────────────────────────────
-
-    const handleViewPrescription = async (appointmentId: string) => {
-        setFetchingPrescription(true);
-        try {
-            const res = await api.get(`/hospital/dashboard/appointments/${appointmentId}/prescription`);
-            if (res.data.prescriptionUrl) {
-                window.open(res.data.prescriptionUrl, "_blank");
-            } else {
-                alert("No prescription found.");
-            }
-        } catch (err: any) {
-            alert(err.response?.data?.message || "Failed to fetch prescription");
-        } finally {
-            setFetchingPrescription(false);
-        }
-    };
 
     const handleGenerateInvoice = async (appointmentId: string) => {
         try {
@@ -504,7 +485,6 @@ export default function PatientSearchAdmin() {
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Doctor</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Status</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Payment</th>
-                                            <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Prescription</th>
                                             <th className="pb-3 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Actions</th>
                                         </tr>
                                     </thead>
@@ -538,26 +518,7 @@ export default function PatientSearchAdmin() {
                                                         {booking.paymentStatus || 'pending'}
                                                     </span>
                                                 </td>
-                                                <td className="py-4">
-                                                    {booking.prescriptionUploadedAt ? (
-                                                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-                                                            <FileCheck className="w-3 h-3" /> Uploaded
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-slate-400">Pending</span>
-                                                    )}
-                                                </td>
                                                 <td className="py-4 flex items-center justify-end gap-2">
-                                                    {booking.prescriptionUploadedAt && (
-                                                        <button
-                                                            onClick={() => handleViewPrescription(booking._id)}
-                                                            disabled={fetchingPrescription}
-                                                            className="p-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-colors disabled:opacity-50"
-                                                            title="View Prescription"
-                                                        >
-                                                            <FileText className="w-4 h-4" />
-                                                        </button>
-                                                    )}
                                                     <button
                                                         onClick={() => handleGenerateInvoice(booking._id)}
                                                         className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors"
@@ -607,16 +568,6 @@ export default function PatientSearchAdmin() {
                                                 <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Doctor</span>
                                                 <span className="font-extrabold text-slate-700">{booking.doctor?.name ? `Dr. ${booking.doctor.name}` : "N/A"}</span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Prescription</span>
-                                                {booking.prescriptionUploadedAt ? (
-                                                    <span className="flex items-center justify-end gap-1 font-bold text-emerald-600">
-                                                        <FileCheck className="w-3 h-3" /> Uploaded
-                                                    </span>
-                                                ) : (
-                                                    <span className="font-bold text-slate-400">Pending</span>
-                                                )}
-                                            </div>
                                         </div>
                                         <div className="pt-3 border-t border-slate-50 flex justify-between items-center text-xs font-bold text-slate-600">
                                             <div>
@@ -631,15 +582,6 @@ export default function PatientSearchAdmin() {
                                         </div>
                                         <div className="pt-3 border-t border-slate-50 space-y-2">
                                             <div className="flex flex-col gap-2 w-full">
-                                                {booking.prescriptionUploadedAt && (
-                                                    <button
-                                                        onClick={() => handleViewPrescription(booking._id)}
-                                                        disabled={fetchingPrescription}
-                                                        className="w-full min-h-[44px] bg-indigo-50 text-indigo-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-indigo-100 active:scale-95 transition-all shadow-sm disabled:opacity-50"
-                                                    >
-                                                        <FileText className="w-3.5 h-3.5" /> View Prescription
-                                                    </button>
-                                                )}
                                                 <button
                                                     onClick={() => handleGenerateInvoice(booking._id)}
                                                     className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 border border-emerald-100 active:scale-95 transition-all shadow-sm"

@@ -1287,20 +1287,6 @@ export default function HospitalDashboard() {
                                                                     </div>
                                                                 )}
 
-                                                                {/* Prescription — available if uploaded */}
-                                                                {app.prescriptionUrl && (
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <a
-                                                                            href={app.prescriptionUrl}
-                                                                            target="_blank"
-                                                                            rel="noreferrer"
-                                                                            title={app.prescriptionUploadedAt ? `Uploaded ${new Date(app.prescriptionUploadedAt).toLocaleString()}` : 'View Prescription'}
-                                                                            className="flex items-center gap-1 text-[9px] font-black uppercase bg-blue-50 border border-blue-100 text-blue-600 py-1.5 px-2 rounded-lg shadow-sm hover:bg-blue-100 transition-colors"
-                                                                        >
-                                                                            <CheckCircle2 className="w-3 h-3 text-emerald-500" /> View Rx
-                                                                        </a>
-                                                                    </div>
-                                                                )}
 
                                                                 {/* Payment status badge — available for ALL statuses, labeled as manual */}
                                                                 <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
@@ -1438,18 +1424,6 @@ export default function HospitalDashboard() {
                                                         </div>
                                                     )}
 
-                                                    {/* Prescription — available if uploaded */}
-                                                    {app.prescriptionUrl && (
-                                                        <a
-                                                            href={app.prescriptionUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            title={app.prescriptionUploadedAt ? `Uploaded ${new Date(app.prescriptionUploadedAt).toLocaleString()}` : 'View Prescription'}
-                                                            className="w-full min-h-[44px] flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-100 shadow-sm"
-                                                        >
-                                                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> View Rx
-                                                        </a>
-                                                    )}
 
                                                     {/* Payment status badge + dropdown — ALL statuses */}
                                                     <div className="relative">
