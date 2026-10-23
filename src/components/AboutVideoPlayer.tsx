@@ -9,9 +9,7 @@ import {
     Maximize2, 
     Minimize2,
     RotateCcw,
-    Sparkles,
-    Film,
-    ShieldCheck
+    Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -44,7 +42,6 @@ export default function AboutVideoPlayer({
     const [duration, setDuration] = useState("0:00");
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [showControls, setShowControls] = useState(true);
-    const [hasStarted, setHasStarted] = useState(false);
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const isRose = accentColor === "rose";
@@ -61,7 +58,6 @@ export default function AboutVideoPlayer({
         if (videoRef.current.paused) {
             videoRef.current.play();
             setIsPlaying(true);
-            setHasStarted(true);
         } else {
             videoRef.current.pause();
             setIsPlaying(false);
@@ -74,14 +70,51 @@ export default function AboutVideoPlayer({
         setIsMuted(videoRef.current.muted);
     };
 
-    const toggleFullscreen = () => {
-        if (!containerRef.current) return;
-        if (!document.fullscreenElement) {
-            containerRef.current.requestFullscreen().catch(() => {});
-            setIsFullscreen(true);
-        } else {
-            document.exitFullscreen().catch(() => {});
-            setIsFullscreen(false);
+    const toggleFullscreen = async () => {
+        if (!containerRef.current && !videoRef.current) return;
+        const isCurrentlyFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+
+        try {
+            if (!isCurrentlyFullscreen) {
+                // Request fullscreen on container or fallback to video element (iOS Safari)
+                if (containerRef.current?.requestFullscreen) {
+                    await containerRef.current.requestFullscreen();
+                } else if ((containerRef.current as any)?.webkitRequestFullscreen) {
+                    await (containerRef.current as any).webkitRequestFullscreen();
+                } else if ((videoRef.current as any)?.webkitEnterFullscreen) {
+                    (videoRef.current as any).webkitEnterFullscreen();
+                    setIsFullscreen(true);
+                    return;
+                }
+                setIsFullscreen(true);
+
+                // Lock orientation to landscape on mobile / tablet devices
+                if (typeof window !== "undefined" && window.screen?.orientation && typeof (window.screen.orientation as any).lock === "function") {
+                    try {
+                        await (window.screen.orientation as any).lock("landscape");
+                    } catch (err) {
+                        // Browsers may restrict orientation lock outside user gestures or installed PWAs
+                    }
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if ((document as any).webkitExitFullscreen) {
+                    await (document as any).webkitExitFullscreen();
+                }
+                setIsFullscreen(false);
+
+                // Unlock orientation back to normal
+                if (typeof window !== "undefined" && window.screen?.orientation && typeof (window.screen.orientation as any).unlock === "function") {
+                    try {
+                        (window.screen.orientation as any).unlock();
+                    } catch (err) {
+                        // Ignore
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Fullscreen error", e);
         }
     };
 
@@ -119,11 +152,20 @@ export default function AboutVideoPlayer({
 
     useEffect(() => {
         const handleFullscreenChange = () => {
-            setIsFullscreen(!!document.fullscreenElement);
+            const isFull = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+            setIsFullscreen(isFull);
+            if (!isFull && typeof window !== "undefined" && window.screen?.orientation && typeof (window.screen.orientation as any).unlock === "function") {
+                try {
+                    (window.screen.orientation as any).unlock();
+                } catch (e) {}
+            }
         };
+
         document.addEventListener("fullscreenchange", handleFullscreenChange);
+        document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
         return () => {
             document.removeEventListener("fullscreenchange", handleFullscreenChange);
+            document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
             if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
         };
     }, []);
@@ -191,11 +233,17 @@ export default function AboutVideoPlayer({
                     transition={{ duration: 0.7 }}
                     onMouseMove={handleMouseMove}
                     onMouseLeave={() => isPlaying && setShowControls(false)}
-                    className="relative aspect-video w-full rounded-[2rem] sm:rounded-[2.5rem] overflow-hidden bg-slate-950 border border-slate-800/80 shadow-2xl shadow-slate-950/40 group select-none"
+                    className={`relative w-full overflow-hidden bg-slate-950 border border-slate-800/80 shadow-2xl shadow-slate-950/40 group select-none transition-all duration-300 ${
+                        isFullscreen 
+                            ? "rounded-none border-none aspect-auto h-screen flex items-center justify-center" 
+                            : "aspect-video rounded-[2rem] sm:rounded-[2.5rem]"
+                    }`}
                 >
                     <video
                         ref={videoRef}
-                        className="w-full h-full object-cover cursor-pointer"
+                        className={`w-full h-full cursor-pointer transition-all ${
+                            isFullscreen ? "object-contain" : "object-cover"
+                        }`}
                         onClick={togglePlay}
                         onTimeUpdate={handleTimeUpdate}
                         onLoadedMetadata={handleLoadedMetadata}
@@ -208,28 +256,6 @@ export default function AboutVideoPlayer({
                         <source src={src} type="video/mp4" />
                         Your browser does not support the video tag.
                     </video>
-
-                    {/* Top Branding Overlay */}
-                    <div 
-                        className={`absolute top-0 inset-x-0 p-4 sm:p-6 bg-gradient-to-b from-black/80 via-black/30 to-transparent flex items-center justify-between pointer-events-none transition-opacity duration-300 ${
-                            showControls ? "opacity-100" : "opacity-0"
-                        }`}
-                    >
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center text-white">
-                                <Film className="w-4 h-4" />
-                            </div>
-                            <div>
-                                <p className="text-white font-extrabold text-xs sm:text-sm tracking-wide">Pillora Hospital Portal</p>
-                                <p className="text-[10px] sm:text-xs text-white/60 font-medium">Official Platform Overview</p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] sm:text-xs font-bold text-white/90">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            Full HD
-                        </div>
-                    </div>
 
                     {/* Big Center Play/Pause Overlay */}
                     <AnimatePresence>
@@ -327,6 +353,7 @@ export default function AboutVideoPlayer({
                                 <button
                                     onClick={toggleFullscreen}
                                     className="p-1.5 sm:p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Landscape"}
                                     aria-label={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
                                 >
                                     {isFullscreen ? (
