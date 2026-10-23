@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
+import AboutVideoPlayer from "@/components/AboutVideoPlayer";
 import {
     Sparkles,
     Users,
@@ -54,6 +55,15 @@ export default function AboutPage() {
                     </motion.p>
                 </div>
             </section>
+
+            {/* Premium Video Showcase */}
+            <AboutVideoPlayer
+                src="/PILLORA.mp4"
+                title="Experience Pillora in Motion"
+                subtitle="Discover how Pillora bridges medical institutions and patients with next-generation appointment scheduling, doctor management, and transparent healthcare coordination."
+                badgeText="Official Platform Film"
+                accentColor="blue"
+            />
 
             {/* Who We Are */}
             <section className="py-24 px-6 bg-white">
