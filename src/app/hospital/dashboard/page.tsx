@@ -812,10 +812,16 @@ export default function HospitalDashboard() {
                 </div>
 
                 {/* Main Action Tabs */}
-                <div className="bg-slate-50 p-2 rounded-[2rem] border border-slate-100 flex overflow-x-auto custom-scrollbar md:max-w-3xl shadow-sm gap-2 whitespace-nowrap">
+                <div 
+                    role="tablist"
+                    aria-label="Hospital Management Tabs"
+                    className="w-full bg-slate-50 p-1.5 sm:p-2 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2"
+                >
                     <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "appointments"}
                         onClick={() => setActiveMainTab("appointments")}
-                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
                             activeMainTab === "appointments" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
@@ -824,8 +830,10 @@ export default function HospitalDashboard() {
                         Appointments & Analytics
                     </button>
                     <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "slots"}
                         onClick={() => setActiveMainTab("slots")}
-                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
                             activeMainTab === "slots" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
@@ -834,8 +842,10 @@ export default function HospitalDashboard() {
                         Slot Management
                     </button>
                     <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "patients"}
                         onClick={() => setActiveMainTab("patients")}
-                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
                             activeMainTab === "patients" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
@@ -844,8 +854,10 @@ export default function HospitalDashboard() {
                         Patient Records
                     </button>
                     <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "payments"}
                         onClick={() => setActiveMainTab("payments")}
-                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
                             activeMainTab === "payments" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
@@ -854,8 +866,10 @@ export default function HospitalDashboard() {
                         Payments
                     </button>
                     <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "settlements"}
                         onClick={() => setActiveMainTab("settlements")}
-                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
                             activeMainTab === "settlements" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
@@ -864,8 +878,10 @@ export default function HospitalDashboard() {
                         Settlements
                     </button>
                     <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "followups"}
                         onClick={() => setActiveMainTab("followups")}
-                        className={`flex-1 py-3.5 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
                             activeMainTab === "followups" 
                                 ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
