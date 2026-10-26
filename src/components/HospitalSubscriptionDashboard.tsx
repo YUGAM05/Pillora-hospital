@@ -88,7 +88,9 @@ export default function HospitalSubscriptionDashboard() {
     const formatDate = (dateStr?: string) => {
         if (!dateStr) return "—";
         try {
-            return new Date(dateStr).toLocaleDateString("en-IN", {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return "—";
+            return d.toLocaleDateString("en-IN", {
                 day: "2-digit",
                 month: "short",
                 year: "numeric"
@@ -293,7 +295,7 @@ export default function HospitalSubscriptionDashboard() {
                             {formatDate(hospital.lastPaymentDate)}
                         </p>
                         <p className="text-[10px] text-emerald-600 font-bold">
-                            {hospital.lastPaymentAmount ? `₹${hospital.lastPaymentAmount.toLocaleString('en-IN')}` : 'No payment yet'}
+                            {hospital.lastPaymentAmount ? `₹${(Number(hospital.lastPaymentAmount) || 0).toLocaleString('en-IN')}` : 'No payment yet'}
                         </p>
                     </div>
 
@@ -496,7 +498,7 @@ export default function HospitalSubscriptionDashboard() {
                                             {formatDate(p.paymentDate)}
                                         </td>
                                         <td className="py-3.5 px-4 whitespace-nowrap font-black text-emerald-600 text-sm">
-                                            ₹{p.amount.toLocaleString('en-IN')}
+                                            ₹{(Number(p.amount) || 0).toLocaleString('en-IN')}
                                         </td>
                                         <td className="py-3.5 px-4 whitespace-nowrap font-bold text-slate-800">
                                             {p.paymentMethod}
