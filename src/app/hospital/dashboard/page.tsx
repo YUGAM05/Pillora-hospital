@@ -9,7 +9,7 @@ import {
     Users, Activity, Calendar, Clock, Plus, Settings, 
     LogOut, User, Stethoscope, ChevronRight, CheckCircle2, 
     XCircle, AlertCircle, Info, RefreshCcw, LayoutDashboard,
-    Download, CreditCard, IndianRupee, Bell
+    Download, CreditCard, IndianRupee, Bell, ShieldAlert
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 
@@ -17,6 +17,7 @@ import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 import PaymentAnalytics from "@/components/PaymentAnalytics";
 import HospitalSettlements from "@/components/HospitalSettlements";
 import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
+import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
 import { initWebPush } from "@/lib/webPush";
 
 export default function HospitalDashboard() {
@@ -58,7 +59,8 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription">("appointments");
+    const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [followUpPrefillData, setFollowUpPrefillData] = useState<any>(null);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [slots, setSlots] = useState<any[]>([]);
@@ -164,8 +166,15 @@ export default function HospitalDashboard() {
     const [manualPaymentStatus, setManualPaymentStatus] = useState("pending");
     const [manualBookingNotes, setManualBookingNotes] = useState("");
 
+    const isSubscriptionActive = !subscriptionData?.hospital || subscriptionData.hospital.subscriptionStatus === 'Active' || subscriptionData.hospital.subscriptionStatus === 'Expiring Soon';
+    const restrictionMessage = "Your Pillora subscription has expired or your payment is pending. Please contact the Pillora Admin to renew your subscription before generating new appointment slots.";
+
     const handleAddSlotSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!isSubscriptionActive) {
+            alert(restrictionMessage);
+            return;
+        }
         try {
             await api.post("/hospital/dashboard/slots/add", {
                 doctorId: addSlotDoctorId,
@@ -189,7 +198,7 @@ export default function HospitalDashboard() {
             setAddSlotRecurrenceUntil("");
             fetchData();
         } catch (err: any) {
-            alert(err.response?.data?.message || "Failed to add slot");
+            alert(err.response?.data?.message || restrictionMessage);
         }
     };
 
@@ -359,17 +368,24 @@ export default function HospitalDashboard() {
                 return;
             }
 
-            const [statsRes, doctorsRes, appointmentsRes, slotsRes] = await Promise.all([
+            const [statsRes, doctorsRes, appointmentsRes, slotsRes, subRes] = await Promise.all([
                 api.get("/hospital/dashboard/stats"),
                 api.get("/hospital/dashboard/doctors"),
                 api.get("/hospital/dashboard/appointments"),
-                api.get("/hospital/dashboard/slots")
+                api.get("/hospital/dashboard/slots"),
+                api.get("/hospital/dashboard/subscription").catch(err => {
+                    console.error("Failed to load subscription in dashboard", err);
+                    return { data: null };
+                })
             ]);
 
             setStats(statsRes.data);
             setDoctors(doctorsRes.data);
             setAppointments(appointmentsRes.data);
             setSlots(slotsRes.data);
+            if (subRes?.data) {
+                setSubscriptionData(subRes.data);
+            }
         } catch (err: any) {
             console.error(err);
             if (err.response?.status === 401) {
@@ -815,7 +831,7 @@ export default function HospitalDashboard() {
                 <div 
                     role="tablist"
                     aria-label="Hospital Management Tabs"
-                    className="w-full bg-slate-50 p-1.5 sm:p-2 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2"
+                    className="w-full bg-slate-50 p-1.5 sm:p-2 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2"
                 >
                     <button 
                         role="tab"
@@ -833,13 +849,16 @@ export default function HospitalDashboard() {
                         role="tab"
                         aria-selected={activeMainTab === "slots"}
                         onClick={() => setActiveMainTab("slots")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center relative ${
                             activeMainTab === "slots" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                         }`}
                     >
-                        Slot Management
+                        <span>Slot Management</span>
+                        {!isSubscriptionActive && (
+                            <span className="ml-1 w-2 h-2 rounded-full bg-rose-500" title="Slot generation locked" />
+                        )}
                     </button>
                     <button 
                         role="tab"
@@ -889,6 +908,27 @@ export default function HospitalDashboard() {
                     >
                         Follow-Up Reminders
                     </button>
+                    <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "subscription"}
+                        onClick={() => setActiveMainTab("subscription")}
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center relative ${
+                            activeMainTab === "subscription" 
+                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        <span>Subscription</span>
+                        {subscriptionData?.hospital?.isExpired && (
+                            <span className="ml-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                        )}
+                        {!subscriptionData?.hospital?.isExpired && subscriptionData?.hospital?.subscriptionStatus === 'Pending Payment' && (
+                            <span className="ml-1 w-2 h-2 rounded-full bg-amber-500" />
+                        )}
+                        {subscriptionData?.hospital?.isExpiringSoon && (
+                            <span className="ml-1 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                        )}
+                    </button>
                 </div>
 
                 {activeMainTab === "patients" && (
@@ -911,7 +951,11 @@ export default function HospitalDashboard() {
                     />
                 )}
 
-                {activeMainTab === "appointments" ? (
+                {activeMainTab === "subscription" && (
+                    <HospitalSubscriptionDashboard />
+                )}
+
+                {activeMainTab === "appointments" && (
                     <>
                         {/* Bookings Analytics & Operational Graphs */}
                         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
@@ -1527,10 +1571,33 @@ export default function HospitalDashboard() {
                             </div>
                         </div>
                     </>
-                ) : (
+                )}
+
+                {activeMainTab === "slots" && (
                     /* SLOT MANAGEMENT SECTION */
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
                         <div className="flex flex-col gap-4">
+                            {/* Subscription restriction warning banner */}
+                            {!isSubscriptionActive && (
+                                <div className="p-5 bg-rose-50 border-2 border-rose-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-rose-800">
+                                    <div className="flex items-start gap-3">
+                                        <ShieldAlert className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
+                                        <div className="space-y-0.5">
+                                            <p className="font-bold text-sm text-rose-900">Slot Generation Locked</p>
+                                            <p className="text-xs font-semibold leading-relaxed">
+                                                {restrictionMessage}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setActiveMainTab("subscription")}
+                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap self-start sm:self-auto shrink-0 shadow-sm active:scale-95"
+                                    >
+                                        View Subscription & Billing
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Title row */}
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                                 <div>
@@ -1542,6 +1609,10 @@ export default function HospitalDashboard() {
                                 {isSelfManaged && (
                                     <button 
                                         onClick={() => {
+                                            if (!isSubscriptionActive) {
+                                                alert(restrictionMessage);
+                                                return;
+                                            }
                                             if (doctors.length === 0) {
                                                 alert("Please recruit a doctor or specialty group first before adding slots.");
                                                 return;
@@ -1549,7 +1620,11 @@ export default function HospitalDashboard() {
                                             setAddSlotDoctorId(doctors[0]._id);
                                             setShowAddSlot(true);
                                         }}
-                                        className="px-5 py-3 bg-primary hover:bg-primary/95 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-all shrink-0"
+                                        className={`px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all shrink-0 ${
+                                            !isSubscriptionActive 
+                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
+                                                : 'bg-primary hover:bg-primary/95 text-white shadow-primary/20 active:scale-95'
+                                        }`}
                                     >
                                         <Plus className="w-4 h-4" /> Add New Slot
                                     </button>
@@ -1859,7 +1934,11 @@ export default function HospitalDashboard() {
                             <button onClick={() => setShowSlotGen(null)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
                         </div>
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <SlotGenTool doctor={showSlotGen} onClose={() => { setShowSlotGen(null); fetchData(); }} />
+                            <SlotGenTool 
+                                doctor={showSlotGen} 
+                                subscriptionStatus={subscriptionData?.hospital?.subscriptionStatus}
+                                onClose={() => { setShowSlotGen(null); fetchData(); }} 
+                            />
                         </div>
                     </motion.div>
                 </div>
