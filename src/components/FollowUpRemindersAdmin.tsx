@@ -207,6 +207,13 @@ export default function FollowUpRemindersAdmin({
         setFormFollowUpTime('10:00');
         setFormReason('');
         setFormReminderTiming('1_day_before');
+        
+        // Default custom time to now + 10 minutes (in local time)
+        const defaultCustom = new Date();
+        defaultCustom.setMinutes(defaultCustom.getMinutes() + 10);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        setFormCustomReminderDate(`${defaultCustom.getFullYear()}-${pad(defaultCustom.getMonth() + 1)}-${pad(defaultCustom.getDate())}T${pad(defaultCustom.getHours())}:${pad(defaultCustom.getMinutes())}`);
+
         setFormChannel('whatsapp');
         setFormIsConfirmedBooking(false);
         setFormNotes('');
@@ -228,6 +235,16 @@ export default function FollowUpRemindersAdmin({
         setFormFollowUpTime(reminder.followUpTime || '');
         setFormReason(reminder.reason || '');
         setFormReminderTiming(reminder.reminderTiming || '1_day_before');
+
+        // Populate custom date if present
+        if (reminder.reminderDate) {
+            const remD = new Date(reminder.reminderDate);
+            const pad = (n: number) => String(n).padStart(2, '0');
+            setFormCustomReminderDate(`${remD.getFullYear()}-${pad(remD.getMonth() + 1)}-${pad(remD.getDate())}T${pad(remD.getHours())}:${pad(remD.getMinutes())}`);
+        } else {
+            setFormCustomReminderDate('');
+        }
+
         setFormChannel(reminder.channel || 'whatsapp');
         setFormIsConfirmedBooking(reminder.isConfirmedBooking);
         setFormNotes(reminder.notes || '');
@@ -265,6 +282,19 @@ export default function FollowUpRemindersAdmin({
             return;
         }
 
+        if (formReminderTiming === 'custom' && !formCustomReminderDate) {
+            setFormError('Please select a custom reminder date & time');
+            return;
+        }
+
+        let customIso: string | undefined = undefined;
+        if (formReminderTiming === 'custom' && formCustomReminderDate) {
+            const parsed = new Date(formCustomReminderDate);
+            if (!isNaN(parsed.getTime())) {
+                customIso = parsed.toISOString();
+            }
+        }
+
         setSubmitting(true);
         try {
             const payload: any = {
@@ -279,7 +309,7 @@ export default function FollowUpRemindersAdmin({
                 followUpTime: formFollowUpTime || undefined,
                 reason: formReason.trim() || undefined,
                 reminderTiming: formReminderTiming,
-                customReminderDate: formReminderTiming === 'custom' ? formCustomReminderDate : undefined,
+                customReminderDate: customIso,
                 channel: formChannel,
                 isConfirmedBooking: formIsConfirmedBooking,
                 notes: formNotes.trim() || undefined
@@ -357,20 +387,22 @@ export default function FollowUpRemindersAdmin({
 
     // Calculated reminder preview text
     const getReminderPreviewText = () => {
+        if (formReminderTiming === 'custom') {
+            if (!formCustomReminderDate) return 'Select your custom reminder date & time (IST)';
+            const parsed = new Date(formCustomReminderDate);
+            return !isNaN(parsed.getTime())
+                ? `Custom reminder scheduled for ${parsed.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })} at ${parsed.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })} (IST).`
+                : 'Select your custom reminder date & time';
+        }
+
         if (!formFollowUpDate) return 'Select a follow-up date to see reminder timing preview.';
         const d = new Date(formFollowUpDate);
         let daysSub = 1;
         if (formReminderTiming === '2_days_before') daysSub = 2;
         if (formReminderTiming === '3_days_before') daysSub = 3;
 
-        if (formReminderTiming === 'custom') {
-            return formCustomReminderDate 
-                ? `Custom reminder scheduled for ${new Date(formCustomReminderDate).toLocaleString()}`
-                : 'Select your custom reminder date & time';
-        }
-
         d.setDate(d.getDate() - daysSub);
-        return `Notification will be sent on ${d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })} at 09:00 AM IST (${daysSub} day${daysSub > 1 ? 's' : ''} prior).`;
+        return `Notification will be sent on ${d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })} at 09:00 AM IST (${daysSub} day${daysSub > 1 ? 's' : ''} prior).`;
     };
 
     return (
@@ -624,9 +656,9 @@ export default function FollowUpRemindersAdmin({
                                             {/* Reminder Scheduled */}
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                                                    <Bell className="w-3.5 h-3.5 text-amber-500" />
-                                                    <span>{reminderD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-                                                    <span className="text-[10px] text-slate-400 font-semibold">{reminderD.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <Bell className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                                    <span>{reminderD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}</span>
+                                                    <span className="text-[10px] text-slate-400 font-semibold">{reminderD.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}</span>
                                                 </div>
                                                 <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400 block mt-0.5">
                                                     {rem.reminderTiming.replace(/_/g, ' ')}
@@ -785,7 +817,7 @@ export default function FollowUpRemindersAdmin({
                                         <div className="flex justify-between">
                                             <span className="text-slate-400 font-bold uppercase text-[9px]">Reminder</span>
                                             <span className="font-bold text-amber-600">
-                                                {reminderD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at {reminderD.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                                {reminderD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })} at {reminderD.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' })}
                                             </span>
                                         </div>
                                         {rem.reason && (
@@ -1071,7 +1103,7 @@ export default function FollowUpRemindersAdmin({
                                     {formReminderTiming === 'custom' && (
                                         <div className="mt-3">
                                             <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                                                Select Custom Date & Time
+                                                Select Custom Date & Time (IST)
                                             </label>
                                             <input
                                                 type="datetime-local"
