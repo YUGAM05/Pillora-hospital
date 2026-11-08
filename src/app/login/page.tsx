@@ -137,10 +137,7 @@ export default function HospitalLoginPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <div className="flex justify-between items-center ml-1">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Password</label>
-                                <Link href="/forgot-password" className="text-[10px] font-black text-blue-600 uppercase hover:underline">Forgot?</Link>
-                            </div>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
@@ -151,6 +148,14 @@ export default function HospitalLoginPage() {
                                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 tracking-widest transition-all"
                                     placeholder="••••••••"
                                 />
+                            </div>
+                            <div className="flex justify-end pt-1">
+                                <Link
+                                    href="/forgot-password"
+                                    className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
+                                >
+                                    Forgot Password?
+                                </Link>
                             </div>
                         </div>
 

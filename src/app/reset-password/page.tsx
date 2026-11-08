@@ -19,6 +19,7 @@ function HospitalResetPasswordForm() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState("");
     const [success, setSuccess] = useState(false);
@@ -62,6 +63,17 @@ function HospitalResetPasswordForm() {
 
     const isPasswordValid = hasMinLength && hasUppercase && hasLowercase && hasNumber && hasSpecial;
 
+    // Strength calculation
+    const requirementsCount = [hasMinLength, hasUppercase, hasLowercase, hasNumber, hasSpecial].filter(Boolean).length;
+    const getStrengthDetails = () => {
+        if (!password) return { label: "Not Entered", percent: 0, color: "bg-slate-200", textColor: "text-slate-400" };
+        if (requirementsCount <= 2) return { label: "Weak", percent: 25, color: "bg-rose-500", textColor: "text-rose-500" };
+        if (requirementsCount === 3) return { label: "Fair", percent: 50, color: "bg-amber-500", textColor: "text-amber-500" };
+        if (requirementsCount === 4) return { label: "Good", percent: 75, color: "bg-blue-500", textColor: "text-blue-500" };
+        return { label: "Strong", percent: 100, color: "bg-emerald-500", textColor: "text-emerald-600" };
+    };
+    const strength = getStrengthDetails();
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!isPasswordValid) {
@@ -84,7 +96,7 @@ function HospitalResetPasswordForm() {
             setSuccess(true);
             setTimeout(() => {
                 router.push("/login");
-            }, 3000);
+            }, 2500);
         } catch (err: any) {
             setSubmitError(err.response?.data?.message || "Failed to reset password. Please try again.");
         } finally {
@@ -129,12 +141,21 @@ function HospitalResetPasswordForm() {
                 <div className="flex justify-center">
                     <CheckCircle2 className="w-16 h-16 text-green-500 animate-bounce" />
                 </div>
-                <h3 className="text-2xl font-black text-slate-900">Password Updated</h3>
-                <p className="text-slate-500 font-bold text-sm">
-                    Your password has been reset successfully. Redirecting you to the login page...
+                <h3 className="text-2xl font-black text-slate-900">Password Reset Successful</h3>
+                <p className="text-slate-600 font-bold text-sm leading-relaxed max-w-sm mx-auto">
+                    Your password has been reset successfully. Please log in using your new password.
                 </p>
-                <div className="flex justify-center">
-                    <Loader2 className="w-5 h-5 text-green-500 animate-spin" />
+                <div className="flex flex-col items-center gap-3 pt-2">
+                    <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                        <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        <span>Redirecting to login...</span>
+                    </div>
+                    <Link
+                        href="/login"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline pt-2"
+                    >
+                        Back to Login
+                    </Link>
                 </div>
             </div>
         );
@@ -165,6 +186,7 @@ function HospitalResetPasswordForm() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        title={showPassword ? "Hide password" : "Show password"}
                     >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
@@ -173,19 +195,43 @@ function HospitalResetPasswordForm() {
 
             {/* Confirm Password input */}
             <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Password</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm New Password</label>
                 <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
                         required
-                        type={showPassword ? "text" : "password"}
+                        type={showConfirmPassword ? "text" : "password"}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 transition-all"
+                        className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 transition-all"
                         placeholder="••••••••"
                     />
+                    <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        title={showConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                 </div>
             </div>
+
+            {/* Password Strength Indicator */}
+            {password && (
+                <div className="space-y-1.5 px-1">
+                    <div className="flex justify-between items-center text-xs font-bold">
+                        <span className="text-[10px] uppercase tracking-wider text-slate-400">Password Strength</span>
+                        <span className={`text-xs font-bold ${strength.textColor}`}>{strength.label}</span>
+                    </div>
+                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                            className={`h-full ${strength.color} transition-all duration-300`}
+                            style={{ width: `${strength.percent}%` }}
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Dynamic Checklist */}
             <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-3">
@@ -225,7 +271,7 @@ function HospitalResetPasswordForm() {
                 disabled={submitting || !isPasswordValid || !passwordsMatch}
                 className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-2xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50 disabled:hover:translate-y-0 disabled:active:scale-100 flex items-center justify-center"
             >
-                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Update Password"}
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Reset Password"}
             </button>
         </form>
     );

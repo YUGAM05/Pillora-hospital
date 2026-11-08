@@ -15,6 +15,7 @@ import SlotGenTool from "@/components/SlotGenTool";
 
 import PatientSearchAdmin from "@/components/PatientSearchAdmin";
 import PaymentAnalytics from "@/components/PaymentAnalytics";
+import PaymentsAndCollections from "@/components/PaymentsAndCollections";
 import HospitalSettlements from "@/components/HospitalSettlements";
 import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
 import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
@@ -164,6 +165,7 @@ export default function HospitalDashboard() {
     const [manualBookingDate, setManualBookingDate] = useState(new Date().toISOString().split("T")[0]);
     const [manualSlotId, setManualSlotId] = useState("");
     const [manualPaymentStatus, setManualPaymentStatus] = useState("pending");
+    const [manualPaymentMethod, setManualPaymentMethod] = useState("cash");
     const [manualBookingNotes, setManualBookingNotes] = useState("");
 
     const isSubscriptionActive = !subscriptionData?.hospital || subscriptionData.hospital.subscriptionStatus === 'Active' || subscriptionData.hospital.subscriptionStatus === 'Expiring Soon';
@@ -329,7 +331,8 @@ export default function HospitalDashboard() {
                 slotId: manualSlotId,
                 slotTime: selectedSlot.startTime,
                 notes: manualBookingNotes,
-                paymentStatus: manualPaymentStatus
+                paymentStatus: manualPaymentStatus,
+                paymentMethod: manualPaymentMethod
             });
 
             alert("Walk-in appointment booked successfully!");
@@ -341,6 +344,7 @@ export default function HospitalDashboard() {
             setManualSlotId("");
             setManualBookingNotes("");
             setManualPaymentStatus("pending");
+            setManualPaymentMethod("cash");
             fetchData();
         } catch (err: any) {
             alert(err.response?.data?.message || "Failed to book manual appointment");
@@ -882,7 +886,7 @@ export default function HospitalDashboard() {
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                         }`}
                     >
-                        Payments
+                        Payments & Collections
                     </button>
                     <button 
                         role="tab"
@@ -936,7 +940,7 @@ export default function HospitalDashboard() {
                 )}
 
                 {activeMainTab === "payments" && (
-                    <PaymentAnalytics />
+                    <PaymentsAndCollections doctors={doctors} />
                 )}
 
                 {activeMainTab === "settlements" && (
@@ -1399,6 +1403,8 @@ export default function HospitalDashboard() {
                                                                         className={`flex items-center gap-1 text-[9px] font-black uppercase py-1.5 px-2 rounded-lg border transition-colors disabled:opacity-50 ${
                                                                             (app.paymentStatus === 'paid')
                                                                                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                                                : (app.paymentStatus === 'partial')
+                                                                                ? 'bg-amber-50 border-amber-200 text-amber-700'
                                                                                 : (app.paymentStatus === 'waived')
                                                                                 ? 'bg-slate-100 border-slate-200 text-slate-500'
                                                                                 : 'bg-rose-50 border-rose-200 text-rose-600'
@@ -1407,12 +1413,30 @@ export default function HospitalDashboard() {
                                                                         {paymentUpdatingId === app._id ? (
                                                                             <RefreshCcw className="w-3 h-3 animate-spin" />
                                                                         ) : null}
-                                                                        {app.paymentStatus === 'paid' ? '💳 Paid' : app.paymentStatus === 'waived' ? '✦ Revoked' : '⚠ Unpaid'}
+                                                                        {app.paymentStatus === 'paid' 
+                                                                            ? '💳 Paid' 
+                                                                            : app.paymentStatus === 'partial' 
+                                                                            ? `Advance: ₹${app.advancePaid || ''} • Due: ₹${app.balanceDue !== undefined ? app.balanceDue : ''}` 
+                                                                            : app.paymentStatus === 'waived' 
+                                                                            ? '✦ Revoked' 
+                                                                            : '⚠ Unpaid'}
                                                                         <span className="text-[7px] opacity-60 ml-0.5">▾</span>
                                                                     </button>
                                                                     {openPaymentDropdown === app._id && (
-                                                                        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden min-w-[130px]">
-                                                                            <div className="px-3 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50">Manually Recorded</div>
+                                                                        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden min-w-[140px]">
+                                                                            <div className="px-3 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50">Payment Action</div>
+                                                                            {app.balanceDue > 0 && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        setOpenPaymentDropdown(null);
+                                                                                        setActiveMainTab("payments");
+                                                                                    }}
+                                                                                    className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 border-b border-slate-100 transition-colors"
+                                                                                >
+                                                                                    Collect Balance
+                                                                                </button>
+                                                                            )}
                                                                             {(['unpaid', 'paid', 'waived'] as const).map(s => (
                                                                                 <button
                                                                                     key={s}
@@ -2205,13 +2229,25 @@ export default function HospitalDashboard() {
                                     <input required type="date" min={new Date().toISOString().split("T")[0]} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Offline Payment Status</label>
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Clinic Payment Status</label>
                                     <select value={manualPaymentStatus} onChange={e => setManualPaymentStatus(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
                                         <option value="pending">Pending Payment</option>
-                                        <option value="paid">Paid (Offline Collected)</option>
+                                        <option value="paid">Paid (Collected at Hospital)</option>
                                     </select>
                                 </div>
                             </div>
+
+                            {manualPaymentStatus === "paid" && (
+                                <div className="space-y-1">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Method</label>
+                                    <select value={manualPaymentMethod} onChange={e => setManualPaymentMethod(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
+                                        <option value="cash">Cash Collection</option>
+                                        <option value="upi">UPI / QR Code</option>
+                                        <option value="card">Debit / Credit Card</option>
+                                        <option value="other_online">Other Online Collection</option>
+                                    </select>
+                                </div>
+                            )}
 
                             {manualDoctorId && (
                                 <div className="space-y-1">

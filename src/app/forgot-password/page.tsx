@@ -14,12 +14,20 @@ export default function HospitalForgotPasswordPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError("");
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const trimmedEmail = email.trim();
+        if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+            setError("Please enter a valid email address.");
+            return;
+        }
+
+        setLoading(true);
 
         try {
             await api.post("/auth/forgot-password", {
-                email: email.trim(),
+                email: trimmedEmail,
                 portal: "hospital"
             });
             setSuccess(true);
@@ -64,8 +72,8 @@ export default function HospitalForgotPasswordPage() {
                 {/* Right Side: Recover Form */}
                 <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center">
                     <div className="mb-10 text-center md:text-left">
-                        <h1 className="text-3xl font-black text-slate-900 mb-2">Recover Password</h1>
-                        <p className="text-slate-500 font-medium">Verify your partner credentials to proceed</p>
+                        <h1 className="text-3xl font-black text-slate-900 mb-2">Forgot Your Password?</h1>
+                        <p className="text-slate-500 font-medium">Enter your registered email address. We will send you a link to reset your password.</p>
                     </div>
 
                     {error && (
@@ -80,7 +88,7 @@ export default function HospitalForgotPasswordPage() {
                                 <CheckCircle className="w-16 h-16 text-green-500" />
                             </div>
                             <p className="text-sm font-bold text-slate-700 bg-slate-50 border border-slate-100 p-5 rounded-2xl leading-relaxed">
-                                If an account exists with this email address, we&apos;ve sent a password reset link.
+                                If an account exists with this email address, you will receive a password reset link shortly.
                             </p>
                             <Link
                                 href="/login"
@@ -92,7 +100,7 @@ export default function HospitalForgotPasswordPage() {
                     ) : (
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Registered Email Address</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                     <input
