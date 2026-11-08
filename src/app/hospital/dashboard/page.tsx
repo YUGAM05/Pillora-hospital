@@ -940,7 +940,7 @@ export default function HospitalDashboard() {
                 )}
 
                 {activeMainTab === "payments" && (
-                    <PaymentsAndCollections doctors={doctors} />
+                    <PaymentAnalytics doctors={doctors} />
                 )}
 
                 {activeMainTab === "settlements" && (
