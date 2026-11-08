@@ -129,9 +129,16 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
     const getFilterParams = useCallback((isExport: boolean = false) => {
         const params = new URLSearchParams();
         params.append("period", period);
+        params.append("dateFilter", period);
         if (period === "custom") {
-            if (customStartDate) params.append("startDate", customStartDate);
-            if (customEndDate) params.append("endDate", customEndDate);
+            if (customStartDate) {
+                params.append("startDate", customStartDate);
+                params.append("customStart", customStartDate);
+            }
+            if (customEndDate) {
+                params.append("endDate", customEndDate);
+                params.append("customEnd", customEndDate);
+            }
         }
         if (searchQuery.trim()) params.append("search", searchQuery.trim());
         if (filterDoctorId !== "all") params.append("doctorId", filterDoctorId);
@@ -154,9 +161,16 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
         try {
             const params = new URLSearchParams();
             params.append("period", period);
+            params.append("dateFilter", period);
             if (period === "custom") {
-                if (customStartDate) params.append("startDate", customStartDate);
-                if (customEndDate) params.append("endDate", customEndDate);
+                if (customStartDate) {
+                    params.append("startDate", customStartDate);
+                    params.append("customStart", customStartDate);
+                }
+                if (customEndDate) {
+                    params.append("endDate", customEndDate);
+                    params.append("customEnd", customEndDate);
+                }
             }
             const res = await api.get(`/hospital/dashboard/financial/overview?${params.toString()}`);
             if (res.data?.success) {
@@ -339,6 +353,27 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
         }
     };
 
+    // Extract overview cards and indicators defensively (supports both .cards and .primaryCards formats)
+    const cards = {
+        totalConsultationFees: overview?.cards?.totalConsultationFees ?? (overview as any)?.primaryCards?.totalConsultationFees ?? 0,
+        grossOnlineAdvances: overview?.cards?.grossOnlineAdvances ?? (overview as any)?.primaryCards?.onlineAdvanceViaPillora?.grossAmount ?? 0,
+        payableFromPillora: {
+            netPayable: overview?.cards?.payableFromPillora?.netPayable ?? (overview as any)?.primaryCards?.payableFromPillora?.netAmount ?? 0,
+            pendingSettlement: overview?.cards?.payableFromPillora?.pendingSettlement ?? (overview as any)?.primaryCards?.payableFromPillora?.breakdown?.pendingSettlement ?? 0,
+            processing: overview?.cards?.payableFromPillora?.processing ?? (overview as any)?.primaryCards?.payableFromPillora?.breakdown?.processing ?? 0,
+            alreadySettled: overview?.cards?.payableFromPillora?.alreadySettled ?? (overview as any)?.primaryCards?.payableFromPillora?.breakdown?.alreadySettled ?? 0
+        },
+        cashAtClinic: overview?.cards?.cashAtClinic ?? (overview as any)?.primaryCards?.collectedAtClinicCash?.amount ?? 0,
+        onlineAtClinic: overview?.cards?.onlineAtClinic ?? (overview as any)?.primaryCards?.collectedAtClinicOnline?.amount ?? 0
+    };
+
+    const indicators = {
+        pendingPatientCollection: overview?.additionalIndicators?.pendingPatientCollection ?? 0,
+        pilloraSettlementPending: overview?.additionalIndicators?.pilloraSettlementPending ?? 0,
+        totalSuccessfullySettled: overview?.additionalIndicators?.totalSuccessfullySettled ?? 0,
+        totalGatewayCharges: overview?.additionalIndicators?.totalGatewayCharges ?? 0
+    };
+
     return (
         <div className="space-y-8">
             {/* Toast Alert */}
@@ -467,7 +502,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                             {loadingOverview ? (
                                 <div className="h-9 w-32 bg-slate-100 rounded-lg animate-pulse" />
                             ) : (
-                                formatCurrency(overview?.cards?.totalConsultationFees)
+                                formatCurrency(cards.totalConsultationFees)
                             )}
                         </div>
                         <p className="text-[11px] text-slate-400 mt-2 font-medium">Value of all appointments within selected date range</p>
@@ -488,7 +523,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                             {loadingOverview ? (
                                 <div className="h-9 w-32 bg-slate-100 rounded-lg animate-pulse" />
                             ) : (
-                                formatCurrency(overview?.cards?.grossOnlineAdvances)
+                                formatCurrency(cards.grossOnlineAdvances)
                             )}
                         </div>
                         <p className="text-[11px] text-blue-600/80 mt-2 font-medium">Gross advance collected through Pillora.in</p>
@@ -509,7 +544,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                             {loadingOverview ? (
                                 <div className="h-9 w-32 bg-white/20 rounded-lg animate-pulse" />
                             ) : (
-                                formatCurrency(overview?.cards?.payableFromPillora?.netPayable)
+                                formatCurrency(cards.payableFromPillora.netPayable)
                             )}
                         </div>
                         <p className="text-[10px] text-indigo-300 mt-1">Advances minus 2.36% gateway charges and taxes</p>
@@ -518,15 +553,15 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                     <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
                         <div className="flex justify-between items-center text-amber-300">
                             <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Pending Settlement:</span>
-                            <span className="font-bold">{formatCurrency(overview?.cards?.payableFromPillora?.pendingSettlement)}</span>
+                            <span className="font-bold">{formatCurrency(cards.payableFromPillora.pendingSettlement)}</span>
                         </div>
                         <div className="flex justify-between items-center text-blue-200">
                             <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Processing:</span>
-                            <span className="font-bold">{formatCurrency(overview?.cards?.payableFromPillora?.processing)}</span>
+                            <span className="font-bold">{formatCurrency(cards.payableFromPillora.processing)}</span>
                         </div>
                         <div className="flex justify-between items-center text-emerald-300">
                             <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Already Settled:</span>
-                            <span className="font-bold">{formatCurrency(overview?.cards?.payableFromPillora?.alreadySettled)}</span>
+                            <span className="font-bold">{formatCurrency(cards.payableFromPillora.alreadySettled)}</span>
                         </div>
                     </div>
                 </div>
@@ -548,7 +583,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                             {loadingOverview ? (
                                 <div className="h-9 w-32 bg-slate-100 rounded-lg animate-pulse" />
                             ) : (
-                                formatCurrency(overview?.cards?.cashAtClinic)
+                                formatCurrency(cards.cashAtClinic)
                             )}
                         </div>
                         <p className="text-[11px] text-emerald-600/80 mt-2 font-medium">All payments recorded by hospital staff as cash collections</p>
@@ -569,7 +604,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                             {loadingOverview ? (
                                 <div className="h-9 w-32 bg-slate-100 rounded-lg animate-pulse" />
                             ) : (
-                                formatCurrency(overview?.cards?.onlineAtClinic)
+                                formatCurrency(cards.onlineAtClinic)
                             )}
                         </div>
                         <p className="text-[11px] text-teal-600/80 mt-2 font-medium">Direct UPI, Card, and digital payments collected at the facility</p>
@@ -586,7 +621,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                     <div className="bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
                         <p className="text-[11px] font-bold text-slate-500">Pending Patient Collection</p>
                         <p className="text-lg sm:text-xl font-black text-rose-600 mt-1">
-                            {loadingOverview ? "..." : formatCurrency(overview?.additionalIndicators?.pendingPatientCollection)}
+                            {loadingOverview ? "..." : formatCurrency(indicators.pendingPatientCollection)}
                         </p>
                         <span className="text-[10px] text-slate-400 block mt-0.5">Total fees – total collections</span>
                     </div>
@@ -594,7 +629,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                     <div className="bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
                         <p className="text-[11px] font-bold text-slate-500">Pillora Settlement Pending</p>
                         <p className="text-lg sm:text-xl font-black text-amber-600 mt-1">
-                            {loadingOverview ? "..." : formatCurrency(overview?.additionalIndicators?.pilloraSettlementPending)}
+                            {loadingOverview ? "..." : formatCurrency(indicators.pilloraSettlementPending)}
                         </p>
                         <span className="text-[10px] text-slate-400 block mt-0.5">Net advances pending payout</span>
                     </div>
@@ -602,7 +637,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                     <div className="bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
                         <p className="text-[11px] font-bold text-slate-500">Total Successfully Settled</p>
                         <p className="text-lg sm:text-xl font-black text-emerald-600 mt-1">
-                            {loadingOverview ? "..." : formatCurrency(overview?.additionalIndicators?.totalSuccessfullySettled)}
+                            {loadingOverview ? "..." : formatCurrency(indicators.totalSuccessfullySettled)}
                         </p>
                         <span className="text-[10px] text-slate-400 block mt-0.5">Net advances already paid to hospital</span>
                     </div>
@@ -610,7 +645,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                     <div className="bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
                         <p className="text-[11px] font-bold text-slate-500">Total Gateway Charges</p>
                         <p className="text-lg sm:text-xl font-black text-slate-700 mt-1">
-                            {loadingOverview ? "..." : formatCurrency(overview?.additionalIndicators?.totalGatewayCharges)}
+                            {loadingOverview ? "..." : formatCurrency(indicators.totalGatewayCharges)}
                         </p>
                         <span className="text-[10px] text-slate-400 block mt-0.5">2% fee + 18% GST (2.36%)</span>
                     </div>
