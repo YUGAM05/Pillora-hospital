@@ -57,24 +57,31 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
         setError("");
         try {
             const token = getToken();
-            const headers = { Authorization: `Bearer ${token}` };
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-            // Fetch dashboard stats
-            const dashRes = await api.get("/settlements/hospital/dashboard", { headers });
-            if (dashRes.data.success) {
-                setDashboardMetrics(dashRes.data.dashboard);
+            // Fetch dashboard stats, expected payouts, and history in parallel with resilience
+            const [dashRes, expRes, histRes] = await Promise.allSettled([
+                api.get("/settlements/hospital/dashboard", { headers }),
+                api.get("/settlements/hospital/expected", { headers }),
+                api.get("/settlements/hospital/history", { headers })
+            ]);
+
+            if (dashRes.status === "fulfilled" && dashRes.value.data?.success) {
+                setDashboardMetrics(dashRes.value.data.dashboard);
+            } else if (dashRes.status === "rejected") {
+                console.warn("[SettlementDashboardWarning]", dashRes.reason);
             }
 
-            // Fetch expected payouts
-            const expRes = await api.get("/settlements/hospital/expected", { headers });
-            if (expRes.data.success) {
-                setExpectedPayout(expRes.data.expected);
+            if (expRes.status === "fulfilled" && expRes.value.data?.success) {
+                setExpectedPayout(expRes.value.data.expected);
+            } else if (expRes.status === "rejected") {
+                console.warn("[SettlementExpectedWarning]", expRes.reason);
             }
 
-            // Fetch history
-            const histRes = await api.get("/settlements/hospital/history", { headers });
-            if (histRes.data.success) {
-                setSettlementHistory(histRes.data.settlements || []);
+            if (histRes.status === "fulfilled" && histRes.value.data?.success) {
+                setSettlementHistory(histRes.value.data.settlements || []);
+            } else if (histRes.status === "rejected") {
+                console.warn("[SettlementHistoryWarning]", histRes.reason);
             }
         } catch (err: any) {
             console.error("[FetchHospitalDataError]", err);
@@ -85,10 +92,8 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
     }, []);
 
     useEffect(() => {
-        if (hospitalId) {
-            fetchHospitalData();
-        }
-    }, [hospitalId, fetchHospitalData]);
+        fetchHospitalData();
+    }, [fetchHospitalData]);
 
     // 2. Confirm receipt ("Yes, Payment Received")
     const handleConfirmReceipt = async (settlementId: string) => {

@@ -61,6 +61,7 @@ export default function HospitalDashboard() {
 
     // Slot Management States
     const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription">("appointments");
+    const [pendingSettlements, setPendingSettlements] = useState<any[]>([]);
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [followUpPrefillData, setFollowUpPrefillData] = useState<any>(null);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -390,6 +391,14 @@ export default function HospitalDashboard() {
             if (subRes?.data) {
                 setSubscriptionData(subRes.data);
             }
+
+            // Fetch pending settlements for instant notification banner and badge
+            api.get("/settlements/hospital/history").then((res) => {
+                if (res.data?.success) {
+                    const pending = (res.data.settlements || []).filter((s: any) => s.status === 'Awaiting Hospital Confirmation');
+                    setPendingSettlements(pending);
+                }
+            }).catch(() => {});
         } catch (err: any) {
             console.error(err);
             if (err.response?.status === 401) {
@@ -746,6 +755,40 @@ export default function HospitalDashboard() {
                 </div>
 
 
+                {/* Action Required Banner for Pending Settlement Payouts */}
+                {pendingSettlements.length > 0 && activeMainTab !== "settlements" && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-5 sm:p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shadow-amber-900/10"
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30 animate-pulse">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900 text-[10px] font-black uppercase tracking-wider mb-1">
+                                    Action Required • Settlement Confirmation
+                                </div>
+                                <h4 className="font-black text-slate-950 text-base sm:text-lg">
+                                    Pillora Admin sent a settlement payout of ₹{pendingSettlements[0].netAmount?.toFixed(2)}
+                                </h4>
+                                <p className="text-xs text-slate-700 font-medium mt-0.5 leading-relaxed">
+                                    Transferred via <strong>{pendingSettlements[0].transferMethod}</strong> (UTR: <code className="font-mono bg-white px-1.5 py-0.5 rounded font-bold text-slate-900">{pendingSettlements[0].utrNumber}</code>).
+                                    Please verify your bank account and confirm receipt.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setActiveMainTab("settlements")}
+                            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all shrink-0 active:scale-95"
+                        >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Review & Confirm Settlement →</span>
+                        </button>
+                    </motion.div>
+                )}
+
                 {/* Mode Warning & Benefits */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {!isSelfManaged && (
@@ -892,13 +935,18 @@ export default function HospitalDashboard() {
                         role="tab"
                         aria-selected={activeMainTab === "settlements"}
                         onClick={() => setActiveMainTab("settlements")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center relative ${
                             activeMainTab === "settlements" 
                                 ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
                                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                         }`}
                     >
-                        Settlements
+                        <span>Settlements</span>
+                        {pendingSettlements.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-400 text-slate-950 animate-pulse">
+                                {pendingSettlements.length}
+                            </span>
+                        )}
                     </button>
                     <button 
                         role="tab"
@@ -944,7 +992,10 @@ export default function HospitalDashboard() {
                 )}
 
                 {activeMainTab === "settlements" && (
-                    <HospitalSettlements hospitalId={stats?.hospital?._id} trialEndDate={stats?.hospital?.trialEndDate} />
+                    <HospitalSettlements 
+                        hospitalId={stats?.stats?.hospital?._id || stats?.hospital?._id} 
+                        trialEndDate={stats?.stats?.hospital?.trialEndDate || stats?.hospital?.trialEndDate} 
+                    />
                 )}
 
                 {activeMainTab === "followups" && (
