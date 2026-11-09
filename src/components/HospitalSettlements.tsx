@@ -308,29 +308,41 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 animate-slideDown shadow-xl shadow-amber-900/5"
+                        className="p-6 sm:p-7 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-[2rem] flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-xl shadow-amber-900/10"
                     >
-                        <div className="flex items-start gap-3">
-                            <Clock className="w-6 h-6 text-amber-600 shrink-0 mt-0.5 animate-pulse" />
-                            <div>
-                                <h5 className="font-extrabold text-slate-900 text-sm">Payout Confirmation Required</h5>
-                                <p className="text-xs text-slate-600 font-semibold mt-0.5">
-                                    Pillora Admin sent a payout of <span className="font-bold text-slate-900">{formatCurrency(s.netAmount)}</span> via {s.transferMethod} (UTR: {s.utrNumber}). Please confirm receipt.
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30 animate-pulse">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900 text-[10px] font-black uppercase tracking-wider">
+                                    Action Required • Settlement Confirmation
+                                </div>
+                                <h5 className="font-black text-slate-950 text-base sm:text-lg">
+                                    Settlement Payout Received: {formatCurrency(s.netAmount)}
+                                </h5>
+                                <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                                    Pillora Admin transferred <strong className="text-slate-900">{formatCurrency(s.netAmount)}</strong> via <strong>{s.transferMethod}</strong> (UTR: <code className="font-mono bg-white/80 px-1.5 py-0.5 rounded text-slate-900 font-bold">{s.utrNumber}</code>)
+                                    {s.startDate && s.endDate && (
+                                        <span> for the period <strong>{new Date(s.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to {new Date(s.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong> ({s.advanceCount || s.paymentIds?.length || 0} online advances)</span>
+                                    )}.
+                                    Please confirm whether you have received the funds in your hospital bank account.
                                 </p>
                             </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap items-center gap-3 shrink-0">
                             <button
                                 onClick={() => handleConfirmReceipt(s._id)}
                                 disabled={actionSubmitting}
-                                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+                                className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-emerald-600/30 active:scale-95 flex items-center gap-2"
                             >
-                                Yes, Payment Received
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>Confirm Received (Yes, I have received the money from Pillora)</span>
                             </button>
                             <button
                                 onClick={() => setDisputeModalId(s._id)}
                                 disabled={actionSubmitting}
-                                className="px-5 py-2.5 border border-rose-200 text-rose-700 hover:bg-rose-50 rounded-xl text-xs font-bold transition-all"
+                                className="px-4 py-3 border border-rose-300 text-rose-700 hover:bg-rose-50 rounded-2xl text-xs font-bold transition-all"
                             >
                                 Report an Issue
                             </button>
@@ -423,9 +435,10 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                         <thead>
                             <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 <th className="py-4 px-6">Settlement ID</th>
+                                <th className="py-4 px-6">Period Range</th>
                                 <th className="py-4 px-6 text-center">Payout Date</th>
                                 <th className="py-4 px-6 text-right">Gross Advances</th>
-                                <th className="py-4 px-6 text-right">Gateway Overheads</th>
+                                <th className="py-4 px-6 text-right">Gateway Deductions (2.36%)</th>
                                 <th className="py-4 px-6 text-right">Net Payout</th>
                                 <th className="py-4 px-6 text-center">Method</th>
                                 <th className="py-4 px-6">UTR Code</th>
@@ -437,12 +450,22 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                             {settlementHistory.map((s) => (
                                 <tr key={s._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-all font-semibold text-slate-800 text-xs">
                                     <td className="py-5 px-6 font-mono text-blue-600 font-bold">{s.settlementId}</td>
+                                    <td className="py-5 px-6 text-slate-600 font-medium">
+                                        {s.startDate && s.endDate ? (
+                                            <div>
+                                                <span>{new Date(s.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(s.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                                <div className="text-[10px] text-slate-400">{s.advanceCount || s.paymentIds?.length || 0} advances</div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-slate-400">Consolidated</span>
+                                        )}
+                                    </td>
                                     <td className="py-5 px-6 text-center text-slate-400 font-medium">
                                         {new Date(s.transferDate || s.createdAt).toLocaleDateString()}
                                     </td>
                                     <td className="py-5 px-6 text-right font-bold text-slate-700">{formatCurrency(s.grossCollection)}</td>
-                                    <td className="py-5 px-6 text-right text-rose-500">{formatCurrency(s.razorpayCharges + s.gstCharges)}</td>
-                                    <td className="py-5 px-6 text-right font-black text-indigo-600">{formatCurrency(s.netAmount)}</td>
+                                    <td className="py-5 px-6 text-right text-rose-500 font-bold">- {formatCurrency(s.razorpayCharges + s.gstCharges)}</td>
+                                    <td className="py-5 px-6 text-right font-black text-indigo-600 text-sm">{formatCurrency(s.netAmount)}</td>
                                     <td className="py-5 px-6 text-center font-bold text-slate-500">{s.transferMethod}</td>
                                     <td className="py-5 px-6 font-mono text-slate-500 font-medium select-all">{s.utrNumber || '—'}</td>
                                     <td className="py-5 px-6 text-center">
@@ -463,7 +486,7 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                             ))}
                             {settlementHistory.length === 0 && (
                                 <tr>
-                                    <td colSpan={9} className="py-12 text-center text-slate-400 font-bold italic">
+                                    <td colSpan={10} className="py-12 text-center text-slate-400 font-bold italic">
                                         No payouts recorded.
                                     </td>
                                 </tr>
