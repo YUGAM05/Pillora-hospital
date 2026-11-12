@@ -19,6 +19,7 @@ import PaymentsAndCollections from "@/components/PaymentsAndCollections";
 import HospitalSettlements from "@/components/HospitalSettlements";
 import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
 import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
+import HospitalSettingsModule from "@/components/HospitalSettingsModule";
 import { initWebPush } from "@/lib/webPush";
 
 export default function HospitalDashboard() {
@@ -60,7 +61,7 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription" | "settings">("appointments");
     const [pendingSettlements, setPendingSettlements] = useState<any[]>([]);
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [followUpPrefillData, setFollowUpPrefillData] = useState<any>(null);
@@ -433,6 +434,13 @@ export default function HospitalDashboard() {
             return;
         }
         setUser(u);
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const tab = params.get("tab");
+            if (tab && ["appointments", "slots", "patients", "payments", "settlements", "followups", "subscription", "settings"].includes(tab)) {
+                setActiveMainTab(tab as any);
+            }
+        }
         fetchData();
         fetchAnalytics();
 
@@ -878,7 +886,7 @@ export default function HospitalDashboard() {
                 <div 
                     role="tablist"
                     aria-label="Hospital Management Tabs"
-                    className="w-full bg-slate-50 p-1.5 sm:p-2 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 sm:gap-2"
+                    className="w-full bg-slate-50 p-1.5 sm:p-2 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2"
                 >
                     <button 
                         role="tab"
@@ -981,6 +989,19 @@ export default function HospitalDashboard() {
                             <span className="ml-1 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                         )}
                     </button>
+                    <button 
+                        role="tab"
+                        aria-selected={activeMainTab === "settings"}
+                        onClick={() => setActiveMainTab("settings")}
+                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center gap-1.5 ${
+                            activeMainTab === "settings" 
+                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
+                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        }`}
+                    >
+                        <Settings className="w-3.5 h-3.5" />
+                        <span>Settings</span>
+                    </button>
                 </div>
 
                 {activeMainTab === "patients" && (
@@ -1008,6 +1029,19 @@ export default function HospitalDashboard() {
 
                 {activeMainTab === "subscription" && (
                     <HospitalSubscriptionDashboard />
+                )}
+
+                {activeMainTab === "settings" && (
+                    <HospitalSettingsModule 
+                        hospital={stats?.hospital || stats?.stats?.hospital}
+                        user={user}
+                        onProfileUpdated={fetchData}
+                        onNavigateTab={(tab: string) => {
+                            if (["appointments", "slots", "patients", "payments", "settlements", "followups", "subscription", "settings"].includes(tab)) {
+                                setActiveMainTab(tab as any);
+                            }
+                        }}
+                    />
                 )}
 
                 {activeMainTab === "appointments" && (
