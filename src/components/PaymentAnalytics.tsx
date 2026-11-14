@@ -22,7 +22,12 @@ import {
     FileText, 
     Eye, 
     Check, 
-    Info 
+    Info,
+    Pencil,
+    Lock,
+    History,
+    AlertTriangle,
+    ShieldCheck
 } from "lucide-react";
 
 interface OverviewCards {
@@ -61,6 +66,7 @@ interface PaymentRecord {
     patientName: string;
     patientPhone: string;
     patientEmail?: string;
+    doctorId?: string;
     doctorName: string;
     consultationFee: number;
     advanceRequired: number;
@@ -79,12 +85,14 @@ interface PaymentRecord {
     transactionDate?: string;
     transactions?: Array<{
         transactionId: string;
+        paymentId?: string;
         amount: number;
         type: string;
         source: string;
         method: string;
         status: string;
         date: string;
+        notes?: string;
     }>;
 }
 
@@ -122,6 +130,25 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
     const [balanceSubmitting, setBalanceSubmitting] = useState<boolean>(false);
 
     const [detailsModalRecord, setDetailsModalRecord] = useState<PaymentRecord | null>(null);
+    const [auditHistory, setAuditHistory] = useState<any[]>([]);
+    const [loadingAuditHistory, setLoadingAuditHistory] = useState<boolean>(false);
+
+    // Edit Payment & Collection States
+    const [editModalRecord, setEditModalRecord] = useState<PaymentRecord | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        patientName: "",
+        doctorId: "",
+        consultationFee: 0,
+        paymentId: "",
+        paymentAmount: 0,
+        paymentMethod: "cash" as "cash" | "upi" | "card" | "qr" | "other_online",
+        paymentDate: "",
+        transactionReference: "",
+        notes: ""
+    });
+    const [showConfirmModal, setShowConfirmModal] = useState<boolean>(false);
+    const [confirmReason, setConfirmReason] = useState<string>("");
+    const [editSubmitting, setEditSubmitting] = useState<boolean>(false);
 
     // Toast feedback
     const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -296,6 +323,167 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
             showToast(err.response?.data?.message || "Error submitting balance collection", "error");
         } finally {
             setBalanceSubmitting(false);
+        }
+    };
+
+    // Fetch Audit History when Details Modal Opens
+    useEffect(() => {
+        if (!detailsModalRecord) {
+            setAuditHistory([]);
+            return;
+        }
+        const fetchAudit = async () => {
+            setLoadingAuditHistory(true);
+            try {
+                const res = await api.get(`/hospital/dashboard/appointments/${detailsModalRecord.appointmentId}/payment-history`);
+                if (res.data?.success) {
+                    setAuditHistory(res.data.history || []);
+                }
+            } catch (err) {
+                console.error("[FetchAuditHistoryError]", err);
+            } finally {
+                setLoadingAuditHistory(false);
+            }
+        };
+        fetchAudit();
+    }, [detailsModalRecord]);
+
+    // Open Edit Payment & Collection Modal
+    const openEditModal = (record: PaymentRecord) => {
+        const clinicTx = record.transactions?.find(t => 
+            t.source === "clinic_collection" || 
+            t.method === "cash" || 
+            t.method === "upi" || 
+            t.method === "card" ||
+            t.type === "balance"
+        ) || (record.transactions && record.transactions.length > 0 ? record.transactions[record.transactions.length - 1] : null);
+
+        setEditFormData({
+            patientName: record.patientName || "",
+            doctorId: record.doctorId || "",
+            consultationFee: record.consultationFee || 0,
+            paymentId: clinicTx?.paymentId || "",
+            paymentAmount: record.balancePaid || clinicTx?.amount || 0,
+            paymentMethod: (clinicTx?.method as any) || (record.clinicCashCollection > 0 ? "cash" : "upi"),
+            paymentDate: clinicTx?.date ? new Date(clinicTx.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+            transactionReference: clinicTx?.transactionId || "",
+            notes: (clinicTx as any)?.notes || ""
+        });
+        setEditModalRecord(record);
+        setShowConfirmModal(false);
+        setConfirmReason("");
+    };
+
+    // Calculate Diff for Confirmation Modal
+    const getFieldChanges = () => {
+        if (!editModalRecord) return [];
+        const changes: Array<{ label: string; oldValue: any; newValue: any }> = [];
+
+        if (editFormData.patientName.trim() !== (editModalRecord.patientName || "").trim()) {
+            changes.push({
+                label: "Patient Name",
+                oldValue: editModalRecord.patientName || "N/A",
+                newValue: editFormData.patientName.trim()
+            });
+        }
+
+        if (editFormData.doctorId && editFormData.doctorId !== editModalRecord.doctorId) {
+            const docObj = doctors.find((d: any) => d._id === editFormData.doctorId);
+            changes.push({
+                label: "Assigned Doctor",
+                oldValue: editModalRecord.doctorName,
+                newValue: docObj ? `Dr. ${docObj.name}` : editFormData.doctorId
+            });
+        }
+
+        if (Number(editFormData.consultationFee) !== editModalRecord.consultationFee) {
+            changes.push({
+                label: "Consultation Fee",
+                oldValue: `₹${editModalRecord.consultationFee}`,
+                newValue: `₹${editFormData.consultationFee}`
+            });
+        }
+
+        if (Number(editFormData.paymentAmount) !== editModalRecord.balancePaid) {
+            changes.push({
+                label: "Clinic Collection Amount",
+                oldValue: `₹${editModalRecord.balancePaid.toFixed(2)}`,
+                newValue: `₹${Number(editFormData.paymentAmount).toFixed(2)}`
+            });
+        }
+
+        const clinicTx = editModalRecord.transactions?.find(t => 
+            t.source === "clinic_collection" || t.method === "cash" || t.method === "upi" || t.method === "card"
+        );
+        const oldMethod = clinicTx?.method || (editModalRecord.clinicCashCollection > 0 ? "cash" : "upi");
+        if (editFormData.paymentMethod !== oldMethod) {
+            changes.push({
+                label: "Payment Mode",
+                oldValue: String(oldMethod).toUpperCase(),
+                newValue: String(editFormData.paymentMethod).toUpperCase()
+            });
+        }
+
+        if (editFormData.transactionReference.trim() !== (clinicTx?.transactionId || "").trim()) {
+            changes.push({
+                label: "Transaction Reference",
+                oldValue: clinicTx?.transactionId || "None",
+                newValue: editFormData.transactionReference.trim() || "None"
+            });
+        }
+
+        if (editFormData.notes.trim() !== ((clinicTx as any)?.notes || "").trim()) {
+            changes.push({
+                label: "Collection Notes",
+                oldValue: (clinicTx as any)?.notes || "None",
+                newValue: editFormData.notes.trim() || "None"
+            });
+        }
+
+        return changes;
+    };
+
+    // Submit Edit to Backend
+    const handleSaveEditSubmit = async () => {
+        if (!editModalRecord) return;
+        if (!confirmReason.trim() || confirmReason.trim().length < 3) {
+            showToast("Please provide a valid mandatory reason for modification (minimum 3 characters).", "error");
+            return;
+        }
+
+        setEditSubmitting(true);
+        try {
+            const payload = {
+                reason: confirmReason.trim(),
+                patientName: editFormData.patientName.trim(),
+                doctorId: editFormData.doctorId || undefined,
+                consultationFee: Number(editFormData.consultationFee),
+                paymentId: editFormData.paymentId || undefined,
+                paymentAmount: Number(editFormData.paymentAmount),
+                paymentMethod: editFormData.paymentMethod,
+                paymentDate: editFormData.paymentDate ? new Date(editFormData.paymentDate).toISOString() : undefined,
+                transactionReference: editFormData.transactionReference.trim(),
+                notes: editFormData.notes.trim()
+            };
+
+            const res = await api.put(`/hospital/dashboard/appointments/${editModalRecord.appointmentId}/financial-edit`, payload);
+
+            if (res.data?.success) {
+                showToast("Payment and collection details updated successfully!", "success");
+                setShowConfirmModal(false);
+                setEditModalRecord(null);
+                setConfirmReason("");
+                fetchOverview();
+                fetchRecords();
+            } else {
+                showToast(res.data?.message || "Failed to update payment record", "error");
+            }
+        } catch (err: any) {
+            console.error("[EditPaymentError]", err);
+            const errMsg = err.response?.data?.error || err.response?.data?.message || err.message || "Failed to update payment record";
+            showToast(errMsg, "error");
+        } finally {
+            setEditSubmitting(false);
         }
     };
 
@@ -948,6 +1136,14 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                                     )}
 
                                                     <button
+                                                        onClick={() => openEditModal(record)}
+                                                        className="p-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all"
+                                                        title="Edit Payment & Collection"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                    </button>
+
+                                                    <button
                                                         onClick={() => setDetailsModalRecord(record)}
                                                         className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-all"
                                                         title="View Details"
@@ -1258,12 +1454,446 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                             </div>
                         </div>
 
+                        {/* Audit Trail / Modification History */}
+                        <div className="pt-2 border-t border-slate-100">
+                            <div className="flex items-center justify-between mb-2">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <History className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Payment Modification History ({auditHistory.length})</span>
+                                </h4>
+                                <span className="text-[10px] text-slate-400 font-semibold">Immutable Audit Trail</span>
+                            </div>
+
+                            {loadingAuditHistory ? (
+                                <div className="p-4 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
+                                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                                    <span>Loading audit history...</span>
+                                </div>
+                            ) : auditHistory.length === 0 ? (
+                                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-slate-400 text-xs font-medium">
+                                    No previous modifications recorded. All original payment records are intact.
+                                </div>
+                            ) : (
+                                <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                                    {auditHistory.map((log: any, idx: number) => (
+                                        <div key={log._id || idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+                                            <div className="flex items-center justify-between text-[11px]">
+                                                <span className="font-bold text-slate-800">
+                                                    {log.modifierName || "Staff"} <span className="text-slate-400 font-normal">({log.modifierRole || "hospital"})</span>
+                                                </span>
+                                                <span className="text-slate-400">{formatDateTime(log.createdAt)}</span>
+                                            </div>
+                                            <div className="bg-amber-50/70 border border-amber-200/60 p-2 rounded-lg text-slate-700 text-[11px]">
+                                                <span className="font-bold text-amber-900">Reason: </span>
+                                                {log.reason}
+                                            </div>
+                                            {log.changes && log.changes.length > 0 && (
+                                                <div className="space-y-1">
+                                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Changes:</span>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {log.changes.map((c: any, cIdx: number) => (
+                                                            <div key={cIdx} className="px-2 py-0.5 bg-white border border-slate-200 rounded text-[11px] text-slate-700">
+                                                                <span className="font-semibold text-slate-900">{c.label}: </span>
+                                                                <span className="line-through text-rose-500">{String(c.oldValue)}</span>
+                                                                <span className="mx-1 text-slate-400">→</span>
+                                                                <span className="font-bold text-emerald-600">{String(c.newValue)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                         <div className="pt-2 flex justify-end">
                             <button
                                 onClick={() => setDetailsModalRecord(null)}
                                 className="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-all"
                             >
                                 Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Edit Payment & Collection */}
+            {editModalRecord && !showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-6 max-h-[90vh] overflow-y-auto">
+                        {/* Header */}
+                        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-blue-100 text-blue-700 rounded-xl">
+                                        <Pencil className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900">Edit Payment & Collection</h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">
+                                            Appointment ID: {editModalRecord.appointmentId} {editModalRecord.tokenNumber ? `• Token #${editModalRecord.tokenNumber}` : ""}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setEditModalRecord(null)}
+                                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-all"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Form */}
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            setShowConfirmModal(true);
+                        }} className="space-y-5">
+
+                            {/* Section A: Appointment Information */}
+                            <div className="space-y-3">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                    <span>Appointment Information</span>
+                                </h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Patient Name</label>
+                                        <input
+                                            type="text"
+                                            value={editFormData.patientName}
+                                            onChange={(e) => setEditFormData({ ...editFormData, patientName: e.target.value })}
+                                            className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Doctor</label>
+                                        <select
+                                            value={editFormData.doctorId}
+                                            onChange={(e) => setEditFormData({ ...editFormData, doctorId: e.target.value })}
+                                            className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                                        >
+                                            <option value="">{editModalRecord.doctorName || "Select Doctor"}</option>
+                                            {doctors.map((doc: any) => (
+                                                <option key={doc._id} value={doc._id}>
+                                                    Dr. {doc.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Consultation Fee (₹)</label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step="1"
+                                            value={editFormData.consultationFee}
+                                            onChange={(e) => setEditFormData({ ...editFormData, consultationFee: Number(e.target.value) })}
+                                            className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-900"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section B: Online Advance (via Pillora / Razorpay) - Locked / Protected */}
+                            {editModalRecord.advancePaid > 0 && (
+                                <div className="p-3.5 bg-blue-50/70 border border-blue-200/80 rounded-2xl space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Lock className="w-4 h-4 text-blue-700" />
+                                            <span className="text-xs font-black text-blue-900 uppercase tracking-wider">
+                                                Pillora Online Advance (Razorpay)
+                                            </span>
+                                        </div>
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-300 flex items-center gap-1">
+                                            <ShieldCheck className="w-3 h-3" />
+                                            Protected & Settled
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2 text-xs pt-1">
+                                        <div>
+                                            <span className="text-[10px] text-blue-600 block">Gross Advance:</span>
+                                            <span className="font-bold text-blue-950">₹{editModalRecord.advancePaid.toFixed(2)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-blue-600 block">2.36% Gateway:</span>
+                                            <span className="font-bold text-rose-600">-₹{editModalRecord.gatewayCharges.toFixed(2)}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] text-blue-600 block">Net Settlement:</span>
+                                            <span className="font-black text-emerald-700">₹{editModalRecord.netAdvancePayable.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-blue-700/80 italic">
+                                        * Razorpay original transaction IDs, gateway deductions, and settled payouts cannot be altered by hospital users.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Section C: Clinic Collection Details (Editable) */}
+                            <div className="space-y-3 pt-1">
+                                <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                                    <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>Clinic Collection Details</span>
+                                </h4>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                                            Clinic Collection Amount (₹) *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            step="0.01"
+                                            value={editFormData.paymentAmount}
+                                            onChange={(e) => setEditFormData({ ...editFormData, paymentAmount: Number(e.target.value) })}
+                                            className="w-full py-2.5 px-3 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-black text-slate-900"
+                                            required
+                                        />
+                                        <span className="text-[10px] text-slate-400 mt-0.5 block">
+                                            Enter verified physical cash or clinic payment received.
+                                        </span>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Payment Mode *</label>
+                                        <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                                            {[
+                                                { id: "cash", label: "Cash" },
+                                                { id: "upi", label: "UPI" },
+                                                { id: "card", label: "Card" },
+                                                { id: "qr", label: "QR" }
+                                            ].map((m) => (
+                                                <button
+                                                    type="button"
+                                                    key={m.id}
+                                                    onClick={() => setEditFormData({ ...editFormData, paymentMethod: m.id as any })}
+                                                    className={`py-2 text-xs font-bold rounded-xl border transition-all text-center ${
+                                                        editFormData.paymentMethod === m.id
+                                                            ? "bg-slate-900 border-slate-900 text-white shadow-sm"
+                                                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                                                    }`}
+                                                >
+                                                    {m.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">Payment Date & Time</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={editFormData.paymentDate}
+                                            onChange={(e) => setEditFormData({ ...editFormData, paymentDate: e.target.value })}
+                                            className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                                            Transaction Reference / Receipt ID
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. REC-10492 or UPI Ref"
+                                            value={editFormData.transactionReference}
+                                            onChange={(e) => setEditFormData({ ...editFormData, transactionReference: e.target.value })}
+                                            className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Collection Notes</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Verified by front desk receptionist"
+                                        value={editFormData.notes}
+                                        onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                                        className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Live Financial Calculation Preview */}
+                            {(() => {
+                                const fee = Number(editFormData.consultationFee || 0);
+                                const advance = Number(editModalRecord.advancePaid || 0);
+                                const clinic = Number(editFormData.paymentAmount || 0);
+                                const totalCollected = advance + clinic;
+                                const balanceDue = Math.max(0, fee - totalCollected);
+                                const overCollected = Math.max(0, totalCollected - fee);
+
+                                return (
+                                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                                            Live Financial Recalculation Preview
+                                        </span>
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 block">Consultation Fee</span>
+                                                <span className="font-bold text-slate-800">₹{fee.toFixed(2)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 block">Total Patient Collection</span>
+                                                <span className="font-bold text-slate-900">₹{totalCollected.toFixed(2)}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 block">Remaining Due</span>
+                                                <span className={`font-bold ${balanceDue > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                                                    ₹{balanceDue.toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="text-[10px] text-slate-400 block">Over-Collection</span>
+                                                <span className={`font-bold ${overCollected > 0 ? "text-amber-600" : "text-emerald-600"}`}>
+                                                    {overCollected > 0 ? `+₹${overCollected.toFixed(2)}` : "₹0.00"}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Over-Collection Resolution Notice */}
+                                        {Boolean(editModalRecord.overCollectionAmount && editModalRecord.overCollectionAmount > 0 && overCollected === 0) && (
+                                            <div className="mt-1 flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 p-2 rounded-xl">
+                                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                                <span>
+                                                    Reconciled! This correction resolves the ₹{Number(editModalRecord.overCollectionAmount).toFixed(2)} over-collection. Total patient collection will perfectly match consultation fee.
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Footer Buttons */}
+                            <div className="pt-2 flex justify-end gap-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => setEditModalRecord(null)}
+                                    className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-1.5"
+                                >
+                                    <span>Review & Confirm Changes</span>
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal: Edit Confirmation with Mandatory Reason */}
+            {editModalRecord && showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 space-y-5 animate-scale-up">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2.5 bg-amber-100 text-amber-700 rounded-2xl shrink-0">
+                                <AlertTriangle className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900">Confirm Financial Modification</h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Appointment #{editModalRecord.appointmentId.slice(-8)} • Patient: {editModalRecord.patientName}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-2xl text-xs text-amber-900">
+                            <p className="font-semibold">
+                                You are modifying financial records. All modifications are permanently recorded in the immutable audit log with user and device metadata.
+                            </p>
+                        </div>
+
+                        {/* Changed Fields Diff */}
+                        <div className="space-y-2">
+                            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 block">
+                                Summary of Modifications
+                            </span>
+                            {(() => {
+                                const changes = getFieldChanges();
+                                if (changes.length === 0) {
+                                    return (
+                                        <div className="p-3 bg-slate-50 rounded-xl text-center text-xs text-slate-400">
+                                            No field values were changed.
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 text-xs">
+                                        <div className="grid grid-cols-3 bg-slate-50 p-2 font-bold text-[10px] text-slate-400 uppercase">
+                                            <span>Field</span>
+                                            <span>Previous</span>
+                                            <span>New</span>
+                                        </div>
+                                        {changes.map((c, i) => (
+                                            <div key={i} className="grid grid-cols-3 p-2 font-medium">
+                                                <span className="font-bold text-slate-800">{c.label}</span>
+                                                <span className="line-through text-rose-500">{String(c.oldValue)}</span>
+                                                <span className="font-bold text-emerald-600">{String(c.newValue)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* Mandatory Reason Field */}
+                        <div>
+                            <label className="text-xs font-black text-slate-800 block mb-1">
+                                Reason for Modification <span className="text-rose-600">*</span>
+                            </label>
+                            <textarea
+                                rows={3}
+                                placeholder="e.g. Corrected clinic cash collection typo from ₹100 to ₹80 after physical till reconciliation..."
+                                value={confirmReason}
+                                onChange={(e) => setConfirmReason(e.target.value)}
+                                className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-slate-800 resize-none"
+                                required
+                            />
+                            <span className="text-[10px] text-slate-400 mt-1 block">
+                                Mandatory: Provide audit justification for this financial alteration.
+                            </span>
+                        </div>
+
+                        {/* Confirmation Buttons */}
+                        <div className="pt-2 flex justify-end gap-2.5">
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmModal(false)}
+                                disabled={editSubmitting}
+                                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all"
+                            >
+                                Back to Edit
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleSaveEditSubmit}
+                                disabled={editSubmitting || !confirmReason.trim() || confirmReason.trim().length < 3}
+                                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5"
+                            >
+                                {editSubmitting ? (
+                                    <>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        <span>Saving Changes...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Check className="w-3.5 h-3.5" />
+                                        <span>Confirm & Save Changes</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
