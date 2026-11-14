@@ -29,7 +29,9 @@ interface OverviewCards {
     totalConsultationFees: number;
     grossOnlineAdvances: number;
     payableFromPillora: {
+        title?: string;
         netPayable: number;
+        outstandingPayable?: number;
         pendingSettlement: number;
         processing: number;
         alreadySettled: number;
@@ -43,6 +45,7 @@ interface AdditionalIndicators {
     pilloraSettlementPending: number;
     totalSuccessfullySettled: number;
     totalGatewayCharges: number;
+    patientOverCollection?: number;
 }
 
 interface OverviewData {
@@ -66,6 +69,8 @@ interface PaymentRecord {
     netAdvancePayable: number;
     balanceDue: number;
     balancePaid: number;
+    totalCollected?: number;
+    overCollectionAmount?: number;
     clinicCashCollection: number;
     clinicOnlineCollection: number;
     paymentStatus: string;
@@ -358,7 +363,11 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
         totalConsultationFees: overview?.cards?.totalConsultationFees ?? (overview as any)?.primaryCards?.totalConsultationFees ?? 0,
         grossOnlineAdvances: overview?.cards?.grossOnlineAdvances ?? (overview as any)?.primaryCards?.onlineAdvanceViaPillora?.grossAmount ?? 0,
         payableFromPillora: {
+            title: overview?.cards?.payableFromPillora?.title ?? "Total Net Settlement",
             netPayable: overview?.cards?.payableFromPillora?.netPayable ?? (overview as any)?.primaryCards?.payableFromPillora?.netAmount ?? 0,
+            outstandingPayable: overview?.cards?.payableFromPillora?.outstandingPayable ?? (
+                (overview?.cards?.payableFromPillora?.pendingSettlement ?? 0) + (overview?.cards?.payableFromPillora?.processing ?? 0)
+            ),
             pendingSettlement: overview?.cards?.payableFromPillora?.pendingSettlement ?? (overview as any)?.primaryCards?.payableFromPillora?.breakdown?.pendingSettlement ?? 0,
             processing: overview?.cards?.payableFromPillora?.processing ?? (overview as any)?.primaryCards?.payableFromPillora?.breakdown?.processing ?? 0,
             alreadySettled: overview?.cards?.payableFromPillora?.alreadySettled ?? (overview as any)?.primaryCards?.payableFromPillora?.breakdown?.alreadySettled ?? 0
@@ -371,7 +380,8 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
         pendingPatientCollection: overview?.additionalIndicators?.pendingPatientCollection ?? 0,
         pilloraSettlementPending: overview?.additionalIndicators?.pilloraSettlementPending ?? 0,
         totalSuccessfullySettled: overview?.additionalIndicators?.totalSuccessfullySettled ?? 0,
-        totalGatewayCharges: overview?.additionalIndicators?.totalGatewayCharges ?? 0
+        totalGatewayCharges: overview?.additionalIndicators?.totalGatewayCharges ?? 0,
+        patientOverCollection: overview?.additionalIndicators?.patientOverCollection ?? 0
     };
 
     return (
@@ -530,7 +540,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                     </div>
                 </div>
 
-                {/* CARD 3: PAYABLE FROM PILLORA */}
+                {/* CARD 3: TOTAL NET SETTLEMENT */}
                 <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 sm:p-7 rounded-3xl shadow-xl shadow-indigo-900/20 relative overflow-hidden flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-3">
@@ -539,7 +549,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                 <Wallet className="w-4 h-4" />
                             </div>
                         </div>
-                        <h4 className="text-xs font-bold text-indigo-200 uppercase tracking-wider">Payable from Pillora</h4>
+                        <h4 className="text-xs font-bold text-indigo-200 uppercase tracking-wider">Total Net Settlement</h4>
                         <div className="text-3xl font-black text-white mt-1.5">
                             {loadingOverview ? (
                                 <div className="h-9 w-32 bg-white/20 rounded-lg animate-pulse" />
@@ -547,7 +557,18 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                 formatCurrency(cards.payableFromPillora.netPayable)
                             )}
                         </div>
-                        <p className="text-[10px] text-indigo-300 mt-1">Advances minus 2.36% gateway charges and taxes</p>
+                        <p className="text-[10px] text-indigo-300 mt-1">Advances minus 2.36% gateway charges (Gross – Gateway = Pending + Processing + Settled)</p>
+
+                        {/* Separate Outstanding Payable figure */}
+                        <div className="mt-3 px-3 py-2 rounded-xl bg-white/10 border border-white/15 flex items-center justify-between text-xs">
+                            <span className="text-amber-300 font-semibold flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5" /> Outstanding Payable:
+                            </span>
+                            <span className="font-black text-amber-300 text-sm">
+                                {formatCurrency(cards.payableFromPillora.pendingSettlement + cards.payableFromPillora.processing)}
+                            </span>
+                        </div>
+                        <span className="text-[9px] text-indigo-300/80 mt-1 block">Pending + Processing only • Excludes settled payouts</span>
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-white/10 space-y-1.5 text-[11px]">
@@ -612,12 +633,12 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 </div>
             </div>
 
-            {/* ADDITIONAL FINANCIAL SUMMARY (4 INDICATORS) */}
-            <div className="bg-slate-50/80 rounded-3xl p-5 sm:p-6 border border-slate-200/80">
-                <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+            {/* ADDITIONAL FINANCIAL SUMMARY (INDICATORS) */}
+            <div className="bg-slate-50/80 rounded-3xl p-5 sm:p-6 border border-slate-200/80 space-y-4">
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" /> Additional Financial Summary
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
                     <div className="bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
                         <p className="text-[11px] font-bold text-slate-500">Pending Patient Collection</p>
                         <p className="text-lg sm:text-xl font-black text-rose-600 mt-1">
@@ -650,6 +671,31 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                         <span className="text-[10px] text-slate-400 block mt-0.5">2% fee + 18% GST (2.36%)</span>
                     </div>
                 </div>
+
+                {/* Over-collection Reconciliation Adjustment Category */}
+                {Boolean(indicators.patientOverCollection && indicators.patientOverCollection > 0) && (
+                    <div className="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900 shadow-sm">
+                        <div className="flex items-start sm:items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-200 text-amber-700 flex items-center justify-center shrink-0">
+                                <AlertCircle className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <span className="font-black text-xs uppercase tracking-wider block">
+                                    Patient Over-Collection • Reconciliation Adjustment
+                                </span>
+                                <span className="text-[11px] text-amber-700 font-medium">
+                                    Total patient collections (₹{cards.grossOnlineAdvances + cards.cashAtClinic + cards.onlineAtClinic}) exceed consultation fees (₹{cards.totalConsultationFees}). Excess recorded at facility:
+                                </span>
+                            </div>
+                        </div>
+                        <div className="text-right sm:text-right shrink-0">
+                            <span className="text-lg sm:text-xl font-black text-amber-800 font-mono">
+                                +{formatCurrency(indicators.patientOverCollection)}
+                            </span>
+                            <span className="text-[9px] text-amber-600 block font-semibold">Over-collected from patient</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* DETAILED APPOINTMENT PAYMENT RECORDS TABLE */}
@@ -865,6 +911,11 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                                             {record.clinicCashCollection > 0 && `Cash: ₹${record.clinicCashCollection.toFixed(2)} `}
                                                             {record.clinicOnlineCollection > 0 && `Online: ₹${record.clinicOnlineCollection.toFixed(2)}`}
                                                         </div>
+                                                        {Boolean(record.overCollectionAmount && record.overCollectionAmount > 0) && (
+                                                            <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                                                                +₹{Number(record.overCollectionAmount || 0).toFixed(2)} Over-collected
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <span className="text-slate-400">—</span>
@@ -1131,6 +1182,21 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                 <p className="text-base font-black text-rose-700 mt-0.5">₹{detailsModalRecord.balanceDue}</p>
                             </div>
                         </div>
+
+                        {/* Over-collection Alert Banner */}
+                        {Boolean(detailsModalRecord.overCollectionAmount && detailsModalRecord.overCollectionAmount > 0) && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-900 shadow-sm">
+                                <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-black block uppercase tracking-wider text-amber-800">
+                                        Patient Over-Collection: +₹{Number(detailsModalRecord.overCollectionAmount || 0).toFixed(2)}
+                                    </span>
+                                    <span className="text-amber-700 mt-0.5 block leading-relaxed">
+                                        Total amount collected from patient (₹{(detailsModalRecord.advancePaid + detailsModalRecord.balancePaid).toFixed(2)}) exceeds consultation fee (₹{detailsModalRecord.consultationFee.toFixed(2)}). An excess of ₹{Number(detailsModalRecord.overCollectionAmount || 0).toFixed(2)} was recorded at the clinic.
+                                    </span>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Patient & Doctor Details */}
                         <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/60 grid grid-cols-2 gap-4 text-xs">
