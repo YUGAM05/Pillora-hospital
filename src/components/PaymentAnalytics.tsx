@@ -828,42 +828,42 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                             </td>
 
                                             <td className="py-3.5 px-4 text-right font-bold text-slate-900">
-                                                ₹{record.consultationFee}
+                                                ₹{record.consultationFee.toLocaleString("en-IN")}
                                             </td>
 
                                             <td className="py-3.5 px-4 text-right">
                                                 {record.advancePaid > 0 ? (
-                                                    <span className="font-bold text-blue-600">₹{record.advancePaid}</span>
+                                                    <span className="font-bold text-blue-600">₹{record.advancePaid.toFixed(2)}</span>
                                                 ) : (
-                                                    <span className="text-slate-400">₹0</span>
+                                                    <span className="text-slate-400">₹0.00</span>
                                                 )}
                                             </td>
 
-                                            <td className="py-3.5 px-4 text-right text-slate-500">
-                                                {record.gatewayCharges > 0 ? `₹${record.gatewayCharges}` : "—"}
+                                            <td className="py-3.5 px-4 text-right text-slate-500 font-mono text-xs">
+                                                {record.gatewayCharges > 0 ? `₹${record.gatewayCharges.toFixed(2)}` : "—"}
                                             </td>
 
-                                            <td className="py-3.5 px-4 text-right font-semibold text-indigo-700">
-                                                {record.netAdvancePayable > 0 ? `₹${record.netAdvancePayable}` : "—"}
+                                            <td className="py-3.5 px-4 text-right font-semibold text-indigo-700 font-mono text-xs">
+                                                {record.netAdvancePayable > 0 ? `₹${record.netAdvancePayable.toFixed(2)}` : "—"}
                                             </td>
 
                                             <td className="py-3.5 px-4 text-right">
                                                 {hasBalanceDue ? (
                                                     <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md">
-                                                        ₹{record.balanceDue}
+                                                        ₹{record.balanceDue.toFixed(2)}
                                                     </span>
                                                 ) : (
-                                                    <span className="text-emerald-600 font-bold">₹0</span>
+                                                    <span className="text-emerald-600 font-bold">₹0.00</span>
                                                 )}
                                             </td>
 
                                             <td className="py-3.5 px-4 text-right">
                                                 {clinicCollectionTotal > 0 ? (
                                                     <div>
-                                                        <span className="font-bold text-slate-800">₹{clinicCollectionTotal}</span>
+                                                        <span className="font-bold text-slate-800">₹{clinicCollectionTotal.toFixed(2)}</span>
                                                         <div className="text-[10px] text-slate-400">
-                                                            {record.clinicCashCollection > 0 && `Cash: ₹${record.clinicCashCollection} `}
-                                                            {record.clinicOnlineCollection > 0 && `Online: ₹${record.clinicOnlineCollection}`}
+                                                            {record.clinicCashCollection > 0 && `Cash: ₹${record.clinicCashCollection.toFixed(2)} `}
+                                                            {record.clinicOnlineCollection > 0 && `Online: ₹${record.clinicOnlineCollection.toFixed(2)}`}
                                                         </div>
                                                     </div>
                                                 ) : (
