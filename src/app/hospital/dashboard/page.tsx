@@ -21,6 +21,7 @@ import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
 import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
 import HospitalSettingsModule from "@/components/HospitalSettingsModule";
 import { initWebPush } from "@/lib/webPush";
+import { doctorLabel, doctorShortLabel } from "@/lib/doctorName";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -509,9 +510,9 @@ export default function HospitalDashboard() {
                 `"${app.patient?.name || 'N/A'}"`,
                 `"${app.patient?.phone || 'N/A'}"`,
                 `"${app.doctor?.specialty || 'N/A'}"`,
-                `"${new Date(app.slotTime).toLocaleDateString()}"`,
+                `"${new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
                 `"${timeSlot}"`,
-                `"${new Date(app.bookingDate || app.createdAt || Date.now()).toLocaleDateString()}"`,
+                `"${new Date(app.bookingDate || app.createdAt || Date.now()).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
                 `"${app.status || 'N/A'}"`,
                 `"${stats?.hospital?.name || stats?.name || user?.hospitalName || 'Pillora Hospital'}"`
             ];
@@ -827,6 +828,11 @@ export default function HospitalDashboard() {
                             {stats?.priority_support && (
                                 <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-rose-100">Priority Support</span>
                             )}
+                            {!(stats?.is_featured || stats?.has_custom_page || stats?.has_govt_schemes || stats?.is_spotlight || stats?.priority_support) && (
+                                <p className="text-sm text-slate-500 font-medium">
+                                    Standard listing — your hospital page and online booking are live.
+                                </p>
+                            )}
                         </div>
                         <div className="text-right">
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plan Benefits</p>
@@ -861,7 +867,7 @@ export default function HospitalDashboard() {
                                     onClick={() => setShowSlotGen(doc)}
                                     className="w-full sm:w-auto px-5 py-4 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 text-slate-700 hover:text-blue-600 font-black rounded-2xl text-xs flex items-center justify-center sm:justify-start gap-2.5 transition-all shadow-sm hover:shadow active:scale-95 shrink-0"
                                 >
-                                    <Clock className="w-4 h-4" /> Setup Timing for Dr. {doc.name}
+                                    <Clock className="w-4 h-4" /> Setup Timing for {doctorLabel(doc)}
                                 </button>
                             ))}
                             {doctors.length === 0 && (
@@ -1076,7 +1082,7 @@ export default function HospitalDashboard() {
                                                     />
                                                 </div>
                                                 <p className="text-[10px] font-black text-slate-400 text-center truncate w-20" title={d.name}>
-                                                    Dr. {d.name.split(" ").pop()}
+                                                    {doctorShortLabel(d)}
                                                 </p>
                                             </div>
                                         ))}
@@ -1126,7 +1132,7 @@ export default function HospitalDashboard() {
                             <div className="mt-8">
                                 {/* Cancellation Rate */}
                                 <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center h-[220px]">
-                                    <h4 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider text-center">Cancellation Rate</h4>
+                                    <h4 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider text-center">Cancellation Rate · This Month</h4>
                                     <div className="flex items-center gap-10">
                                         <div className="relative w-36 h-36 flex items-center justify-center">
                                             <svg className="w-full h-full transform -rotate-90">
@@ -1148,7 +1154,7 @@ export default function HospitalDashboard() {
                                             </div>
                                         </div>
                                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            Out of {cancellationRate?.total || 0} Total Bookings
+                                            Out of {cancellationRate?.total || 0} bookings this month
                                         </div>
                                     </div>
                                 </div>
@@ -1354,7 +1360,7 @@ export default function HospitalDashboard() {
                                                 className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
                                             >
                                                 <option value="">All Doctors</option>
-                                                {doctors.map(d => <option key={d._id} value={d._id}>Dr. {d.name}</option>)}
+                                                {doctors.map(d => <option key={d._id} value={d._id}>{doctorLabel(d)}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-1">
@@ -1420,10 +1426,10 @@ export default function HospitalDashboard() {
                                                                 </div>
                                                             )}
                                                         </td>
-                                                        <td className="p-4 font-bold text-slate-700">Dr. {app.doctor?.name}</td>
+                                                        <td className="p-4 font-bold text-slate-700">{doctorLabel(app.doctor)}</td>
                                                         <td className="p-4 font-bold uppercase tracking-wider text-[10px] text-slate-400">{app.doctor?.specialty}</td>
                                                         <td className="p-4">
-                                                            <div className="font-bold text-slate-800">{new Date(app.slotTime).toLocaleDateString()}</div>
+                                                            <div className="font-bold text-slate-800">{new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</div>
                                                             <div className="text-[10px] font-black text-slate-500 mt-0.5 uppercase tracking-wide">
                                                                 {app.slot ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` : 'N/A'}
                                                             </div>
@@ -1584,11 +1590,11 @@ export default function HospitalDashboard() {
                                                 <div className="pt-3 border-t border-slate-50 flex justify-between text-xs font-bold text-slate-600">
                                                     <div>
                                                         <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Doctor</span>
-                                                        <span className="font-extrabold text-slate-700">Dr. {app.doctor?.name}</span>
+                                                        <span className="font-extrabold text-slate-700">{doctorLabel(app.doctor)}</span>
                                                     </div>
                                                     <div className="text-right">
                                                         <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Schedule Slot</span>
-                                                        <span className="font-extrabold text-slate-700">{new Date(app.slotTime).toLocaleDateString()}</span>
+                                                        <span className="font-extrabold text-slate-700">{new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
                                                         <span className="block text-[9px] text-slate-500 font-black mt-0.5">
                                                             {app.slot ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` : 'N/A'}
                                                         </span>
@@ -1605,7 +1611,7 @@ export default function HospitalDashboard() {
                                                             onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
                                                         >
                                                             <option value="" disabled>-- Assign / Reassign Doctor --</option>
-                                                            {doctors.map(d => <option key={d._id} value={d._id}>Dr. {d.name}</option>)}
+                                                            {doctors.map(d => <option key={d._id} value={d._id}>{doctorLabel(d)}</option>)}
                                                         </select>
                                                     )}
                                                     {/* Status progression */}
@@ -1814,6 +1820,8 @@ export default function HospitalDashboard() {
                                                 const isCancelled = slot.status === 'cancelled';
                                                 const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
                                                 if (!tabMatch) return false;
+                                                // Upcoming = not yet ended (pick a date in the filter to see past slots)
+                                                if (activeSlotSubTab === 'upcoming' && !slotDateFilter && new Date(slot.endTime || slot.startTime).getTime() < Date.now()) return false;
                                                 // Date filter: compare slot's local date (YYYY-MM-DD) against the filter
                                                 if (slotDateFilter) {
                                                     const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA'); // YYYY-MM-DD
@@ -1833,7 +1841,7 @@ export default function HospitalDashboard() {
                                                 return (
                                                     <tr key={slot._id} className="hover:bg-slate-50/50 transition-colors">
                                                         <td className="p-4 pl-6 font-bold text-slate-900">
-                                                            Dr. {slot.doctor?.name || "Specialty Group"}
+                                                            {slot.doctor ? doctorLabel(slot.doctor) : "Specialty Group"}
                                                             {slot.doctor?.isSpecialtyGroup && (
                                                                 <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-black uppercase tracking-wider rounded-md">Group</span>
                                                             )}
@@ -1924,6 +1932,8 @@ export default function HospitalDashboard() {
                                         const isCancelled = slot.status === 'cancelled';
                                         const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
                                         if (!tabMatch) return false;
+                                        // Upcoming = not yet ended (pick a date in the filter to see past slots)
+                                        if (activeSlotSubTab === 'upcoming' && !slotDateFilter && new Date(slot.endTime || slot.startTime).getTime() < Date.now()) return false;
                                         if (slotDateFilter) {
                                             const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA');
                                             if (slotLocalDate !== slotDateFilter) return false;
@@ -1941,7 +1951,7 @@ export default function HospitalDashboard() {
                                             <div key={slot._id} className="p-5 space-y-4">
                                                 <div className="flex justify-between items-start">
                                                     <div>
-                                                        <h4 className="font-extrabold text-slate-800 text-sm">Dr. {slot.doctor?.name || "Specialty Group"}</h4>
+                                                        <h4 className="font-extrabold text-slate-800 text-sm">{slot.doctor ? doctorLabel(slot.doctor) : "Specialty Group"}</h4>
                                                         {slot.doctor?.isSpecialtyGroup && (
                                                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-black uppercase tracking-wider rounded-md mt-1 inline-block">Specialty Group</span>
                                                         )}
@@ -2410,10 +2420,10 @@ export default function HospitalDashboard() {
                                     <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
-                                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{note.doctor ? `Dr. ${note.doctor.name}` : 'Hospital Staff'}</span>
+                                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{note.doctor ? doctorLabel(note.doctor) : 'Hospital Staff'}</span>
                                                 {note.doctor?.specialty && <span className="ml-2 text-[9px] font-bold text-primary bg-blue-50 px-2 py-0.5 rounded-full">{note.doctor.specialty}</span>}
                                             </div>
-                                            <span className="text-[9px] font-bold text-slate-400">{new Date(note.createdAt).toLocaleString()}</span>
+                                            <span className="text-[9px] font-bold text-slate-400">{new Date(note.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
                                         </div>
                                         <p className="text-xs font-medium text-slate-700 whitespace-pre-wrap">{note.note}</p>
                                     </div>

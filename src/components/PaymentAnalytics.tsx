@@ -29,6 +29,7 @@ import {
     AlertTriangle,
     ShieldCheck
 } from "lucide-react";
+import { doctorLabel } from "@/lib/doctorName";
 
 interface OverviewCards {
     totalConsultationFees: number;
@@ -392,7 +393,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
             changes.push({
                 label: "Assigned Doctor",
                 oldValue: editModalRecord.doctorName,
-                newValue: docObj ? `Dr. ${docObj.name}` : editFormData.doctorId
+                newValue: docObj ? doctorLabel(docObj) : editFormData.doctorId
             });
         }
 
@@ -689,7 +690,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 {/* CARD 1: TOTAL CONSULTATION FEES */}
                 <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 relative overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Card 1</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">All Appointments</span>
                         <div className="w-11 h-11 rounded-2xl bg-slate-50 text-slate-700 flex items-center justify-center border border-slate-100">
                             <Layers className="w-5 h-5" />
                         </div>
@@ -710,7 +711,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 {/* CARD 2: ONLINE ADVANCE VIA PILLORA */}
                 <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 relative overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Card 2 • 20% Online Advance</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">20% Online Advance</span>
                         <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
                             <CreditCard className="w-5 h-5" />
                         </div>
@@ -732,7 +733,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 sm:p-7 rounded-3xl shadow-xl shadow-indigo-900/20 relative overflow-hidden flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-300">Card 3 • Net Settlement</span>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-300">Payable by Pillora</span>
                             <div className="w-9 h-9 rounded-xl bg-white/10 text-indigo-200 flex items-center justify-center">
                                 <Wallet className="w-4 h-4" />
                             </div>
@@ -781,7 +782,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 {/* CARD 4: COLLECTED AT CLINIC (CASH) */}
                 <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 relative overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">Card 4 • Physical Cash</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600">Physical Cash</span>
                         <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
                             <Banknote className="w-5 h-5" />
                         </div>
@@ -802,7 +803,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 {/* CARD 5: COLLECTED AT CLINIC (ONLINE) */}
                 <div className="bg-white p-6 sm:p-7 rounded-3xl border border-slate-100 shadow-xl shadow-blue-900/5 relative overflow-hidden flex flex-col justify-between">
                     <div className="flex items-center justify-between mb-4">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">Card 5 • UPI / Card / QR</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">UPI / Card / QR</span>
                         <div className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100">
                             <ArrowUpRight className="w-5 h-5" />
                         </div>
@@ -932,7 +933,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                 <option value="all">All Doctors</option>
                                 {doctors.map((doc: any) => (
                                     <option key={doc._id} value={doc._id}>
-                                        Dr. {doc.name}
+                                        {doctorLabel(doc)}
                                     </option>
                                 ))}
                             </select>
@@ -1580,7 +1581,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                                             <option value="">{editModalRecord.doctorName || "Select Doctor"}</option>
                                             {doctors.map((doc: any) => (
                                                 <option key={doc._id} value={doc._id}>
-                                                    Dr. {doc.name}
+                                                    {doctorLabel(doc)}
                                                 </option>
                                             ))}
                                         </select>

@@ -9,6 +9,7 @@ import {
     RefreshCcw, ArrowRight, MessageSquare, Edit2, AlertTriangle,
     ShieldCheck, CalendarCheck, Check, Send, RotateCcw, X, Info
 } from "lucide-react";
+import { doctorLabel } from "@/lib/doctorName";
 
 interface Doctor {
     _id: string;
@@ -368,7 +369,7 @@ export default function FollowUpRemindersAdmin({
 
     // Convert Recommended Follow-Up to Confirmed Appointment
     const handleConfirmBooking = async (reminder: FollowUpReminder) => {
-        if (!confirm(`Mark follow-up for ${reminder.patientName} on ${new Date(reminder.followUpDate).toLocaleDateString()} as a Confirmed Appointment?`)) {
+        if (!confirm(`Mark follow-up for ${reminder.patientName} on ${new Date(reminder.followUpDate).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })} as a Confirmed Appointment?`)) {
             return;
         }
         setActionLoadingId(reminder._id);
@@ -552,7 +553,7 @@ export default function FollowUpRemindersAdmin({
                     >
                         <option value="all">All Doctors</option>
                         {doctors.map(doc => (
-                            <option key={doc._id} value={doc._id}>Dr. {doc.name}</option>
+                            <option key={doc._id} value={doc._id}>{doctorLabel(doc)}</option>
                         ))}
                     </select>
 
@@ -630,7 +631,7 @@ export default function FollowUpRemindersAdmin({
 
                                             {/* Doctor */}
                                             <td className="px-6 py-4">
-                                                <p className="font-bold text-slate-800 text-sm">Dr. {rem.doctorName}</p>
+                                                <p className="font-bold text-slate-800 text-sm">{doctorLabel(rem.doctorName)}</p>
                                                 <p className="text-[11px] font-semibold text-blue-600 mt-0.5">{rem.department || 'General Medicine'}</p>
                                                 {rem.reason && (
                                                     <p className="text-[10px] text-slate-400 italic line-clamp-1 mt-0.5" title={rem.reason}>
@@ -805,7 +806,7 @@ export default function FollowUpRemindersAdmin({
                                     <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs">
                                         <div className="flex justify-between">
                                             <span className="text-slate-400 font-bold uppercase text-[9px]">Doctor</span>
-                                            <span className="font-bold text-slate-800">Dr. {rem.doctorName}</span>
+                                            <span className="font-bold text-slate-800">{doctorLabel(rem.doctorName)}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-400 font-bold uppercase text-[9px]">Follow-Up</span>
@@ -981,7 +982,7 @@ export default function FollowUpRemindersAdmin({
                                             >
                                                 <option value="">Select Doctor</option>
                                                 {doctors.map(d => (
-                                                    <option key={d._id} value={d._id}>Dr. {d.name} ({d.specialty || 'General'})</option>
+                                                    <option key={d._id} value={d._id}>{doctorLabel(d)} ({d.specialty || 'General'})</option>
                                                 ))}
                                             </select>
                                         ) : (
