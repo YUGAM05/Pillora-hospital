@@ -7,6 +7,7 @@ import {
     CheckCircle2, Stethoscope, Layers, Loader2, ArrowRight, ArrowLeft 
 } from "lucide-react";
 import api from "@/lib/api";
+import { trackEvent } from "@/lib/analytics";
 
 interface PartnerRequestModalProps {
     isOpen: boolean;
@@ -135,6 +136,7 @@ export default function PartnerRequestModal({ isOpen, onClose }: PartnerRequestM
 
         try {
             await api.post("/partners/submit", payload);
+            trackEvent("partner_click", { action: "partner_modal_submitted" });
             setSuccess(true);
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to submit partnership request. Please try again.");
