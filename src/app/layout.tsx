@@ -2,33 +2,44 @@
 import type { Metadata } from "next";
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SITE } from "@/lib/seo";
+import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/structuredData";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// GA4 + Search Console come from env vars, never hard-coded.
+// TODO(analytics): set NEXT_PUBLIC_GA4_ID to the pillorahospital.in GA4 property
+// (a separate ID from www.pillora.in) in Vercel. Until then GA4 is simply off.
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID;
+const GSC_TOKEN = process.env.NEXT_PUBLIC_GSC_VERIFICATION;
+
 export const metadata: Metadata = {
-    title: "Pillora | Hospital Portal",
-    description: "Find verified blood donors in India, check hospital charges, and explore government health schemes. Pillora is your complete health-tech platform.",
-    keywords: ["blood donor", "hospital information", "find blood donor India", "hospital charges", "government health schemes India"],
-    alternates: {
-        canonical: "https://www.pillora.in"
+    metadataBase: new URL(SITE.url),
+    // No canonical here on purpose: a root-layout canonical is inherited by every
+    // page (it pointed the whole site at www.pillora.in). Pages set their own.
+    title: {
+        default: "Hospital Appointment Booking Software for India | Pillora",
+        template: "%s | Pillora for Hospitals",
     },
+    description:
+        "Appointment and doctor schedule software for hospitals and clinics in India: online and walk-in bookings, flexible slots, advance fee payment, real-time sync.",
     openGraph: {
-        title: "Pillora | Hospital Portal",
-        description: "Find verified blood donors in India, check hospital charges, and explore government health schemes. Pillora is your complete health-tech platform.",
-        url: "https://www.pillora.in",
-        siteName: "Pillora",
+        siteName: SITE.name,
+        locale: SITE.locale,
         type: "website",
+        images: [{ url: SITE.ogImage, width: 1200, height: 630, alt: "Pillora for Hospitals" }],
     },
     twitter: {
         card: "summary_large_image",
-        title: "Pillora | Hospital Portal",
-        description: "Find verified blood donors in India, check hospital charges, and explore government health schemes.",
+        images: [SITE.ogImage],
     },
+    ...(GSC_TOKEN ? { verification: { google: GSC_TOKEN } } : {}),
     icons: {
         icon: [
             { url: "/favicon.ico" },
@@ -52,27 +63,10 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "MedicalOrganization",
-        "name": "Pillora",
-        "description": "Blood Connect and Hospital Info provider in Ahmedabad.",
-        "url": "https://www.pillora.in",
-        "address": {
-            "@type": "PostalAddress",
-            "addressLocality": "Ahmedabad",
-            "addressRegion": "Gujarat",
-            "addressCountry": "IN"
-        }
-    };
-
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-                />
+                <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
             </head>
             <body className={inter.className}>
                 <ThemeProvider
@@ -89,8 +83,23 @@ export default function RootLayout({
                 </ThemeProvider>
                 <Analytics />
                 <SpeedInsights />
+                {GA4_ID && (
+                    <>
+                        <Script
+                            src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
+                            strategy="afterInteractive"
+                        />
+                        <Script id="google-analytics" strategy="afterInteractive">
+                            {`
+                                window.dataLayer = window.dataLayer || [];
+                                function gtag(){dataLayer.push(arguments);}
+                                gtag('js', new Date());
+                                gtag('config', '${GA4_ID}');
+                            `}
+                        </Script>
+                    </>
+                )}
             </body>
         </html>
     );
 }
-
