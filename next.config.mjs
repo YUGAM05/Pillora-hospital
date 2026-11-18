@@ -1,6 +1,12 @@
+import seoRedirectsModule from './src/seoRedirects.js';
+const { seoRedirects } = seoRedirectsModule;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Redirects removed for hospital panel to prevent build-time fetch errors
+  // 301 patient-page redirects to www.pillora.in (see src/seoRedirects.js)
+  async redirects() {
+    return seoRedirects;
+  },
 
   images: {
     remotePatterns: [
