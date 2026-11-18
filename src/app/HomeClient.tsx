@@ -61,7 +61,7 @@ export default function HospitalPortalHome() {
                         transition={{ delay: 0.2 }}
                         className="text-xl text-slate-500 font-medium max-w-3xl mx-auto mb-12 leading-relaxed"
                     >
-                        Pillora Hospital Portal provides medical institutions with state-of-the-art tools to manage appointments, doctor schedules, and real-time patient booking with zero friction.
+                        Pillora Hospital Portal gives hospitals and clinics one place to manage online and walk-in appointments, doctor schedules and slots, and advance consultation fees, synced with the Pillora.in patient booking portal.
                     </motion.p>
                     
                     <motion.div 
@@ -89,7 +89,7 @@ export default function HospitalPortalHome() {
                     <FeatureCard 
                         icon={<Calendar className="w-8 h-8 text-blue-600" />}
                         title="Smart Appointment Engine"
-                        desc={UNVERIFIED_CLAIMS.appointmentEngineCopy}
+                        desc="Create consultation slots with durations set by each doctor, and manage online and walk-in appointments in one schedule."
                     />
                     <FeatureCard 
                         icon={<Users className="w-8 h-8 text-blue-600" />}
@@ -98,8 +98,8 @@ export default function HospitalPortalHome() {
                     />
                     <FeatureCard 
                         icon={<Zap className="w-8 h-8 text-blue-600" />}
-                        title="Real-time Sync"
-                        desc="Immediate synchronization between your management panel and the public Pillora.in patient booking portal."
+                        title="Synced with Pillora.in"
+                        desc="The doctors, schedules and fees you manage in your dashboard are shared with the Pillora.in patient booking portal."
                     />
                 </div>
             </section>

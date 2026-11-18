@@ -24,7 +24,7 @@ export const organizationJsonLd = () => ({
     url: SITE.url,
     logo: absoluteUrl(SITE.logo),
     description:
-        'Pillora provides hospitals and clinics in India with online and walk-in appointment management, doctor schedules with flexible slots, advance online consultation fee payment, and a doctor directory that syncs in real time with the pillora.in patient booking portal.',
+        'Pillora provides hospitals and clinics in India with online and walk-in appointment management, doctor schedules with flexible slots, advance online consultation fee payment, and a doctor directory shared with the pillora.in patient booking portal.',
     sameAs: [...SITE.sameAs, SITE.patientSiteUrl],
     contactPoint: [
         {
@@ -117,14 +117,14 @@ export const softwareApplicationJsonLd = () => ({
     url: SITE.url,
     image: absoluteUrl(SITE.ogImage),
     description:
-        'Appointment and doctor schedule software for hospitals and clinics in India: online appointment booking for patients, offline and walk-in appointment management, digital scheduling with flexible doctor-configured slots, advance online consultation fee payment, a doctor directory with availability and fees, and real-time sync with the pillora.in patient booking portal.',
+        'Appointment and doctor schedule software for hospitals and clinics in India: online appointment booking for patients, offline and walk-in appointment management, digital scheduling with flexible doctor-configured slots, advance online consultation fee payment, and a doctor directory with availability and fees that is synced with the pillora.in patient booking portal.',
     featureList: [
         'Online appointment booking for patients',
         'Offline and walk-in appointment management',
         'Digital scheduling with flexible slots configured by doctors',
         'Advance online consultation fee payment',
         'Doctor directory with availability and fees',
-        'Real-time sync between the hospital dashboard and pillora.in',
+        'Doctor schedules and slots synced with the pillora.in patient booking portal',
     ],
     areaServed: { '@type': 'Country', name: 'India' },
     provider: { '@id': `${SITE.url}/#organization` },

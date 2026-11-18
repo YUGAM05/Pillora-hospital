@@ -19,7 +19,4 @@ export const UNVERIFIED_CLAIMS = {
     /** Security section copy: "enterprise-grade encryption" not documented */
     securityCopy:
         'Your hospital data is protected with enterprise-grade encryption. We ensure strict multi-tenancy so your records remain private and accessible only to your authorized personnel.',
-    /** Feature card: the QA review (Nov 2026) found paid slots can be double-booked */
-    appointmentEngineCopy:
-        'Generate real-time consultation slots with customizable durations. Prevent double-bookings with atomic slot locking.',
 } as const;
