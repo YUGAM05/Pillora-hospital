@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SITE } from "@/lib/seo";
 import { JsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/structuredData";
+import VoiceDemoWidget from "@/components/VoiceDemoWidget";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -80,6 +81,8 @@ export default function RootLayout({
                         {children}
                     </div>
                     <Footer />
+                    {/* AI receptionist voice demo; hidden unless NEXT_PUBLIC_VOICE_DEMO_URL is set */}
+                    <VoiceDemoWidget />
                 </ThemeProvider>
                 <Analytics />
                 <SpeedInsights />
