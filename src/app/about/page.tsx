@@ -51,7 +51,7 @@ export default function AboutPage() {
                         transition={{ delay: 0.2 }}
                         className="text-xl text-slate-500 font-medium max-w-3xl mx-auto leading-relaxed"
                     >
-                        A next-generation hospital management platform designed to make finding the right hospital, booking an appointment, and managing healthcare as simple as a few taps.
+                        Appointment and doctor schedule software that helps hospitals and clinics manage online and walk-in appointments, while patients book on pillora.in.
                     </motion.p>
                 </div>
             </section>
@@ -60,7 +60,7 @@ export default function AboutPage() {
             <AboutVideoPlayer
                 src="/PILLORA.mp4"
                 title="Experience Pillora in Motion"
-                subtitle="Discover how Pillora bridges medical institutions and patients with next-generation appointment scheduling, doctor management, and transparent healthcare coordination."
+                subtitle="See how hospitals and clinics manage appointments and doctor slots on Pillora, and how patients book them on pillora.in."
                 badgeText="Official Platform Film"
                 accentColor="blue"
             />
@@ -81,10 +81,11 @@ export default function AboutPage() {
                                 <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Who We Are</h2>
                             </div>
                             <p className="text-lg text-slate-600 font-medium leading-relaxed mb-6">
-                                Pillora is a next-generation hospital management platform designed to bridge the gap between medical institutions and patients. We believe that finding the right hospital, booking an appointment, and managing healthcare should be as simple as a few taps on your phone.
+                                Pillora is a healthcare technology platform that helps hospitals, clinics and doctors manage appointments digitally. Patients find doctors and book available slots on pillora.in, and hospital teams manage those bookings, walk-ins, doctor slots and fees from one dashboard.
                             </p>
                             <p className="text-lg text-slate-600 font-medium leading-relaxed">
-                                We are currently in our <span className="text-blue-600 font-bold">prototype phase</span>, fine-tuning every detail before our official launch. Our mission is simple — eliminate the administrative chaos that hospitals face daily and give patients a seamless, trustworthy experience when they need care the most.
+                                {/* TODO(confirm-onboarding-status): confirm "now onboarding early partners" is still true. */}
+                                We are <span className="text-blue-600 font-bold">now onboarding early partner hospitals and clinics</span>. Our mission is simple — eliminate the administrative chaos that hospitals face daily and give patients a seamless, trustworthy experience when they need care the most.
                             </p>
                         </motion.div>
 
@@ -131,7 +132,7 @@ export default function AboutPage() {
                         className="bg-white rounded-[3rem] p-10 md:p-16 border border-slate-100 shadow-xl shadow-slate-200/50"
                     >
                         <p className="text-2xl md:text-3xl font-black text-slate-900 leading-tight mb-0">
-                            A India where every hospital —{" "}
+                            An India where every hospital —{" "}
                             <span className="text-blue-600">whether a large multi-specialty institution or a small local clinic</span>{" "}
                             — has access to powerful, affordable tools to manage their operations, grow their patient base, and deliver better care.
                         </p>
@@ -166,7 +167,7 @@ export default function AboutPage() {
                                 <Building2 className="w-10 h-10 mb-6 opacity-80" />
                                 <h3 className="text-xl font-black mb-4 uppercase tracking-widest text-[13px] text-blue-200">For Hospitals</h3>
                                 <p className="text-blue-100 font-medium leading-relaxed text-lg">
-                                    Manage doctor schedules, track appointments, handle patient inquiries, and build their digital presence — all from one dashboard.
+                                    Manage doctor slots and fees, online and walk-in appointments, and the hospital page patients see on pillora.in — all from one dashboard.
                                 </p>
                             </div>
                         </motion.div>
@@ -183,7 +184,7 @@ export default function AboutPage() {
                                 <Users className="w-10 h-10 mb-6 text-blue-600" />
                                 <h3 className="text-xl font-black mb-4 uppercase tracking-widest text-[13px] text-slate-500">For Patients</h3>
                                 <p className="text-slate-600 font-medium leading-relaxed text-lg">
-                                    A reliable, transparent way to discover hospitals, check doctor availability, read service details, and book with zero friction.
+                                    Find hospitals on pillora.in, see doctors&apos; availability and consultation fees, and book an available slot online.
                                 </p>
                             </div>
                         </motion.div>
@@ -220,8 +221,8 @@ export default function AboutPage() {
                         viewport={{ once: true }}
                         className="text-4xl md:text-6xl font-black mb-10 leading-tight"
                     >
-                        Pre-Launch. <br />
-                        <span className="text-blue-400">Onboarding Early Partners.</span>
+                        Onboarding <br />
+                        <span className="text-blue-400">Early Partners.</span>
                     </motion.h2>
                     <motion.p
                         initial={{ opacity: 0, y: 20 }}
@@ -229,7 +230,7 @@ export default function AboutPage() {
                         viewport={{ once: true }}
                         className="text-xl text-slate-400 leading-relaxed font-medium max-w-3xl mx-auto mb-12"
                     >
-                        We are pre-launch, onboarding early hospital partners who believe in what we&apos;re building. Every hospital that joins us now becomes a foundational partner — shaping the product, getting priority placement, and growing with us from day one.
+                        We are onboarding early partner hospitals and clinics. Early partners help shape the product and get priority placement on pillora.in. {/* TODO(confirm-early-partner-offer): confirm this offer. */}
                     </motion.p>
 
                     <motion.div
@@ -240,7 +241,7 @@ export default function AboutPage() {
                     >
                         {[
                             { label: "Shape the Product", desc: "Your feedback directly influences what we build" },
-                            { label: "Priority Placement", desc: "Be at the top when we go live to patients" },
+                            { label: "Priority Placement", desc: "Priority placement on pillora.in for early partners" }, // TODO(confirm-early-partner-offer)
                             { label: "Grow Together", desc: "Partner from day one and scale with us" }
                         ].map((item, i) => (
                             <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-[2rem] text-left backdrop-blur-sm">

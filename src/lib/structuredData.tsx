@@ -117,12 +117,13 @@ export const softwareApplicationJsonLd = () => ({
     url: SITE.url,
     image: absoluteUrl(SITE.ogImage),
     description:
-        'Appointment and doctor schedule software for hospitals and clinics in India: online appointment booking for patients, offline and walk-in appointment management, digital scheduling with flexible doctor-configured slots, advance online consultation fee payment, and a doctor directory with availability and fees that is synced with the pillora.in patient booking portal.',
+        'Appointment and doctor schedule software for hospitals and clinics in India: online appointment booking for patients, offline and walk-in appointment management, doctor slots with consultation durations, and a doctor directory with availability and fees, shared with the pillora.in patient booking portal.',
     featureList: [
         'Online appointment booking for patients',
         'Offline and walk-in appointment management',
-        'Digital scheduling with flexible slots configured by doctors',
-        'Advance online consultation fee payment',
+        'Doctor slot management with consultation durations',
+        // TODO(confirm-advance-payments): add 'Advance online consultation fee payment' back only after
+        // the owner confirms it and the paid-slot double-booking bug is fixed.
         'Doctor directory with availability and fees',
         'Doctor schedules and slots synced with the pillora.in patient booking portal',
     ],
