@@ -7,11 +7,15 @@ import {
     ArrowRight,
     Building2,
     Calendar,
+    CalendarCheck,
     CalendarX,
     CheckCircle2,
     ClipboardList,
     Globe,
+    Headphones,
+    Languages,
     LayoutDashboard,
+    ListChecks,
     NotebookPen,
     Phone,
     PhoneMissed,
@@ -25,6 +29,7 @@ import { motion } from "framer-motion";
 import PartnerRequestModal from "@/components/PartnerRequestModal";
 import DemoRequestForm from "@/components/marketing/DemoRequestForm";
 import { HOME_FAQS, PATIENT_SITE, SHOW_ADVANCE_PAYMENTS_CARD, SUPPORT_PHONE } from "@/content/marketing";
+import { VOICE_DEMO_ENABLED, openVoiceDemo } from "@/lib/voiceDemo";
 
 /**
  * pillorahospital.in homepage. Copy is the owner's brief (19 Nov 2026), word for word.
@@ -71,6 +76,15 @@ const AUDIENCES: (Card & { href?: string; linkText?: string })[] = [
     { icon: <Building2 className="w-7 h-7 text-blue-600" aria-hidden="true" />, title: "Hospitals", desc: "Manage appointments across doctors and departments from one dashboard.", href: "/for-hospitals", linkText: "Appointment software for hospitals" },
     { icon: <Stethoscope className="w-7 h-7 text-blue-600" aria-hidden="true" />, title: "Clinics", desc: "Replace phone calls and paper registers with online and walk-in appointment management.", href: "/for-clinics", linkText: "Appointment software for clinics" },
     { icon: <UserRound className="w-7 h-7 text-blue-600" aria-hidden="true" />, title: "Individual doctors", desc: "Set your own available slots and let patients book them online." },
+];
+
+// AI receptionist: only what the current agent really does (see voice-agent/web-prototype).
+// Not claimed: WhatsApp confirmations, call transfer to staff, live booking into the
+// hospital's own schedule. Add those lines only once they are built.
+const AI_POINTS: Card[] = [
+    { icon: <Languages className="w-6 h-6 text-blue-600" aria-hidden="true" />, title: "Speaks Gujarati and Hindi", desc: "Patients talk naturally, the way they would with your reception staff." },
+    { icon: <CalendarCheck className="w-6 h-6 text-blue-600" aria-hidden="true" />, title: "Offers only free slots", desc: "It checks which times are free for the doctor before suggesting them." },
+    { icon: <ListChecks className="w-6 h-6 text-blue-600" aria-hidden="true" />, title: "Reads the booking back", desc: "Doctor, day, time and patient name are confirmed with the caller before booking." },
 ];
 
 const WITHOUT = ["Phone calls", "Paper register", "Patients unsure of their turn"];
@@ -133,6 +147,10 @@ export default function HospitalPortalHome() {
                         </motion.div>
                         {/* TODO(confirm-onboarding-status) [CONFIRM]: is this still true? */}
                         <p className="mt-6 text-sm font-semibold text-slate-500">Now onboarding early partner hospitals and clinics.</p>
+                        <a href="#ai-receptionist" className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-blue-600 hover:underline">
+                            <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[11px] font-black uppercase tracking-wider">New</span>
+                            An AI receptionist that answers calls in Gujarati and Hindi <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                        </a>
                     </div>
                     <ScheduleIllustration />
                 </div>
@@ -184,6 +202,58 @@ export default function HospitalPortalHome() {
                         </li>
                     ))}
                 </ul>
+            </section>
+
+            {/* 4b. AI receptionist (add-on)
+                TODO(confirm-ai-availability) [CONFIRM]: "early access for partner hospitals" and
+                "optional add-on" are the planned offer; change once AI calling is sold. */}
+            <section id="ai-receptionist" className="scroll-mt-24 max-w-7xl mx-auto px-4 sm:px-6 pb-16" aria-labelledby="ai-heading">
+                <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-[2.5rem] p-6 sm:p-10 md:p-14 text-white relative overflow-hidden">
+                    <div className="absolute -top-24 -right-24 w-80 h-80 bg-white/10 rounded-full blur-[80px]" aria-hidden="true" />
+                    <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                        <div>
+                            <p className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 rounded-full text-xs font-black uppercase tracking-widest mb-5">
+                                <Headphones className="w-4 h-4" aria-hidden="true" /> New · AI receptionist
+                            </p>
+                            <h2 id="ai-heading" className="text-3xl md:text-4xl font-black tracking-tight leading-tight">
+                                An AI receptionist that answers patient calls and books appointments
+                            </h2>
+                            <p className="mt-4 text-lg text-blue-100 font-medium leading-relaxed">
+                                Patients call and speak in Gujarati or Hindi. The AI finds a free slot with the right doctor and books it, so fewer calls go unanswered when your front desk is busy.
+                            </p>
+                            <ul className="mt-6 space-y-4">
+                                {AI_POINTS.map((p) => (
+                                    <li key={p.title} className="flex gap-3">
+                                        <span className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0">{p.icon}</span>
+                                        <span>
+                                            <span className="block font-black">{p.title}</span>
+                                            <span className="block text-blue-100 text-sm font-medium">{p.desc}</span>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                                {VOICE_DEMO_ENABLED && (
+                                    <button
+                                        type="button"
+                                        onClick={openVoiceDemo}
+                                        className="w-full sm:w-auto px-7 py-4 bg-white text-blue-700 rounded-[2rem] font-black hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Phone className="w-5 h-5" aria-hidden="true" /> Talk to it now
+                                    </button>
+                                )}
+                                <a href="#request-demo" className="w-full sm:w-auto px-7 py-4 border border-white/40 rounded-[2rem] font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                                    Ask about it for your hospital <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                                </a>
+                            </div>
+                            <p className="mt-4 text-sm text-blue-100">
+                                Optional add-on, in early access for partner hospitals.
+                                {VOICE_DEMO_ENABLED && " The live demo uses a sample hospital, so nothing is really booked."}
+                            </p>
+                        </div>
+                        <CallIllustration />
+                    </div>
+                </div>
             </section>
 
             {/* 5. How it works */}
@@ -336,6 +406,39 @@ function ScheduleIllustration() {
                 </ul>
             </div>
             <figcaption className="mt-3 text-xs text-slate-400 text-center">Illustration only, not a real screenshot.</figcaption>
+        </figure>
+    );
+}
+
+/** Example AI receptionist call, in Gujarati with English below. Illustration, not a recording. */
+function CallIllustration() {
+    const lines: { who: "ai" | "patient"; text: string; en: string }[] = [
+        { who: "ai", text: "નમસ્તે, પિલોરામાં આપનું સ્વાગત છે. કયા ડૉક્ટરને બતાવવું છે?", en: "Hello, welcome to Pillora. Which doctor would you like to see?" },
+        { who: "patient", text: "કાલે સાંજે ડૉક્ટર શાહને બતાવવું છે.", en: "I want to see Dr. Shah tomorrow evening." },
+        { who: "ai", text: "કાલે સાંજે 5, 6 કે સાડા છ વાગે સમય છે. કયો ફાવશે?", en: "Tomorrow evening there's 5, 6 or 6:30. Which suits you?" },
+        { who: "patient", text: "છ વાગે ચાલશે.", en: "6 o'clock is fine." },
+    ];
+    return (
+        <figure className="w-full max-w-md mx-auto lg:ml-auto" role="img" aria-label="Example of a phone call in Gujarati where the AI receptionist offers free times and the patient picks one. Illustration, not a recording.">
+            <div className="bg-white text-slate-900 rounded-[2rem] shadow-2xl shadow-blue-900/30 p-5 sm:p-6" aria-hidden="true">
+                <div className="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+                    <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center"><Headphones className="w-5 h-5" /></span>
+                    <span className="flex-1">
+                        <span className="block font-black leading-tight">Pillora AI receptionist</span>
+                        <span className="block text-xs font-semibold text-emerald-600">● On a call</span>
+                    </span>
+                    <Phone className="w-5 h-5 text-slate-400" />
+                </div>
+                <ul className="space-y-3">
+                    {lines.map((l, i) => (
+                        <li key={i} className={`max-w-[88%] rounded-2xl px-4 py-2.5 ${l.who === "ai" ? "bg-slate-100" : "ml-auto bg-blue-600 text-white"}`}>
+                            <span className="block text-sm font-semibold">{l.text}</span>
+                            <span className={`block text-xs mt-0.5 ${l.who === "ai" ? "text-slate-500" : "text-blue-100"}`}>{l.en}</span>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <figcaption className="mt-3 text-xs text-blue-100 text-center">Example conversation, not a real call.</figcaption>
         </figure>
     );
 }

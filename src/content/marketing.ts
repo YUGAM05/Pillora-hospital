@@ -212,6 +212,22 @@ export const HOME_FAQS: Faq[] = [
             'Yes. Slots are set per doctor: you choose the date, the start and end time, and the length of each consultation slot. Doctors with different consultation lengths can have different slot durations.',
     },
     {
+        question: 'What is the AI receptionist?',
+        // TODO(confirm-ai-availability) [CONFIRM]: "optional add-on" / "early access" wording.
+        answer:
+            'An optional add-on that answers patient phone calls for your hospital or clinic. Patients speak in Gujarati or Hindi, and the AI finds a free slot with the right doctor and books the appointment. It is in early access for partner hospitals, and you can try a live demo on this page.',
+        todo: true,
+    },
+    {
+        question: 'Can the AI receptionist book a wrong time?',
+        answer:
+            'It only offers times that are free for that doctor. Before booking, it reads the doctor, day, time and patient name back to the caller and books only after the caller confirms. It will not book a time the caller did not choose.',
+    },
+    {
+        question: 'Which languages does the AI receptionist speak?',
+        answer: 'Gujarati and Hindi. Patients can speak naturally, the way they would talk to your reception staff.',
+    },
+    {
         question: 'How do I get started?',
         // TODO(onboarding) [CONFIRM]: real onboarding steps (same as /faq).
         answer:
