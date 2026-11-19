@@ -57,6 +57,8 @@ export default function VoiceDemoWidget() {
     const [lines, setLines] = useState<Line[]>([]);
     const [booking, setBooking] = useState<Booking | null>(null);
     const [error, setError] = useState("");
+    // Polite messages from the server (line busy, demo limit, time over, taking a break).
+    const [notice, setNotice] = useState("");
     const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
     // Audio plumbing lives in refs: it must not trigger re-renders.
@@ -143,6 +145,7 @@ export default function VoiceDemoWidget() {
     const startCall = async () => {
         if (!VOICE_URL) return;
         setError("");
+        setNotice("");
         setLines([]);
         setBooking(null);
         setStatus("");
@@ -178,7 +181,7 @@ export default function VoiceDemoWidget() {
         worklet.port.onmessage = (e) => socket.readyState === WebSocket.OPEN && socket.send(e.data);
 
         socket.onopen = () => socket.send(JSON.stringify({ type: "start", lang }));
-        socket.onerror = () => setError("Couldn't reach the demo line. Please try again in a moment.");
+        socket.onerror = () => setNotice("Couldn't reach the demo line. Please try again in a moment.");
         socket.onclose = () => endCall();
         socket.onmessage = (e) => {
             if (typeof e.data !== "string") return playPcm(e.data);
@@ -221,7 +224,7 @@ export default function VoiceDemoWidget() {
                     trackEvent("voice_demo_booked", { language: lang });
                     break;
                 case "refused":
-                    setError(m.message);
+                    setNotice(m.message);
                     break;
                 case "error":
                     setLines((l) => [...l, { who: "note", text: "Something went wrong on the line. You can end the call and try again." }]);
@@ -351,7 +354,12 @@ export default function VoiceDemoWidget() {
                     {/* After the call */}
                     {phase === "ended" && (
                         <div className="space-y-3 p-4 text-center">
-                            {booking ? <BookingCard b={booking} /> : <p className="text-sm text-gray-600 dark:text-gray-400">Call ended.</p>}
+                            {booking && <BookingCard b={booking} />}
+                            {notice ? (
+                                <p className="rounded-xl bg-gray-100 p-3 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-300">{notice}</p>
+                            ) : (
+                                !booking && <p className="text-sm text-gray-600 dark:text-gray-400">Call ended.</p>
+                            )}
                             {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                             <p className="text-sm font-medium">Want this answering your hospital&apos;s phone?</p>
                             <Link
