@@ -229,13 +229,13 @@ export default function PartnersPage() {
                             Why Partner Early
                         </h2>
                         <p className="text-xl text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed">
-                            Early partners get priority placement on the platform, direct access to our team for feedback and support, and the opportunity to shape features that matter most to your hospital. You&apos;re not just a listing — you&apos;re a <span className="text-white font-black">founding partner.</span>
+                            Early partners get priority placement on pillora.in, direct access to our team for feedback and support, and the opportunity to shape features that matter most to your hospital. You&apos;re not just a listing — you&apos;re a <span className="text-white font-black">founding partner.</span>
                         </p>
                     </motion.div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
                         {[
-                            { icon: <Zap className="w-5 h-5" />, title: "Priority Placement", desc: "Be first in patient search results when we launch." },
+                            { icon: <Zap className="w-5 h-5" />, title: "Priority Placement", desc: "Priority placement on pillora.in for early partners." }, // TODO(confirm-early-partner-offer)
                             { icon: <Activity className="w-5 h-5" />, title: "Direct Access", desc: "Talk to our team directly. Your feedback shapes the product." },
                             { icon: <Star className="w-5 h-5" />, title: "Founding Partner Status", desc: "A permanent recognition for hospitals that believed in us first." }
                         ].map((item, i) => (

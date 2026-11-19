@@ -231,8 +231,8 @@ export default function HospitalPortalHome() {
 
             {/* 8. Early partner offer
                 TODO(confirm-early-partner-offer) [CONFIRM]: taken from the About page; remove if no
-                longer true. NOTE: patient booking on pillora.in is already live, so "when patient
-                booking goes live" may be inaccurate (see REPORT §18). */}
+                longer true. Wording "priority placement on pillora.in" chosen by the owner (19 Nov 2026)
+                and matches the About page; patient booking on pillora.in is already live. */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 pb-16" aria-labelledby="early-heading">
                 <div className="bg-slate-900 rounded-[2.5rem] p-8 md:p-14 text-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/20 rounded-full blur-[100px]" aria-hidden="true" />
@@ -240,7 +240,7 @@ export default function HospitalPortalHome() {
                         <div>
                             <h2 id="early-heading" className="text-2xl md:text-3xl font-black">Join as an early partner</h2>
                             <p className="text-slate-300 font-medium text-lg mt-3">We are onboarding early partner hospitals and clinics.</p>
-                            <p className="text-slate-300 font-medium text-lg">Partners get priority placement when patient booking goes live.</p>
+                            <p className="text-slate-300 font-medium text-lg">Partners get priority placement on pillora.in.</p>
                         </div>
                         <button
                             type="button"
