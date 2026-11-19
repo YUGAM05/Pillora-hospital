@@ -28,7 +28,7 @@ export const metadata: Metadata = {
         template: "%s | Pillora for Hospitals",
     },
     description:
-        "Appointment and doctor schedule software for hospitals and clinics in India: online and walk-in bookings, flexible slots, advance fees, synced with pillora.in.",
+        "Pillora helps hospitals, clinics and doctors take online appointments, manage walk-ins and organise doctor slots from one dashboard. Request a demo.",
     openGraph: {
         siteName: SITE.name,
         locale: SITE.locale,

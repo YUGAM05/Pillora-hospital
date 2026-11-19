@@ -164,3 +164,64 @@ export const NAV_LINKS = [
 ] as const;
 
 export const PATIENT_SITE = 'https://www.pillora.in';
+
+/** Header links on public pages (owner brief, 19 Nov 2026). The footer keeps the full NAV_LINKS. */
+export const HEADER_LINKS = [
+    { href: '/features', label: 'Features' },
+    { href: '/for-clinics', label: 'For Clinics' },
+    { href: '/for-hospitals', label: 'For Hospitals' },
+    { href: '/faq', label: 'FAQ' },
+] as const;
+
+/** Contact details shown on the homepage and in the footer. */
+export const SUPPORT_PHONE = { display: '9429167856', tel: '+919429167856' } as const;
+
+/** Registered address, as already published on the About page (src/app/about/page.tsx). */
+export const REGISTERED_ADDRESS = '4 Pansheel Society, Jintan Road, Infront of Ultra Vision School, Surendranagar - 363002, Gujarat, India';
+
+/**
+ * Feature flag for the "Advance online payments" card on the homepage.
+ * TODO(confirm-advance-payments) [CONFIRM]: keep false until the owner approves AND the
+ * paid-slot double-booking bug is fixed (Pillora-backend paymentController.verifyPayment).
+ */
+export const SHOW_ADVANCE_PAYMENTS_CARD = false;
+
+/**
+ * Homepage FAQ (also emitted as FAQPage JSON-LD on "/"). Answers reuse the /faq
+ * answers where one exists, or the owner's homepage copy.
+ */
+export const HOME_FAQS: Faq[] = [
+    {
+        question: 'What is Pillora?',
+        answer:
+            'Pillora is a healthcare technology platform that helps hospitals, clinics and doctors manage appointments digitally. Patients find your doctors and book available slots online on pillora.in. Your team manages online and walk-in appointments from the hospital dashboard.',
+    },
+    {
+        question: 'Who is Pillora for?',
+        answer:
+            'Hospitals, clinics and individual doctors in India. Hospitals manage appointments across doctors and departments, clinics replace phone calls and paper registers, and individual doctors set their own available slots for patients to book online.',
+    },
+    {
+        question: 'Can I manage walk-in patients too?',
+        answer:
+            'Yes. Front-desk staff can book walk-in and offline appointments from the hospital dashboard, so online and walk-in patients share one schedule for each doctor.',
+    },
+    {
+        question: 'Can doctors set their own slots?',
+        answer:
+            'Yes. Slots are set per doctor: you choose the date, the start and end time, and the length of each consultation slot. Doctors with different consultation lengths can have different slot durations.',
+    },
+    {
+        question: 'How do I get started?',
+        // TODO(onboarding) [CONFIRM]: real onboarding steps (same as /faq).
+        answer:
+            'Request a demo or a quote with your hospital or clinic details. The Pillora team sets up your hospital account and doctors, and then you can manage appointments from the hospital dashboard.',
+        todo: true,
+    },
+    {
+        question: 'How much does it cost?',
+        // TODO(pricing) [CONFIRM]: owner-approved answer; no prices until confirmed.
+        answer: 'Pricing depends on your needs. Request a quote.',
+        todo: true,
+    },
+];

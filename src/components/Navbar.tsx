@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut, Menu, X } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
-import { NAV_LINKS } from "@/content/marketing";
+import { HEADER_LINKS } from "@/content/marketing";
 
 /**
  * Hospital portal header.
@@ -68,7 +68,7 @@ export default function Navbar() {
                     {/* Product links (public pages only) */}
                     {!inDashboard && (
                         <ul className="hidden lg:flex items-center gap-6">
-                            {NAV_LINKS.map((l) => (
+                            {HEADER_LINKS.map((l) => (
                                 <li key={l.href}>
                                     <Link
                                         href={l.href}
@@ -108,9 +108,9 @@ export default function Navbar() {
                         ) : (
                             <>
                                 <Link href="/login" className="hidden sm:flex px-4 min-h-[44px] items-center rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50">
-                                    Hospital login
+                                    Partner login
                                 </Link>
-                                <Link href="/get-a-quote#request" className="hidden sm:flex px-5 min-h-[44px] items-center bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+                                <Link href={pathname === "/" ? "#request-demo" : "/#request-demo"} className="hidden sm:flex px-5 min-h-[44px] items-center bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
                                     Request a demo
                                 </Link>
                             </>
@@ -136,7 +136,7 @@ export default function Navbar() {
                     <div className="fixed inset-x-0 top-16 sm:top-20 bottom-0 bg-black/30 lg:hidden -z-10" onClick={() => setMenuOpen(false)} aria-hidden="true" />
                     <div id="hospital-mobile-menu" className="lg:hidden absolute top-full inset-x-0 bg-white border-t border-slate-100 shadow-lg p-4">
                         <ul className="space-y-1">
-                            {NAV_LINKS.map((l) => (
+                            {HEADER_LINKS.map((l) => (
                                 <li key={l.href}>
                                     <Link href={l.href} className="block px-4 py-3 rounded-lg font-semibold text-slate-700 hover:bg-slate-50">{l.label}</Link>
                                 </li>
@@ -147,8 +147,8 @@ export default function Navbar() {
                                 <Link href="/hospital/dashboard" className="col-span-2 text-center px-4 py-3 rounded-xl font-bold bg-slate-900 text-white">Open dashboard</Link>
                             ) : (
                                 <>
-                                    <Link href="/login" className="text-center px-4 py-3 rounded-xl font-bold border border-slate-200 text-slate-700">Hospital login</Link>
-                                    <Link href="/get-a-quote#request" className="text-center px-4 py-3 rounded-xl font-bold bg-blue-600 text-white">Request a demo</Link>
+                                    <Link href="/login" className="text-center px-4 py-3 rounded-xl font-bold border border-slate-200 text-slate-700">Partner login</Link>
+                                    <Link href={pathname === "/" ? "#request-demo" : "/#request-demo"} onClick={() => setMenuOpen(false)} className="text-center px-4 py-3 rounded-xl font-bold bg-blue-600 text-white">Request a demo</Link>
                                 </>
                             )}
                         </div>
