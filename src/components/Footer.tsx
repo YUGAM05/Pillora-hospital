@@ -1,90 +1,59 @@
-
 import Link from 'next/link';
-import Image from 'next/image';
-import { Facebook, Instagram, Mail, Phone, MapPin } from 'lucide-react';
+import { NAV_LINKS, PATIENT_SITE, REGISTERED_ADDRESS, SUPPORT_PHONE } from '@/content/marketing';
 
+/**
+ * Footer for the hospital partner portal: product/company links, support and
+ * legal links (legal pages live on www.pillora.in), and contact details.
+ *
+ * Company name: "Pillora" everywhere on this site. The About page does not name
+ * a legal entity, so "Pillora Inc." (used on www.pillora.in) is not shown here.
+ * TODO(company-name) [CONFIRM]: the registered legal name, then use it on both sites.
+ */
 export default function Footer() {
     return (
-        <footer className="bg-white border-t border-gray-100 pt-16 pb-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-                    {/* Brand */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Image
-                                src="/logo.png"
-                                alt="Pillora"
-                                width={72}
-                                height={72}
-                                className="w-14 h-14 xl:w-16 xl:h-16 object-contain object-right"
-                                unoptimized
-                            />
-                            <Image
-                                src="/pillora-text.png"
-                                alt="Pillora"
-                                width={240}
-                                height={80}
-                                className="block h-10 sm:h-12 xl:h-[3.5rem] w-auto object-contain object-left mt-0.5 xl:mt-1"
-                                unoptimized
-                            />
-                        </div>
-                        <p className="text-gray-500 text-sm leading-relaxed">
-                            We&apos;re a healthcare coordination platform focused on emergency blood services and hospital data.
-                        </p>
-                        <div className="flex gap-4 pt-2">
-                            <SocialIcon icon={<Facebook className="w-4 h-4" />} href="https://www.facebook.com/share/1LPeKutMEw/" />
-                            <SocialIcon 
-                                icon={<Instagram className="w-4 h-4" />} 
-                                href="https://www.instagram.com/pillora_official?igsh=MnBpemU0MW40bW5m" 
-                            />
-                        </div>
-                    </div>
-
-                    {/* Quick Links */}
-                    <div>
-                        <h3 className="font-bold text-gray-900 mb-4">Company</h3>
-                        <ul className="space-y-3 text-sm text-gray-500">
-                            <li><Link href="/about" className="hover:text-blue-600 transition-colors">About Us</Link></li>
-                            <li><Link href="/careers" className="hover:text-blue-600 transition-colors">Careers</Link></li>
-                            <li><Link href="/blog" className="hover:text-blue-600 transition-colors">Blog</Link></li>
-                            <li><Link href="/partners" className="hover:text-blue-600 transition-colors">Partner with us</Link></li>
-                        </ul>
-                    </div>
-
-                    {/* Contact */}
-                    <div>
-                        <h3 className="font-bold text-gray-900 mb-4">Support</h3>
-                        <ul className="space-y-3 text-sm text-gray-500">
-                            <li><Link href="/help" className="hover:text-blue-600 transition-colors">Help Center</Link></li>
-                            <li><Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy Policy</Link></li>
-                            <li><Link href="/terms" className="hover:text-blue-600 transition-colors">Terms & Conditions</Link></li>
-                            <li><Link href="/returns" className="hover:text-blue-600 transition-colors">Refund & Cancellation Policy</Link></li>
-                            <li><Link href="/contact" className="hover:text-blue-600 transition-colors">Contact Us</Link></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <p className="text-xs text-gray-400">
-                        &copy; {new Date().getFullYear()} Pillora Inc. All rights reserved.
+        <footer className="bg-white border-t border-slate-100 mt-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
+                <div>
+                    <p className="font-black text-slate-900">Pillora for Hospitals</p>
+                    <p className="text-slate-500 mt-2 leading-relaxed">
+                        Pillora is a healthcare technology platform that helps hospitals, clinics and doctors manage appointments digitally.
                     </p>
-                    <div className="flex items-center gap-2">
-                    </div>
                 </div>
+                <nav aria-label="Company">
+                    <p className="font-black text-slate-900 mb-3">Company</p>
+                    <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-slate-500">
+                        {NAV_LINKS.map((l) => (
+                            <li key={l.href}><Link href={l.href} className="hover:text-blue-600 py-1 inline-block">{l.label}</Link></li>
+                        ))}
+                        <li><Link href="/about" className="hover:text-blue-600 py-1 inline-block">About</Link></li>
+                        <li><Link href="/contact" className="hover:text-blue-600 py-1 inline-block">Contact</Link></li>
+                    </ul>
+                </nav>
+                <nav aria-label="Support and legal">
+                    <p className="font-black text-slate-900 mb-3">Support</p>
+                    <ul className="space-y-2 text-slate-500">
+                        <li><Link href="/login" className="hover:text-blue-600 py-1 inline-block">Hospital login</Link></li>
+                        <li><a href={`${PATIENT_SITE}/help`} className="hover:text-blue-600 py-1 inline-block">Help Center</a></li>
+                        <li><a href={`${PATIENT_SITE}/privacy`} className="hover:text-blue-600 py-1 inline-block">Privacy policy</a></li>
+                        <li><a href={`${PATIENT_SITE}/terms`} className="hover:text-blue-600 py-1 inline-block">Terms</a></li>
+                    </ul>
+                </nav>
+                <div>
+                    <p className="font-black text-slate-900 mb-3">Contact Us</p>
+                    <ul className="space-y-2 text-slate-500">
+                        <li><a href={`tel:${SUPPORT_PHONE.tel}`} className="hover:text-blue-600 py-1 inline-block font-semibold">Call {SUPPORT_PHONE.display}</a></li>
+                        <li><a href={PATIENT_SITE} className="hover:text-blue-600 py-1 inline-block font-semibold">www.pillora.in</a></li>
+                        <li>
+                            <address className="not-italic leading-relaxed">{REGISTERED_ADDRESS}</address>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div className="border-t border-slate-100">
+                <p className="max-w-7xl mx-auto px-4 sm:px-6 py-5 text-xs text-slate-400">
+                    &copy; {new Date().getFullYear()} Pillora · Hospital Partner Portal
+                </p>
             </div>
         </footer>
     );
-}
-
-function SocialIcon({ icon, href = "#" }: any) {
-    return (
-        <a 
-            href={href} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
-        >
-            {icon}
-        </a>
-    )
 }

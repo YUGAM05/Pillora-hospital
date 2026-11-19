@@ -31,6 +31,7 @@ export default function RegisterPage() {
     const [mfaSetup, setMfaSetup] = useState(false);
     const [mfaCode, setMfaCode] = useState("");
     const [mfaUserId, setMfaUserId] = useState("");
+    const [mfaToken, setMfaToken] = useState("");
     const [qrCode, setQrCode] = useState("");
     const [mfaSecret, setMfaSecret] = useState("");
 
@@ -38,44 +39,6 @@ export default function RegisterPage() {
         e.preventDefault();
         setLoading(true);
         setError("");
-
-        // Admin login Easter Egg
-        if (name.trim().toLowerCase() === "admin" && email.trim().toLowerCase() === "admin@life-link.com" && password === "admin") {
-            try {
-                const res = await api.post('/auth/login', { email, password });
-
-                if (res.data.mfaRequired) {
-                    setMfaStep(true);
-                    setMfaUserId(res.data.userId);
-                    setLoading(false);
-                    return;
-                }
-
-                if (res.data.mfaSetupRequired) {
-                    setMfaSetup(true);
-                    setMfaStep(true);
-                    setMfaUserId(res.data.userId);
-                    setQrCode(res.data.qrCode);
-                    setMfaSecret(res.data.secret);
-                    setLoading(false);
-                    return;
-                }
-
-                if (res.data.role !== 'admin') {
-                    setError("Access Denied. Admin privileges required.");
-                    setLoading(false);
-                    return;
-                }
-
-                await completeAdminLogin(res.data.token, res.data);
-            } catch (err: any) {
-                console.error("Admin Login Error:", err);
-                setError(err.response?.data?.message || "Admin Login failed");
-            } finally {
-                setLoading(false);
-            }
-            return;
-        }
 
         try {
             const res = await api.post("/auth/register", {
@@ -102,7 +65,7 @@ export default function RegisterPage() {
 
         try {
             const res = await api.post('/auth/verify-mfa', {
-                userId: mfaUserId,
+                mfaToken,
                 token: mfaCode,
             });
 

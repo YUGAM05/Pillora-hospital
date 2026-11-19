@@ -9,6 +9,7 @@ import {
     Loader2, ChevronDown, Hash, IndianRupee, Bell
 } from "lucide-react";
 import FollowUpRemindersAdmin from "./FollowUpRemindersAdmin";
+import { doctorLabel } from "@/lib/doctorName";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -503,7 +504,7 @@ export default function PatientSearchAdmin() {
                                                     <p className="text-[10px] font-semibold text-slate-500">{formatTime(booking.slotTime || booking.bookingDate)}</p>
                                                 </td>
                                                 <td className="py-4 text-xs font-bold text-slate-700">
-                                                    {booking.doctor?.name ? `Dr. ${booking.doctor.name}` : "N/A"}
+                                                    {doctorLabel(booking.doctor, "—")}
                                                 </td>
                                                 <td className="py-4">
                                                     <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
@@ -577,7 +578,7 @@ export default function PatientSearchAdmin() {
                                         <div className="pt-3 border-t border-slate-50 flex justify-between text-xs font-bold text-slate-600">
                                             <div>
                                                 <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Doctor</span>
-                                                <span className="font-extrabold text-slate-700">{booking.doctor?.name ? `Dr. ${booking.doctor.name}` : "N/A"}</span>
+                                                <span className="font-extrabold text-slate-700">{doctorLabel(booking.doctor, "—")}</span>
                                             </div>
                                         </div>
                                         <div className="pt-3 border-t border-slate-50 flex justify-between items-center text-xs font-bold text-slate-600">

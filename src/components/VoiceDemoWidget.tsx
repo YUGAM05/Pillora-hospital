@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Phone, PhoneOff, X, Mic, CheckCircle2, Headphones, Sparkles } from "lucide-react";
+import { VOICE_DEMO_EVENT } from "@/lib/voiceDemo";
 
 // GA4 event if Google Analytics is on the page; silently does nothing otherwise.
 // No personal data is sent, only the language.
@@ -125,6 +126,13 @@ export default function VoiceDemoWidget() {
     }, []);
 
     useEffect(() => cleanup, [cleanup]); // hang up if the visitor navigates away
+
+    // Buttons elsewhere on the page ("Hear it now") open this panel.
+    useEffect(() => {
+        const openPanel = () => setOpen(true);
+        window.addEventListener(VOICE_DEMO_EVENT, openPanel);
+        return () => window.removeEventListener(VOICE_DEMO_EVENT, openPanel);
+    }, []);
 
     const endCall = useCallback(() => {
         cleanup();
@@ -345,7 +353,7 @@ export default function VoiceDemoWidget() {
                         <div className="space-y-3 p-4 text-center">
                             {booking ? <BookingCard b={booking} /> : <p className="text-sm text-gray-600 dark:text-gray-400">Call ended.</p>}
                             {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-                            <p className="text-sm font-medium">Want this answering your hospital&apos;s phone 24×7?</p>
+                            <p className="text-sm font-medium">Want this answering your hospital&apos;s phone?</p>
                             <Link
                                 href="/#request-demo"
                                 onClick={() => setOpen(false)}

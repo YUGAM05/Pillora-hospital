@@ -3,206 +3,158 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { LogOut, Menu, X } from "lucide-react";
 import { getUser, clearAuth } from "@/lib/tokenStorage";
-import { motion, AnimatePresence } from "framer-motion";
+import { HEADER_LINKS } from "@/content/marketing";
 
+/**
+ * Hospital portal header.
+ * - Public/marketing pages: product links, Login and "Request a demo".
+ * - Dashboard (/hospital/*): branding plus who is signed in and Log Out; the
+ *   dashboard's own tab bar handles navigation there.
+ */
 export default function Navbar() {
     const router = useRouter();
-    const pathname = usePathname();
+    const pathname = usePathname() || "/";
     const [user, setUser] = useState<any>(null);
-    const [isOpen, setIsOpen] = useState(false);
-    const [mounted, setMounted] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-        setIsMounted(true);
-        const checkAuth = () => {
-            const storedUser = getUser();
-            if (storedUser) setUser(storedUser);
-            else setUser(null);
-        };
+        const checkAuth = () => setUser(getUser() || null);
         checkAuth();
+        setMenuOpen(false);
         window.addEventListener('storage', checkAuth);
         return () => window.removeEventListener('storage', checkAuth);
     }, [pathname]);
-
-    // Lock body scroll when sidebar is open
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => { document.body.style.overflow = ''; };
-    }, [isOpen]);
 
     const handleLogout = () => {
         clearAuth();
         setUser(null);
         router.replace("/login");
-        setIsOpen(false);
     };
 
     // Don't show navbar on login/register pages
     if (pathname === '/login' || pathname === '/register' || pathname === '/auth/change-password') return null;
 
-    return (
-    <>
-        <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 w-full overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                <div className="flex items-center justify-between h-20">
-                    
-                    {/* Mobile Menu Button (Left) */}
-                    <div className="flex items-center lg:hidden gap-2">
-                        <button onClick={() => setIsOpen(true)} className="p-2 -ml-2 text-slate-500 hover:text-slate-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center">
-                            <Menu className="w-6 h-6" />
-                        </button>
-                        
-                        {/* Mobile Logo */}
-                        <Link href="/" className="flex-shrink-0 flex items-center group">
-                            <Image
-                                src="/logo.png"
-                                alt="Pillora"
-                                width={72}
-                                height={72}
-                                className="w-12 h-12 object-contain object-right"
-                                unoptimized
-                            />
-                            <Image
-                                src="/pillora-text.png"
-                                alt="Pillora"
-                                width={240}
-                                height={80}
-                                className="block h-12 w-auto object-contain object-left -ml-1"
-                                unoptimized
-                            />
-                        </Link>
-                    </div>
+    const inDashboard = pathname.startsWith('/hospital');
+    const homeHref = inDashboard && user ? "/hospital/dashboard" : "/";
 
-                    {/* Desktop Logo */}
-                    <Link href="/" className="hidden lg:flex-shrink-0 lg:flex items-center group">
+    return (
+        <nav className="border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 w-full" aria-label="Main">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                <div className="flex items-center justify-between h-16 sm:h-20 gap-3">
+
+                    <Link href={homeHref} className="flex-shrink-0 flex items-center" aria-label="Pillora for Hospitals home">
                         <Image
-                            src="/logo.png"
+                            src="/logo-sm.png"
                             alt="Pillora"
+                            priority
                             width={72}
                             height={72}
-                            className="w-14 h-14 xl:w-16 xl:h-16 object-contain object-right"
+                            className="w-10 h-10 sm:w-14 sm:h-14 xl:w-16 xl:h-16 object-contain object-right"
                             unoptimized
                         />
                         <Image
-                            src="/pillora-text.png"
-                            alt="Pillora"
+                            src="/pillora-text-sm.png"
+                            alt=""
+                            priority
                             width={240}
                             height={80}
-                            className="block h-14 sm:h-16 xl:h-[4.5rem] w-auto object-contain object-left -ml-1 sm:-ml-2 xl:-ml-3"
+                            className="block h-10 sm:h-14 xl:h-[4.5rem] w-auto object-contain object-left -ml-1 sm:-ml-2 xl:-ml-3"
                             unoptimized
                         />
                     </Link>
 
-                    {/* Desktop Links */}
-                    <div className="hidden lg:flex items-center gap-8">
+                    {/* Product links (public pages only) */}
+                    {!inDashboard && (
+                        <ul className="hidden lg:flex items-center gap-6">
+                            {HEADER_LINKS.map((l) => (
+                                <li key={l.href}>
+                                    <Link
+                                        href={l.href}
+                                        className={`text-sm font-semibold transition-colors ${pathname === l.href || pathname.startsWith(`${l.href}/`) ? "text-blue-600" : "text-slate-600 hover:text-blue-600"}`}
+                                    >
+                                        {l.label}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         {user ? (
-                            <div className="flex items-center gap-4">
-                                <div className="flex flex-col items-end">
-                                    <p className="text-sm font-black text-slate-900 leading-none">{user.name}</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 tracking-tighter">Hospital Management</p>
+                            <>
+                                {!inDashboard && (
+                                    <Link href="/hospital/dashboard" className="hidden sm:flex px-4 min-h-[44px] items-center rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50">
+                                        Dashboard
+                                    </Link>
+                                )}
+                                <div className="hidden sm:flex flex-col items-end min-w-0">
+                                    <p className="text-sm font-black text-slate-900 leading-none truncate max-w-[200px]">{user.name}</p>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase mt-1 tracking-tight">Hospital Management</p>
                                 </div>
-                                <button onClick={handleLogout} className="p-2.5 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors shadow-sm shadow-rose-100 min-h-[44px] min-w-[44px] flex items-center justify-center">
+                                <div className="sm:hidden w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-black text-sm" title={user.name} aria-hidden="true">
+                                    {user.name?.charAt(0)?.toUpperCase()}
+                                </div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex items-center gap-2 px-3 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-100 transition-colors min-h-[44px] min-w-[44px] justify-center font-bold text-sm"
+                                    aria-label="Log out"
+                                >
                                     <LogOut className="w-5 h-5" />
+                                    <span className="hidden md:inline">Log Out</span>
                                 </button>
-                            </div>
+                            </>
                         ) : (
-                            <Link href="/login" className="px-6 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95 min-h-[44px] flex items-center justify-center">
-                                Partner Login
-                            </Link>
+                            <>
+                                <Link href="/login" className="hidden sm:flex px-4 min-h-[44px] items-center rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50">
+                                    Partner login
+                                </Link>
+                                <Link href={pathname === "/" ? "#request-demo" : "/#request-demo"} className="hidden sm:flex px-5 min-h-[44px] items-center bg-blue-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
+                                    Request a demo
+                                </Link>
+                            </>
+                        )}
+                        {!inDashboard && (
+                            <button
+                                onClick={() => setMenuOpen((o) => !o)}
+                                className="lg:hidden p-2 text-slate-600 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                                aria-expanded={menuOpen}
+                                aria-controls="hospital-mobile-menu"
+                            >
+                                {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                            </button>
                         )}
                     </div>
                 </div>
             </div>
-        </nav>
 
-        {/* Mobile Sidebar — portaled to document.body to escape nav's stacking context */}
-        {isMounted && createPortal(
-            <AnimatePresence>
-                {isOpen && (
-                    <>
-                        {/* Full-page backdrop — z-[9998] at root level */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-                            style={{ zIndex: 9998 }}
-                            onClick={() => setIsOpen(false)}
-                        />
-                        {/* Sidebar panel — z-[9999] at root level */}
-                        <motion.div
-                            initial={{ x: "-100%" }}
-                            animate={{ x: 0 }}
-                            exit={{ x: "-100%" }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-[280px] bg-white flex flex-col shadow-2xl"
-                            style={{ zIndex: 9999 }}
-                        >
-                            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <Image
-                                        src="/logo.png"
-                                        alt="Pillora"
-                                        width={72}
-                                        height={72}
-                                        className="w-12 h-12 object-contain object-right"
-                                        unoptimized
-                                    />
-                                    <Image
-                                        src="/pillora-text.png"
-                                        alt="Pillora"
-                                        width={240}
-                                        height={80}
-                                        className="block h-12 w-auto object-contain object-left -ml-1"
-                                        unoptimized
-                                    />
-                                </div>
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-900 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            <div className="p-6 space-y-3 flex-1 overflow-y-auto">
-                            </div>
-
-                            {user && (
-                                <div className="p-6 border-t border-slate-100">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-black">
-                                            {user.name?.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-900 leading-none">{user.name}</p>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">{user.email}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="w-full flex items-center justify-center gap-2 min-h-[44px] bg-rose-50 text-rose-500 rounded-xl font-bold hover:bg-rose-100 transition-colors"
-                                    >
-                                        <LogOut className="w-5 h-5" />
-                                        Log Out
-                                    </button>
-                                </div>
+            {/* Mobile menu (public pages) */}
+            {!inDashboard && menuOpen && (
+                <>
+                    <div className="fixed inset-x-0 top-16 sm:top-20 bottom-0 bg-black/30 lg:hidden -z-10" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+                    <div id="hospital-mobile-menu" className="lg:hidden absolute top-full inset-x-0 bg-white border-t border-slate-100 shadow-lg p-4">
+                        <ul className="space-y-1">
+                            {HEADER_LINKS.map((l) => (
+                                <li key={l.href}>
+                                    <Link href={l.href} className="block px-4 py-3 rounded-lg font-semibold text-slate-700 hover:bg-slate-50">{l.label}</Link>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100">
+                            {user ? (
+                                <Link href="/hospital/dashboard" className="col-span-2 text-center px-4 py-3 rounded-xl font-bold bg-slate-900 text-white">Open dashboard</Link>
+                            ) : (
+                                <>
+                                    <Link href="/login" className="text-center px-4 py-3 rounded-xl font-bold border border-slate-200 text-slate-700">Partner login</Link>
+                                    <Link href={pathname === "/" ? "#request-demo" : "/#request-demo"} onClick={() => setMenuOpen(false)} className="text-center px-4 py-3 rounded-xl font-bold bg-blue-600 text-white">Request a demo</Link>
+                                </>
                             )}
-                        </motion.div>
-                    </>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
-    </>
+                        </div>
+                    </div>
+                </>
+            )}
+        </nav>
     );
 }

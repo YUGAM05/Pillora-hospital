@@ -466,7 +466,7 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                                         )}
                                     </td>
                                     <td className="py-5 px-6 text-center text-slate-400 font-medium">
-                                        {new Date(s.transferDate || s.createdAt).toLocaleDateString()}
+                                        {new Date(s.transferDate || s.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                     </td>
                                     <td className="py-5 px-6 text-right font-bold text-slate-700">{formatCurrency(s.grossCollection)}</td>
                                     <td className="py-5 px-6 text-right text-rose-500 font-bold">- {formatCurrency(s.razorpayCharges + s.gstCharges)}</td>

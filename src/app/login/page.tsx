@@ -131,7 +131,7 @@ export default function HospitalLoginPage() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 transition-all"
-                                    placeholder="hospital@pillora.in"
+                                    placeholder="you@yourhospital.com"
                                 />
                             </div>
                         </div>
@@ -146,7 +146,7 @@ export default function HospitalLoginPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none font-bold text-slate-900 tracking-widest transition-all"
-                                    placeholder="••••••••"
+                                    placeholder="Enter your password"
                                 />
                             </div>
                             <div className="flex justify-end pt-1">

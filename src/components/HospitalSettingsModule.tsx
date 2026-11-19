@@ -1796,7 +1796,7 @@ export default function HospitalSettingsModule({
                                                         <div className="text-[10px] text-slate-400">{sess.userAgent?.slice(0, 35)}...</div>
                                                     </div>
                                                     <span className="text-[10px] font-bold text-slate-500">
-                                                        {new Date(sess.createdAt).toLocaleDateString()}
+                                                        {new Date(sess.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                                     </span>
                                                 </div>
                                             ))}
@@ -1993,7 +1993,7 @@ export default function HospitalSettingsModule({
                                                 <div>
                                                     <div className="font-bold text-slate-900">{t.subject}</div>
                                                     <div className="text-[10px] text-slate-400 mt-0.5">
-                                                        Category: {t.category || t.type} • {new Date(t.createdAt).toLocaleDateString()}
+                                                        Category: {t.category || t.type} • {new Date(t.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                                     </div>
                                                 </div>
                                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
