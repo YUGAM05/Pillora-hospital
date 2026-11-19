@@ -238,7 +238,7 @@ export default function VoiceDemoWidget() {
     const mmss = secondsLeft == null ? "" : `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
     return (
-        <div className="fixed bottom-4 right-4 z-[9998] flex flex-col items-end gap-3 print:hidden">
+        <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[9998] flex flex-col items-end gap-3 print:hidden">
             {open && (
                 <div
                     role="dialog"
@@ -373,14 +373,15 @@ export default function VoiceDemoWidget() {
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
-                    className="group flex items-center gap-2 rounded-full bg-blue-600 py-2 pl-2 pr-4 text-white shadow-xl transition hover:bg-blue-700"
+                    className="group flex items-center gap-2 rounded-full bg-blue-600 p-1.5 sm:py-2 sm:pl-2 sm:pr-4 text-white shadow-xl transition hover:bg-blue-700"
                     aria-label="Try the Pillora AI receptionist demo"
                 >
-                    <span className="relative grid h-10 w-10 place-items-center rounded-full bg-white/20">
+                    {/* Phones: round icon only, so it doesn't cover page text. */}
+                    <span className="relative grid h-11 w-11 sm:h-10 sm:w-10 place-items-center rounded-full bg-white/20">
                         <Headphones className="h-5 w-5" />
                         <span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-blue-600 bg-green-400" />
                     </span>
-                    <span className="text-left leading-tight">
+                    <span className="hidden text-left leading-tight sm:block">
                         <span className="block text-sm font-semibold">Talk to our AI</span>
                         <span className="block text-[11px] text-blue-100">Live call demo</span>
                     </span>

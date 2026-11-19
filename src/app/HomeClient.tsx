@@ -111,7 +111,7 @@ export default function HospitalPortalHome() {
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-black uppercase tracking-widest mb-6 border border-blue-100"
+                            className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider sm:tracking-widest mb-6 border border-blue-100"
                         >
                             <Stethoscope className="w-4 h-4 shrink-0" aria-hidden="true" /> For hospitals, clinics and doctors in India
                         </motion.p>
@@ -186,19 +186,22 @@ export default function HospitalPortalHome() {
             </section>
 
             {/* 4. What you get */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16" aria-labelledby="features-heading">
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-8">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16" aria-labelledby="features-heading">
+                <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-1 sm:gap-3 mb-6 sm:mb-8">
                     <h2 id="features-heading" className="text-3xl md:text-4xl font-black tracking-tight">What you get</h2>
-                    <Link href="/features" className="text-blue-600 font-bold inline-flex items-center gap-1 hover:underline">
+                    <Link href="/features" className="text-blue-600 font-bold inline-flex items-center gap-1 hover:underline min-h-[44px] md:min-h-0">
                         See all Pillora features <ArrowRight className="w-4 h-4" aria-hidden="true" />
                     </Link>
                 </div>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {/* Phones: compact rows (icon beside text). From sm up: the original cards. */}
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
                     {FEATURES.filter((f) => !f.hidden).map((f) => (
-                        <li key={f.title} className="p-6 md:p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:border-blue-200 transition-all">
-                            <span className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-5">{f.icon}</span>
-                            <h3 className="text-xl font-black text-slate-900 mb-2">{f.title}</h3>
-                            <p className="text-slate-500 font-medium leading-relaxed">{f.desc}</p>
+                        <li key={f.title} className="flex items-start gap-4 sm:block p-5 sm:p-6 md:p-8 bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm hover:border-blue-200 transition-all">
+                            <span className="w-11 h-11 sm:w-12 sm:h-12 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0 sm:mb-5">{f.icon}</span>
+                            <div className="min-w-0">
+                                <h3 className="text-lg sm:text-xl font-black text-slate-900 mb-1 sm:mb-2">{f.title}</h3>
+                                <p className="text-slate-500 font-medium leading-relaxed">{f.desc}</p>
+                            </div>
                         </li>
                     ))}
                 </ul>
@@ -243,7 +246,9 @@ export default function HospitalPortalHome() {
                                     </button>
                                 )}
                                 <a href="#request-demo" className="w-full sm:w-auto px-7 py-4 border border-white/40 rounded-[2rem] font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                                    Ask about it for your hospital <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                                    <span className="sm:hidden">Ask about it</span>
+                                    <span className="hidden sm:inline">Ask about it for your hospital</span>
+                                    <ArrowRight className="w-5 h-5" aria-hidden="true" />
                                 </a>
                             </div>
                             <p className="mt-4 text-sm text-blue-100">
@@ -258,13 +263,14 @@ export default function HospitalPortalHome() {
 
             {/* 5. How it works */}
             <section className="bg-slate-50/70 border-y border-slate-100" aria-labelledby="how-heading">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
-                    <h2 id="how-heading" className="text-3xl md:text-4xl font-black tracking-tight mb-8">How it works</h2>
-                    <ol className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+                    <h2 id="how-heading" className="text-3xl md:text-4xl font-black tracking-tight mb-6 sm:mb-8">How it works</h2>
+                    {/* Below md the steps are stacked: number beside text. From md: the original cards. */}
+                    <ol className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5">
                         {STEPS.map((s, i) => (
-                            <li key={s.text} className="p-6 md:p-8 bg-white border border-slate-100 rounded-[2rem] shadow-sm">
-                                <span className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center mb-4" aria-hidden="true">{i + 1}</span>
-                                <p className="text-lg font-bold text-slate-800 leading-snug">{s.text}</p>
+                            <li key={s.text} className="flex items-center gap-4 md:block p-5 sm:p-6 md:p-8 bg-white border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem] shadow-sm">
+                                <span className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-black flex items-center justify-center shrink-0 md:mb-4" aria-hidden="true">{i + 1}</span>
+                                <p className="text-base sm:text-lg font-bold text-slate-800 leading-snug">{s.text}</p>
                             </li>
                         ))}
                     </ol>
@@ -272,16 +278,19 @@ export default function HospitalPortalHome() {
             </section>
 
             {/* 6. Who it is for */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-16" aria-labelledby="audience-heading">
-                <h2 id="audience-heading" className="text-3xl md:text-4xl font-black tracking-tight mb-8">Who it is for</h2>
-                <ul className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16" aria-labelledby="audience-heading">
+                <h2 id="audience-heading" className="text-3xl md:text-4xl font-black tracking-tight mb-6 sm:mb-8">Who it is for</h2>
+                <ul className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5">
                     {AUDIENCES.map((a) => (
-                        <li key={a.title} className="p-6 md:p-8 bg-slate-50/70 border border-slate-100 rounded-[2rem]">
-                            <span className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mb-5 shadow-sm">{a.icon}</span>
-                            <h3 className="text-xl font-black text-slate-900 mb-2">{a.title}</h3>
+                        <li key={a.title} className="p-5 sm:p-6 md:p-8 bg-slate-50/70 border border-slate-100 rounded-[1.5rem] sm:rounded-[2rem]">
+                            {/* Below md: icon and title on one line. From md: the original stacked card. */}
+                            <div className="flex items-center gap-3 mb-2 md:block md:mb-0">
+                                <span className="w-11 h-11 md:w-12 md:h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 md:mb-5 shadow-sm">{a.icon}</span>
+                                <h3 className="text-lg md:text-xl font-black text-slate-900 md:mb-2">{a.title}</h3>
+                            </div>
                             <p className="text-slate-500 font-medium leading-relaxed">{a.desc}</p>
                             {a.href && (
-                                <Link href={a.href} className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline">
+                                <Link href={a.href} className="mt-2 md:mt-4 inline-flex items-center gap-1 text-sm font-bold text-blue-600 hover:underline min-h-[44px] md:min-h-0">
                                     {a.linkText} <ArrowRight className="w-4 h-4" aria-hidden="true" />
                                 </Link>
                             )}
@@ -345,7 +354,7 @@ export default function HospitalPortalHome() {
                         </details>
                     ))}
                 </div>
-                <Link href="/faq" className="mt-6 text-blue-600 font-bold inline-flex items-center gap-1 hover:underline">
+                <Link href="/faq" className="mt-6 text-blue-600 font-bold inline-flex items-center gap-1 hover:underline min-h-[44px] md:min-h-0">
                     Read all questions about Pillora for Hospitals <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
             </section>
