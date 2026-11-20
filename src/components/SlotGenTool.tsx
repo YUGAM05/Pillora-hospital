@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import api from "@/lib/api";
+import { SUPPORT_PHONE } from "@/content/marketing";
 import { Calendar, Clock, Activity, ShieldAlert, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -77,7 +78,7 @@ export default function SlotGenTool({ doctor, hospitalId, subscriptionStatus, on
                             Status: {subscriptionStatus || 'Subscription Required'}
                         </span>
                         <a
-                            href="tel:+919876543210"
+                            href={`tel:${SUPPORT_PHONE.tel}`}
                             className="ui-btn-danger ui-btn-sm"
                         >
                             <Phone className="w-3.5 h-3.5" /> Contact Admin

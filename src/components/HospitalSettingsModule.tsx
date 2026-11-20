@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { planLabel } from "@/lib/plans";
+import { SUPPORT_PHONE } from "@/content/marketing";
 
 type SettingsSection = 
     | "profile" 
@@ -1930,7 +1931,7 @@ export default function HospitalSettingsModule({
                                     </span>
                                     <div className="min-w-0">
                                         <div className="text-xs font-medium text-slate-500">Partner hotline</div>
-                                        <div className="text-sm font-semibold text-slate-900">+91 98765 43210</div>
+                                        <div className="text-sm font-semibold text-slate-900">{SUPPORT_PHONE.display}</div>
                                     </div>
                                 </div>
 

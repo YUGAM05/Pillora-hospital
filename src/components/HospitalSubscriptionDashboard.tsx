@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
+import { SUPPORT_PHONE } from "@/content/marketing";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     CreditCard, 
@@ -25,6 +26,9 @@ import {
     CalendarX,
     FileText
 } from "lucide-react";
+
+/** Inbox for renewal and payment emails (same address as the Contact page). */
+const RENEWAL_EMAIL = "team@pillora.in";
 
 interface IHospitalSubData {
     hospital: {
@@ -158,7 +162,7 @@ export default function HospitalSubscriptionDashboard() {
                         </div>
                     </div>
                     <a
-                        href="tel:+919876543210"
+                        href={`tel:${SUPPORT_PHONE.tel}`}
                         className="ui-btn-danger shrink-0 w-full md:w-auto"
                     >
                         Contact Admin to Renew
@@ -184,7 +188,7 @@ export default function HospitalSubscriptionDashboard() {
                         </div>
                     </div>
                     <a
-                        href="mailto:admin@pillora.in?subject=Payment Confirmation for Hospital Subscription"
+                        href={`mailto:${RENEWAL_EMAIL}?subject=Payment Confirmation for Hospital Subscription`}
                         className="ui-btn bg-amber-600 text-white shadow-sm hover:bg-amber-700 shrink-0 w-full md:w-auto"
                     >
                         Notify Admin of Payment
@@ -212,7 +216,7 @@ export default function HospitalSubscriptionDashboard() {
                         </div>
                     </div>
                     <a
-                        href="tel:+919876543210"
+                        href={`tel:${SUPPORT_PHONE.tel}`}
                         className="ui-btn bg-orange-600 text-white shadow-sm hover:bg-orange-700 shrink-0 w-full md:w-auto"
                     >
                         Request Renewal
@@ -371,7 +375,7 @@ export default function HospitalSubscriptionDashboard() {
                         <div className="p-4 bg-slate-50 rounded-xl space-y-1">
                             <span className="text-xs font-medium text-slate-500">Hospital Support Desk</span>
                             <div className="font-semibold text-slate-900 text-sm flex items-start gap-2">
-                                <Phone className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" /> +91 98765 43210 / +91 91234 56789
+                                <Phone className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" /> {SUPPORT_PHONE.display}
                             </div>
                             <p className="text-xs text-slate-500">Available Mon – Sat, 9:00 AM – 7:00 PM IST</p>
                         </div>
@@ -379,20 +383,20 @@ export default function HospitalSubscriptionDashboard() {
                         <div className="p-4 bg-slate-50 rounded-xl space-y-1">
                             <span className="text-xs font-medium text-slate-500">Direct Email Address</span>
                             <div className="font-semibold text-slate-900 text-sm flex items-start gap-2 break-all">
-                                <Mail className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" /> admin@pillora.in / billing@pillora.in
+                                <Mail className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" /> {RENEWAL_EMAIL}
                             </div>
                             <p className="text-xs text-slate-500">Include your hospital name and transaction receipt</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3 pt-1">
                             <a
-                                href="tel:+919876543210"
+                                href={`tel:${SUPPORT_PHONE.tel}`}
                                 className="ui-btn-dark"
                             >
                                 <Phone className="w-4 h-4" /> Call Admin
                             </a>
                             <a
-                                href={`mailto:admin@pillora.in?subject=Subscription Renewal - ${hospital.name}&body=Hello Pillora Admin,%0D%0A%0D%0AWe would like to renew our 30-day subscription for ${hospital.name}.%0D%0A%0D%0AThank you!`}
+                                href={`mailto:${RENEWAL_EMAIL}?subject=Subscription Renewal - ${hospital.name}&body=Hello Pillora Admin,%0D%0A%0D%0AWe would like to renew our 30-day subscription for ${hospital.name}.%0D%0A%0D%0AThank you!`}
                                 className="ui-btn-primary"
                             >
                                 <Mail className="w-4 h-4" /> Email Admin
