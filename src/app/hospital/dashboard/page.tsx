@@ -19,6 +19,7 @@ import PaymentsAndCollections from "@/components/PaymentsAndCollections";
 import HospitalSettlements from "@/components/HospitalSettlements";
 import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
 import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
+import UsagePanel, { UsageWarningBanner } from "@/components/UsagePanel";
 import HospitalSettingsModule from "@/components/HospitalSettingsModule";
 import { initWebPush } from "@/lib/webPush";
 import { doctorLabel, doctorShortLabel } from "@/lib/doctorName";
@@ -1038,6 +1039,9 @@ export default function HospitalDashboard() {
                     </button>
                 </div>
 
+                {/* Low WhatsApp messages / AI minutes warning (hidden when there's enough left) */}
+                {activeMainTab !== "subscription" && <UsageWarningBanner onOpen={() => setActiveMainTab("subscription")} />}
+
                 {activeMainTab === "patients" && (
                     <PatientSearchAdmin />
                 )}
@@ -1062,7 +1066,10 @@ export default function HospitalDashboard() {
                 )}
 
                 {activeMainTab === "subscription" && (
-                    <HospitalSubscriptionDashboard />
+                    <div className="space-y-8">
+                        <UsagePanel />
+                        <HospitalSubscriptionDashboard />
+                    </div>
                 )}
 
                 {activeMainTab === "settings" && (
