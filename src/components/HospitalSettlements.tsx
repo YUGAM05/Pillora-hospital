@@ -298,7 +298,7 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                     <div>
                         <h4 className="font-extrabold text-slate-900 text-lg leading-tight">Zero-Commission Settlement Model</h4>
                         <p className="text-xs text-slate-500 font-semibold leading-relaxed mt-1">
-                            Pillora charges a fixed flat ₹2,000 monthly subscription. We charge ₹0 commission on appointment bookings. 
+                            Pillora charges a fixed monthly plan fee (Clinic ₹2,999, Hospital ₹7,999 or Enterprise ₹14,999, plus GST). We charge ₹0 commission on appointment bookings. 
                             Hospitals receive 100% of patient online advance payments (20% of fee), less standard payment gateway charges (2% Razorpay Fee + 18% GST on the fee).
                         </p>
                     </div>

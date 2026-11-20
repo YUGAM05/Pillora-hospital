@@ -11,6 +11,7 @@ import {
     ShieldAlert, FileText, ArrowRight, Upload, Stethoscope, ChevronRight
 } from "lucide-react";
 import api from "@/lib/api";
+import { planLabel } from "@/lib/plans";
 
 type SettingsSection = 
     | "profile" 
@@ -612,7 +613,7 @@ export default function HospitalSettingsModule({
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-xs font-black text-white flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>{settingsData?.subscription?.plan || "Standard"} Tier</span>
+                            <span>{planLabel(settingsData?.subscription?.plan)} plan</span>
                         </div>
                         {settingsData?.hospital?.is_verified ? (
                             <div className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black flex items-center gap-1.5">

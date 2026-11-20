@@ -23,6 +23,7 @@ import UsagePanel, { UsageWarningBanner } from "@/components/UsagePanel";
 import HospitalSettingsModule from "@/components/HospitalSettingsModule";
 import { initWebPush } from "@/lib/webPush";
 import { doctorLabel, doctorShortLabel } from "@/lib/doctorName";
+import { planLabel } from "@/lib/plans";
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -768,7 +769,7 @@ export default function HospitalDashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest border border-blue-100 shadow-sm">
-                            {stats?.plan || 'Standard'} Tier
+                            {planLabel(stats?.plan)} plan
                         </div>
                         <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
                             System Online
