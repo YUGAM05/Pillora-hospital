@@ -417,6 +417,34 @@ export default function HospitalDashboard() {
         }
     }, []);
 
+    // Light refresh of appointments + slots only. Bookings also arrive from
+    // outside this page (patients online, the AI phone receptionist), and live
+    // socket updates don't work on the serverless backend, so poll instead.
+    const refreshAppointments = useCallback(async () => {
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+        if (!getToken()) return;
+        try {
+            const [appointmentsRes, slotsRes] = await Promise.all([
+                api.get("/hospital/dashboard/appointments"),
+                api.get("/hospital/dashboard/slots"),
+            ]);
+            setAppointments(appointmentsRes.data);
+            setSlots(slotsRes.data);
+        } catch {
+            /* keep showing the last data; the next refresh will retry */
+        }
+    }, []);
+
+    useEffect(() => {
+        const timer = setInterval(refreshAppointments, 30 * 1000);
+        const onVisible = () => document.visibilityState === "visible" && refreshAppointments();
+        document.addEventListener("visibilitychange", onVisible);
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", onVisible);
+        };
+    }, [refreshAppointments]);
+
     const fetchAnalytics = useCallback(async () => {
         try {
             const token = getToken();
@@ -1408,6 +1436,7 @@ export default function HospitalDashboard() {
                                                                         ({app.patientAge || app.patient?.age} yrs)
                                                                     </span>
                                                                 )}
+                                                                {app.bookingSource === 'ai_call' && <AiCallBadge />}
                                                                 {app.patient?._id && (
                                                                     <button 
                                                                         onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
@@ -1562,6 +1591,7 @@ export default function HospitalDashboard() {
                                                         </span>
                                                         <h4 className="font-extrabold text-slate-800 mt-2 text-sm">
                                                             {app.patientName || app.patient?.name || 'N/A'}
+                                                            {app.bookingSource === 'ai_call' && <AiCallBadge />}
                                                             {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
                                                                 <span className="text-[10px] text-slate-400 font-medium ml-1">
                                                                     ({app.patientAge || app.patient?.age} yrs)
@@ -2555,5 +2585,17 @@ function StatCard({ label, value, icon }: any) {
                 <p className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest leading-none mt-1">{label}</p>
             </div>
         </div>
+    );
+}
+
+/** Label for appointments booked by the AI phone receptionist (bookingSource 'ai_call'). */
+function AiCallBadge() {
+    return (
+        <span
+            title="Booked by the AI phone receptionist"
+            className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 align-middle text-[9px] font-black uppercase tracking-wider text-violet-700 border border-violet-100"
+        >
+            <span aria-hidden="true">📞</span> AI call
+        </span>
     );
 }
