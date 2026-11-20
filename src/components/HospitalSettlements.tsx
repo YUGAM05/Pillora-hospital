@@ -244,7 +244,7 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
     const getTimelineIcon = (status: string) => {
         switch (status) {
             case 'Settlement Completed': return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
-            case 'Awaiting Hospital Confirmation': return <Clock className="w-5 h-5 text-amber-500 animate-pulse" />;
+            case 'Awaiting Hospital Confirmation': return <Clock className="w-5 h-5 text-amber-500" />;
             case 'Under Review': return <AlertCircle className="w-5 h-5 text-rose-500" />;
             case 'Failed': return <XCircle className="w-5 h-5 text-red-500" />;
             default: return <Clock className="w-5 h-5 text-blue-500" />;
@@ -255,7 +255,7 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
         switch (status) {
             case 'Settlement Completed': return 'bg-emerald-50 text-emerald-700 border-emerald-100';
             case 'Ready for Settlement': return 'bg-blue-50 text-blue-700 border-blue-100';
-            case 'Awaiting Hospital Confirmation': return 'bg-amber-50 text-amber-700 border-amber-100 animate-pulse';
+            case 'Awaiting Hospital Confirmation': return 'bg-amber-50 text-amber-700 border-amber-200';
             case 'Under Review': return 'bg-rose-50 text-rose-700 border-rose-100';
             case 'Failed': return 'bg-red-50 text-red-700 border-red-100';
             case 'On Hold': return 'bg-slate-100 text-slate-700 border-slate-200';
@@ -265,21 +265,21 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
 
     if (loading) {
         return (
-            <div className="py-24 flex flex-col items-center justify-center">
-                <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
-                <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Retrieving Settlements Log...</p>
+            <div className="ui-card py-20 flex flex-col items-center justify-center">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-3" />
+                <p className="text-sm text-slate-500">Retrieving settlements log…</p>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="py-24 text-center">
-                <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-rose-100">
-                    <AlertCircle className="w-8 h-8 text-rose-500" />
+            <div className="ui-card py-16 px-6 text-center">
+                <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <AlertCircle className="w-7 h-7 text-rose-500" />
                 </div>
-                <p className="text-rose-600 font-bold text-lg mb-2">{error}</p>
-                <button onClick={fetchHospitalData} className="mt-2 px-6 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-blue-700 shadow-md">Try Again</button>
+                <p className="text-rose-600 font-semibold mb-4">{error}</p>
+                <button onClick={fetchHospitalData} className="ui-btn-primary">Try Again</button>
             </div>
         );
     }
@@ -288,20 +288,18 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
     const pendingConfirmations = settlementHistory.filter(s => s.status === 'Awaiting Hospital Confirmation');
 
     return (
-        <div className="space-y-8 font-sans pb-20">
+        <div className="space-y-6 font-sans pb-10">
             {/* Business Model Explanation Card */}
-            <div className="p-6 bg-gradient-to-r from-blue-50/40 to-indigo-50/20 border border-blue-100/60 rounded-[2rem] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div className="flex items-start gap-4">
-                    <div className="p-3.5 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/20 shrink-0">
-                        <Info className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <h4 className="font-extrabold text-slate-900 text-lg leading-tight">Zero-Commission Settlement Model</h4>
-                        <p className="text-xs text-slate-500 font-semibold leading-relaxed mt-1">
-                            Pillora charges a fixed monthly plan fee (Clinic ₹2,999, Hospital ₹7,999 or Enterprise ₹14,999, plus GST). We charge ₹0 commission on appointment bookings. 
-                            Hospitals receive 100% of patient online advance payments (20% of fee), less standard payment gateway charges (2% Razorpay Fee + 18% GST on the fee).
-                        </p>
-                    </div>
+            <div className="p-4 sm:p-5 bg-blue-50/60 border border-blue-100 rounded-2xl flex items-start gap-3 sm:gap-4">
+                <span className="flex h-10 w-10 items-center justify-center bg-blue-600 text-white rounded-xl shrink-0">
+                    <Info className="w-5 h-5" />
+                </span>
+                <div>
+                    <h4 className="font-semibold text-slate-900">Zero-Commission Settlement Model</h4>
+                    <p className="text-sm text-slate-600 leading-relaxed mt-1">
+                        Pillora charges a fixed monthly plan fee (Clinic ₹2,999, Hospital ₹7,999 or Enterprise ₹14,999, plus GST). We charge ₹0 commission on appointment bookings.
+                        Hospitals receive 100% of patient online advance payments (20% of fee), less standard payment gateway charges (2% Razorpay Fee + 18% GST on the fee).
+                    </p>
                 </div>
             </div>
 
@@ -310,44 +308,44 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                 {pendingConfirmations.map((s) => (
                     <motion.div
                         key={s._id}
-                        initial={{ opacity: 0, y: -10 }}
+                        initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="p-6 sm:p-7 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-[2rem] flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-xl shadow-amber-900/10"
+                        exit={{ opacity: 0, y: -8 }}
+                        className="p-4 sm:p-5 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col gap-4"
                     >
-                        <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30 animate-pulse">
-                                <Clock className="w-6 h-6" />
-                            </div>
-                            <div className="space-y-1">
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900 text-[10px] font-black uppercase tracking-wider">
+                        <div className="flex items-start gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                                <Clock className="w-5 h-5" />
+                            </span>
+                            <div className="space-y-1 min-w-0">
+                                <p className="text-xs font-semibold text-amber-800">
                                     Action Required • Settlement Confirmation
-                                </div>
-                                <h5 className="font-black text-slate-950 text-base sm:text-lg">
+                                </p>
+                                <h5 className="font-semibold text-slate-900">
                                     Settlement Payout Received: {formatCurrency(s.netAmount)}
                                 </h5>
-                                <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                                    Pillora Admin transferred <strong className="text-slate-900">{formatCurrency(s.netAmount)}</strong> via <strong>{s.transferMethod}</strong> (UTR: <code className="font-mono bg-white/80 px-1.5 py-0.5 rounded text-slate-900 font-bold">{s.utrNumber}</code>)
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    Pillora Admin transferred <strong className="font-semibold text-slate-900">{formatCurrency(s.netAmount)}</strong> via <strong className="font-semibold">{s.transferMethod}</strong> (UTR: <code className="font-mono bg-white px-1.5 py-0.5 rounded text-xs text-slate-900 font-semibold">{s.utrNumber}</code>)
                                     {s.startDate && s.endDate && (
-                                        <span> for the period <strong>{new Date(s.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to {new Date(s.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong> ({s.advanceCount || s.paymentIds?.length || 0} online advances)</span>
+                                        <span> for the period <strong className="font-semibold">{new Date(s.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} to {new Date(s.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</strong> ({s.advanceCount || s.paymentIds?.length || 0} online advances)</span>
                                     )}.
                                     Please confirm whether you have received the funds in your hospital bank account.
                                 </p>
                             </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-3 shrink-0">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:pl-[52px]">
                             <button
                                 onClick={() => handleConfirmReceipt(s._id)}
                                 disabled={actionSubmitting}
-                                className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black transition-all shadow-lg shadow-emerald-600/30 active:scale-95 flex items-center gap-2"
+                                className="ui-btn-success whitespace-normal text-left h-auto py-2.5"
                             >
-                                <CheckCircle2 className="w-4 h-4" />
+                                <CheckCircle2 className="w-4 h-4 shrink-0" />
                                 <span>Confirm Received (Yes, I have received the money from Pillora)</span>
                             </button>
                             <button
                                 onClick={() => setDisputeModalId(s._id)}
                                 disabled={actionSubmitting}
-                                className="px-4 py-3 border border-rose-300 text-rose-700 hover:bg-rose-50 rounded-2xl text-xs font-bold transition-all"
+                                className="ui-btn border border-rose-300 bg-white text-rose-700 hover:bg-rose-50"
                             >
                                 Report an Issue
                             </button>
@@ -357,190 +355,196 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
             </AnimatePresence>
 
             {/* DASHBOARD CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div className="p-6 bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-900/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today&apos;s Online Advance</p>
-                    <h3 className="text-3xl font-black text-slate-900 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                <div className="ui-card p-5">
+                    <p className="text-[13px] font-medium text-slate-500">Today&apos;s Online Advance</p>
+                    <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 mt-1.5">
                         {formatCurrency(dashboardMetrics?.todayOnlineCollection)}
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-1">From {dashboardMetrics?.todayBookings} booking advances collected</p>
+                    <p className="text-xs text-slate-500 mt-1">From {dashboardMetrics?.todayBookings} booking advances collected</p>
                 </div>
 
-                <div className="p-6 bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-900/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pending Payout (Razorpay Clearances)</p>
-                    <h3 className="text-3xl font-black text-indigo-700 mt-2">
+                <div className="ui-card p-5">
+                    <p className="text-[13px] font-medium text-slate-500">Pending Payout (Razorpay Clearances)</p>
+                    <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-indigo-700 mt-1.5">
                         {formatCurrency(dashboardMetrics?.pendingSettlementAmount)}
                     </h3>
-                    <p className="text-[10px] text-indigo-500 font-semibold mt-1">Next Expected Cycle: {dashboardMetrics?.nextExpectedSettlementDate}</p>
+                    <p className="text-xs text-indigo-600 mt-1">Next Expected Cycle: {dashboardMetrics?.nextExpectedSettlementDate}</p>
                 </div>
 
-                <div className="p-6 bg-white border border-slate-100 rounded-3xl shadow-xl shadow-slate-900/5">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Last Settled Payout</p>
-                    <h3 className="text-3xl font-black text-emerald-600 mt-2">
+                <div className="ui-card p-5">
+                    <p className="text-[13px] font-medium text-slate-500">Last Settled Payout</p>
+                    <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 mt-1.5">
                         {formatCurrency(dashboardMetrics?.lastSettlementAmount)}
                     </h3>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-1">Received on: {dashboardMetrics?.lastSettlementDate}</p>
+                    <p className="text-xs text-slate-500 mt-1">Received on: {dashboardMetrics?.lastSettlementDate}</p>
                 </div>
             </div>
 
             {/* EXPECTED SETTLEMENT SUMMARY */}
-            <div className="bg-white border border-slate-100 p-8 rounded-[2rem] shadow-xl shadow-slate-900/5 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="ui-card p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
                 <div className="space-y-4">
                     <div>
-                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border bg-blue-50 text-blue-700 border-blue-100">
+                        <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
                             Upcoming Payout
                         </span>
-                        <h3 className="text-xl font-extrabold text-slate-950 mt-2">Expected Settlement Details</h3>
+                        <h3 className="ui-title mt-2">Expected Settlement Details</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase">Gross Collection</p>
-                            <p className="text-lg font-bold text-slate-800 mt-1">{formatCurrency(expectedPayout?.grossCollection)}</p>
+                            <p className="text-xs font-medium text-slate-500">Gross Collection</p>
+                            <p className="text-lg font-semibold text-slate-900 mt-0.5">{formatCurrency(expectedPayout?.grossCollection)}</p>
                         </div>
                         <div>
-                            <p className="text-[9px] font-black text-slate-400 uppercase">Est. Settlement Net</p>
-                            <p className="text-lg font-bold text-indigo-600 mt-1">{formatCurrency(expectedPayout?.expectedSettlementAmount)}</p>
+                            <p className="text-xs font-medium text-slate-500">Est. Settlement Net</p>
+                            <p className="text-lg font-semibold text-indigo-600 mt-0.5">{formatCurrency(expectedPayout?.expectedSettlementAmount)}</p>
                         </div>
                     </div>
                     <div>
-                        <p className="text-[9px] font-black text-slate-400 uppercase">Eligible Payout Date</p>
-                        <p className="text-sm font-bold text-slate-700 mt-1">{expectedPayout?.estimatedSettlementDate}</p>
+                        <p className="text-xs font-medium text-slate-500">Eligible Payout Date</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-0.5">{expectedPayout?.estimatedSettlementDate}</p>
                     </div>
                 </div>
 
                 {/* Progress bar represent T+2 settlement timeline */}
-                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 space-y-4">
-                    <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                <div className="p-4 sm:p-5 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                    <div className="flex flex-wrap justify-between items-center gap-2 text-sm font-medium text-slate-600">
                         <span>Razorpay Settlement Cycle</span>
                         <span className="text-indigo-600">{expectedPayout?.currentStatus}</span>
                     </div>
-                    <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                        <div 
-                            style={{ 
-                                width: expectedPayout?.currentStatus === 'Ready for Settlement' ? '100%' : '50%' 
-                            }} 
-                            className="bg-indigo-600 h-full rounded-full transition-all duration-500 shadow-md shadow-indigo-500/10"
+                    <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                        <div
+                            style={{
+                                width: expectedPayout?.currentStatus === 'Ready for Settlement' ? '100%' : '50%'
+                            }}
+                            className="bg-indigo-600 h-full rounded-full transition-all duration-500"
                         />
                     </div>
-                    <p className="text-[10px] text-slate-400 font-semibold">
+                    <p className="text-xs text-slate-500 leading-relaxed">
                         Razorpay settles patient advance collections into Pillora&apos;s account in T+2 working days, which are then manually transferred to your bank.
                     </p>
                 </div>
             </div>
 
             {/* PERMANENT LEDGER / HISTORY */}
-            <div className="bg-white border border-slate-100 p-8 rounded-[2rem] shadow-xl shadow-slate-900/5 space-y-6">
-                <div>
-                    <h3 className="text-lg font-bold text-slate-950">Payout Ledger History</h3>
-                    <p className="text-xs text-slate-400 font-semibold mt-0.5">Permanent record of payouts and transaction breakdowns</p>
+            <div className="ui-card">
+                <div className="p-5 sm:p-6 border-b border-slate-100">
+                    <h3 className="ui-title">Payout Ledger History</h3>
+                    <p className="ui-subtitle">Permanent record of payouts and transaction breakdowns</p>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th className="py-4 px-6">Settlement ID</th>
-                                <th className="py-4 px-6">Period Range</th>
-                                <th className="py-4 px-6 text-center">Payout Date</th>
-                                <th className="py-4 px-6 text-right">Gross Advances</th>
-                                <th className="py-4 px-6 text-right">Gateway Deductions (2.36%)</th>
-                                <th className="py-4 px-6 text-right">Net Payout</th>
-                                <th className="py-4 px-6 text-center">Method</th>
-                                <th className="py-4 px-6">UTR Code</th>
-                                <th className="py-4 px-6 text-center">Receipt</th>
-                                <th className="py-4 px-6 text-center">Status</th>
+                            <tr className="bg-slate-50/80 border-b border-slate-100">
+                                <th className="ui-th pl-6">Settlement ID</th>
+                                <th className="ui-th">Period Range</th>
+                                <th className="ui-th text-center">Payout Date</th>
+                                <th className="ui-th text-right">Gross Advances</th>
+                                <th className="ui-th text-right">Gateway Deductions (2.36%)</th>
+                                <th className="ui-th text-right">Net Payout</th>
+                                <th className="ui-th text-center">Method</th>
+                                <th className="ui-th">UTR Code</th>
+                                <th className="ui-th text-center">Receipt</th>
+                                <th className="ui-th pr-6 text-center">Status</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-slate-100">
                             {settlementHistory.map((s) => (
-                                <tr key={s._id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-all font-semibold text-slate-800 text-xs">
-                                    <td className="py-5 px-6 font-mono text-blue-600 font-bold">{s.settlementId}</td>
-                                    <td className="py-5 px-6 text-slate-600 font-medium">
+                                <tr key={s._id} className="hover:bg-slate-50/60 transition-colors">
+                                    <td className="ui-td pl-6 font-mono text-xs text-blue-600 font-semibold whitespace-nowrap">{s.settlementId}</td>
+                                    <td className="ui-td whitespace-nowrap">
                                         {s.startDate && s.endDate ? (
                                             <div>
                                                 <span>{new Date(s.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })} - {new Date(s.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                                                <div className="text-[10px] text-slate-400">{s.advanceCount || s.paymentIds?.length || 0} advances</div>
+                                                <div className="text-xs text-slate-500">{s.advanceCount || s.paymentIds?.length || 0} advances</div>
                                             </div>
                                         ) : (
                                             <span className="text-slate-400">Consolidated</span>
                                         )}
                                     </td>
-                                    <td className="py-5 px-6 text-center text-slate-400 font-medium">
+                                    <td className="ui-td text-center text-slate-500 whitespace-nowrap">
                                         {new Date(s.transferDate || s.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                     </td>
-                                    <td className="py-5 px-6 text-right font-bold text-slate-700">{formatCurrency(s.grossCollection)}</td>
-                                    <td className="py-5 px-6 text-right text-rose-500 font-bold">- {formatCurrency(s.razorpayCharges + s.gstCharges)}</td>
-                                    <td className="py-5 px-6 text-right font-black text-indigo-600 text-sm">{formatCurrency(s.netAmount)}</td>
-                                    <td className="py-5 px-6 text-center font-bold text-slate-500">{s.transferMethod}</td>
-                                    <td className="py-5 px-6 font-mono text-slate-500 font-medium select-all">{s.utrNumber || '—'}</td>
-                                    <td className="py-5 px-6 text-center">
-                                        <button 
+                                    <td className="ui-td text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(s.grossCollection)}</td>
+                                    <td className="ui-td text-right text-rose-500 font-medium whitespace-nowrap">- {formatCurrency(s.razorpayCharges + s.gstCharges)}</td>
+                                    <td className="ui-td text-right font-semibold text-indigo-600 whitespace-nowrap">{formatCurrency(s.netAmount)}</td>
+                                    <td className="ui-td text-center text-slate-600">{s.transferMethod}</td>
+                                    <td className="ui-td font-mono text-xs text-slate-500 select-all">{s.utrNumber || '—'}</td>
+                                    <td className="ui-td text-center">
+                                        <button
                                             onClick={() => handlePrintInvoice(s)}
-                                            className="p-2 border border-slate-200 text-slate-400 hover:text-slate-900 rounded-xl hover:bg-slate-50 transition-all"
+                                            className="inline-flex h-9 w-9 items-center justify-center border border-slate-200 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-50 transition-colors"
                                             title="Print/Download PDF Receipt"
+                                            aria-label="Print or download PDF receipt"
                                         >
-                                            <Download className="w-3.5 h-3.5" />
+                                            <Download className="w-4 h-4" />
                                         </button>
                                     </td>
-                                    <td className="py-5 px-6 text-center">
-                                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase border ${getStatusColor(s.status)}`}>
+                                    <td className="ui-td pr-6 text-center">
+                                        <span className={`ui-badge ${getStatusColor(s.status)}`}>
                                             {s.status}
                                         </span>
                                     </td>
                                 </tr>
                             ))}
-                            {settlementHistory.length === 0 && (
-                                <tr>
-                                    <td colSpan={10} className="py-12 text-center text-slate-400 font-bold italic">
-                                        No payouts recorded.
-                                    </td>
-                                </tr>
-                            )}
                         </tbody>
                     </table>
+                    {settlementHistory.length === 0 && (
+                        <div className="py-12 text-center text-sm text-slate-500">
+                            No payouts recorded.
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* DISPUTE COMPLAINT DIALOG MODAL */}
             <AnimatePresence>
                 {disputeModalId && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fadeIn">
-                        <motion.div 
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl border border-slate-100 flex flex-col relative"
+                    <div className="ui-overlay">
+                        <motion.div
+                            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 24, scale: 0.98 }}
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Report Payout Issue"
+                            className="ui-dialog sm:max-w-md"
                         >
-                            <div className="flex gap-3 mb-2 items-center text-rose-600">
-                                <AlertTriangle className="w-6 h-6 shrink-0" />
-                                <h3 className="text-xl font-bold text-slate-900">Report Payout Issue</h3>
+                            <div className="flex items-start gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+                                    <AlertTriangle className="w-5 h-5" />
+                                </span>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-slate-900 leading-tight">Report Payout Issue</h3>
+                                    <p className="text-sm text-slate-500 mt-0.5">Describe the issue in detail. This immediately changes status to &apos;Under Review&apos;.</p>
+                                </div>
                             </div>
-                            <p className="text-xs text-slate-400 font-semibold mb-6">Describe the issue in detail. This immediately changes status to &apos;Under Review&apos;.</p>
 
-                            <form onSubmit={handleDisputeReceipt} className="space-y-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase">Reason for dispute</label>
+                            <form onSubmit={handleDisputeReceipt} className="flex-1 overflow-y-auto px-5 py-5 sm:px-6 space-y-4">
+                                <label className="block">
+                                    <span className="ui-label">Reason for dispute</span>
                                     <textarea
                                         required
                                         placeholder="e.g. Received incorrect net payout in bank; UTR reference code is invalid..."
                                         value={disputeReason}
                                         onChange={(e) => setDisputeReason(e.target.value)}
-                                        className="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold outline-none text-xs h-28 resize-none"
+                                        className="ui-input h-28 resize-none"
                                     />
-                                </div>
+                                </label>
 
-                                <div className="flex gap-3 pt-2">
+                                <div className="flex gap-3 pt-1">
                                     <button
                                         type="button"
                                         onClick={() => setDisputeModalId(null)}
-                                        className="flex-1 py-3.5 border border-slate-200 text-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-50 transition-colors"
+                                        className="ui-btn-secondary flex-1 min-h-[44px]"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={actionSubmitting}
-                                        className="flex-1 py-3.5 bg-rose-600 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-rose-700 shadow-lg shadow-rose-500/10 disabled:opacity-50"
+                                        className="ui-btn-danger flex-1 min-h-[44px]"
                                     >
                                         {actionSubmitting ? "Submitting Dispute..." : "Submit Complaint"}
                                     </button>

@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import api from "@/lib/api";
 import { getToken, getUser, clearAuth } from "@/lib/tokenStorage";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-    Users, Activity, Calendar, Clock, Plus, Settings, 
-    LogOut, User, Stethoscope, ChevronRight, CheckCircle2, 
-    XCircle, AlertCircle, Info, RefreshCcw, LayoutDashboard,
-    Download, CreditCard, IndianRupee, Bell, ShieldAlert
+import {
+    Users, Activity, Calendar, CalendarClock, Clock, Plus, Settings,
+    User, UserPlus, Stethoscope, CheckCircle2, Check, ChevronDown,
+    XCircle, X, AlertCircle, Info, RefreshCcw, LayoutDashboard,
+    Download, CreditCard, IndianRupee, Bell, BellRing, ShieldAlert,
+    Landmark, SlidersHorizontal, FileText, Trash2, PhoneCall
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 
@@ -694,11 +695,50 @@ export default function HospitalDashboard() {
         }
     };
 
+    // Mobile section tabs: keep the active tab scrolled into view, and open a
+    // newly chosen section at the top of the page.
+    const tabStripRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const strip = tabStripRef.current;
+        const active = strip?.querySelector<HTMLElement>('[aria-selected="true"]');
+        if (strip && active) {
+            strip.scrollTo({ left: active.offsetLeft - strip.clientWidth / 2 + active.clientWidth / 2, behavior: "smooth" });
+        }
+        if (typeof window !== "undefined" && window.scrollY > 200) window.scrollTo({ top: 0 });
+    }, [activeMainTab, loading]);
+
+    // The payment menu in the appointments table floats above the table (so the
+    // table's scroll area can't cut it off). It follows its button while the page
+    // scrolls and closes once the button is off screen.
+    const [paymentMenuPos, setPaymentMenuPos] = useState<{ top?: number; bottom?: number; right: number } | null>(null);
+    const paymentAnchorRef = useRef<HTMLElement | null>(null);
+    const placePaymentMenu = useCallback((el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        const right = document.documentElement.clientWidth - r.right;
+        setPaymentMenuPos(window.innerHeight - r.bottom > 220 ? { top: r.bottom + 4, right } : { bottom: window.innerHeight - r.top + 4, right });
+    }, []);
+    useEffect(() => {
+        if (!openPaymentDropdown) return;
+        const follow = () => {
+            const el = paymentAnchorRef.current;
+            if (!el || !el.isConnected) return setOpenPaymentDropdown(null);
+            const r = el.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > window.innerHeight) return setOpenPaymentDropdown(null);
+            placePaymentMenu(el);
+        };
+        window.addEventListener("scroll", follow, true);
+        window.addEventListener("resize", follow);
+        return () => {
+            window.removeEventListener("scroll", follow, true);
+            window.removeEventListener("resize", follow);
+        };
+    }, [openPaymentDropdown, placePaymentMenu]);
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full" />
-                <p className="mt-4 font-bold text-primary animate-pulse">Loading Hospital Dashboard...</p>
+            <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }} className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full" />
+                <p className="text-sm font-medium text-slate-500">Loading hospital dashboard…</p>
             </div>
         );
     }
@@ -706,14 +746,16 @@ export default function HospitalDashboard() {
     if (error) {
         return (
             <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-                <div className="bg-white p-8 rounded-3xl shadow-xl border border-red-100 text-center max-w-md">
-                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-black text-gray-900 mb-2">Access Error</h1>
-                    <p className="text-gray-500 font-medium">{error}</p>
+                <div className="ui-card p-8 text-center max-w-md w-full">
+                    <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
+                        <AlertCircle className="w-7 h-7" />
+                    </span>
+                    <h1 className="text-xl font-bold text-slate-900">Access error</h1>
+                    <p className="mt-1 text-sm text-slate-500">{error}</p>
                     <button onClick={() => {
                         clearAuth();
                         window.location.href = '/login';
-                    }} className="mt-6 px-8 py-3 bg-gray-900 text-white font-bold rounded-xl">Back to Login</button>
+                    }} className="ui-btn-dark mt-6 w-full sm:w-auto">Back to login</button>
                 </div>
             </div>
         );
@@ -734,8 +776,151 @@ export default function HospitalDashboard() {
     const doctorData = getDoctorBreakdown();
     const maxCount = Math.max(...doctorData.map(d => d.count), 1);
 
+    const hospitalName: string = stats?.hospital?.name || stats?.stats?.hospital?.name || "";
+    const timeRange = (start?: string, end?: string) =>
+        start && end
+            ? `${new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`
+            : 'N/A';
+
+    // Slots listed in Slot Management (same rules for the table and the phone cards)
+    const visibleSlots = slots.filter((slot: any) => {
+        const isCancelled = slot.status === 'cancelled';
+        const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
+        if (!tabMatch) return false;
+        // Upcoming = not yet ended (pick a date in the filter to see past slots)
+        if (activeSlotSubTab === 'upcoming' && !slotDateFilter && new Date(slot.endTime || slot.startTime).getTime() < Date.now()) return false;
+        // Date filter: compare slot's local date (YYYY-MM-DD) against the filter
+        if (slotDateFilter) {
+            const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA'); // YYYY-MM-DD
+            if (slotLocalDate !== slotDateFilter) return false;
+        }
+        return true;
+    });
+
+    // Free slots offered in the walk-in booking form
+    const manualSlotOptions = slots.filter((s: any) => {
+        const matchDoc = s.doctor?._id === manualDoctorId;
+        const slotDate = new Date(s.startTime).toISOString().split("T")[0];
+        const matchDate = slotDate === manualBookingDate;
+        const isAvailable = s.status === "available";
+        const maxAppts = s.max_appointments || 1;
+        const bookingCount = s.bookingCount || 0;
+        const hasCapacity = bookingCount < maxAppts;
+        return matchDoc && matchDate && isAvailable && hasCapacity;
+    });
+
+    const activeFilterCount = [filterDate, startDate, endDate, filterSpecialty, filterDoctor, filterStatus].filter(Boolean).length;
+
+    const dot = (cls: string, label: string) => (
+        <span className={`h-2 w-2 shrink-0 rounded-full ${cls}`} role="img" aria-label={label} />
+    );
+
+    const navItems: { id: typeof activeMainTab; label: string; short: string; icon: React.ReactNode; badge?: React.ReactNode }[] = [
+        { id: "appointments", label: "Appointments", short: "Appointments", icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
+        {
+            id: "slots", label: "Slot management", short: "Slots", icon: <CalendarClock className="w-[18px] h-[18px]" />,
+            badge: !isSubscriptionActive ? dot("bg-rose-500", "Slot generation locked") : null,
+        },
+        { id: "patients", label: "Patient records", short: "Patients", icon: <Users className="w-[18px] h-[18px]" /> },
+        { id: "payments", label: "Payments & collections", short: "Payments", icon: <IndianRupee className="w-[18px] h-[18px]" /> },
+        {
+            id: "settlements", label: "Settlements", short: "Settlements", icon: <Landmark className="w-[18px] h-[18px]" />,
+            badge: pendingSettlements.length > 0 ? (
+                <span className="min-w-[20px] rounded-full bg-amber-400 px-1.5 py-0.5 text-center text-[11px] font-bold leading-4 text-slate-950" aria-label={`${pendingSettlements.length} waiting for confirmation`}>
+                    {pendingSettlements.length}
+                </span>
+            ) : null,
+        },
+        { id: "followups", label: "Follow-up reminders", short: "Follow-ups", icon: <BellRing className="w-[18px] h-[18px]" /> },
+        {
+            id: "subscription", label: "Plan & usage", short: "Plan & usage", icon: <CreditCard className="w-[18px] h-[18px]" />,
+            badge: subscriptionData?.hospital?.isExpired ? dot("bg-rose-500 ring-4 ring-rose-500/20", "Subscription expired")
+                : subscriptionData?.hospital?.subscriptionStatus === 'Pending Payment' ? dot("bg-amber-500", "Payment pending")
+                : subscriptionData?.hospital?.isExpiringSoon ? dot("bg-orange-500", "Expiring soon")
+                : null,
+        },
+        { id: "settings", label: "Settings", short: "Settings", icon: <Settings className="w-[18px] h-[18px]" /> },
+    ];
+
+    const hasPlanBenefits = stats?.is_featured || stats?.has_custom_page || stats?.has_govt_schemes || stats?.is_spotlight || stats?.priority_support;
+    const planBenefits = (
+        <div className="ui-card p-4">
+            <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-slate-500">Plan benefits</p>
+                <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">Active</span>
+            </div>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{planLabel(stats?.plan)} plan</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+                {stats?.is_featured && (
+                    <span className="ui-badge border-indigo-100 bg-indigo-50 text-indigo-700">Top of search</span>
+                )}
+                {stats?.has_govt_schemes && (
+                    <span className="ui-badge border-emerald-100 bg-emerald-50 text-emerald-700">Govt schemes</span>
+                )}
+                {stats?.is_spotlight && (
+                    <span className="ui-badge border-amber-100 bg-amber-50 text-amber-700">Spotlight</span>
+                )}
+                {stats?.priority_support && (
+                    <span className="ui-badge border-rose-100 bg-rose-50 text-rose-700">Priority support</span>
+                )}
+                {!hasPlanBenefits && (
+                    <p className="text-xs leading-relaxed text-slate-500">
+                        Standard listing — your hospital page and online booking are live.
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+
+    const quickSlotCard = isSelfManaged ? (
+        <section className="ui-card p-5 sm:p-6" aria-labelledby="quick-slot-heading">
+            <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Clock className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                    <h2 id="quick-slot-heading" className="ui-title">Quick slot & timing generator</h2>
+                    <p className="ui-subtitle">Select a doctor to set their available date, start/end timing and booking slot duration.</p>
+                </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+                {doctors.map((doc: any) => (
+                    <button
+                        key={doc._id}
+                        onClick={() => setShowSlotGen(doc)}
+                        title={`Set up timing for ${doctorLabel(doc)}`}
+                        className="ui-btn-secondary ui-btn-sm min-h-[40px] max-w-full text-[13px] sm:min-h-[36px]"
+                    >
+                        <Clock className="h-3.5 w-3.5 shrink-0 text-blue-600" />
+                        <span className="truncate">{doctorLabel(doc)}</span>
+                    </button>
+                ))}
+                {doctors.length === 0 && (
+                    <p className="ui-empty w-full py-6">Add a doctor under Staff &amp; groups first to configure timings and generate slots.</p>
+                )}
+            </div>
+        </section>
+    ) : null;
+
+    const statusPill = (status: string) => {
+        const tone =
+            status === 'completed' || status === 'confirmed' ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : status === 'pending' ? 'border-amber-200 bg-amber-50 text-amber-700'
+            : status === 'checked-in' ? 'border-blue-200 bg-blue-50 text-blue-700'
+            : status === 'in-consultation' ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+            : 'border-rose-200 bg-rose-50 text-rose-700';
+        const label = (status || 'unknown').replace(/-/g, ' ');
+        return <span className={`ui-badge capitalize ${tone}`}>{label}</span>;
+    };
+
+    const paymentTone = (s?: string) =>
+        s === 'paid' ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : s === 'partial' ? 'border-amber-200 bg-amber-50 text-amber-700'
+        : s === 'waived' ? 'border-slate-200 bg-slate-100 text-slate-600'
+        : 'border-rose-200 bg-rose-50 text-rose-600';
+
     return (
-        <div className="min-h-screen bg-white text-slate-900 font-sans" onClick={(e) => {
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans" onClick={(e) => {
             // Close payment dropdown when clicking outside
             if (openPaymentDropdown && !(e.target as HTMLElement).closest('.payment-dropdown-wrapper')) {
                 setOpenPaymentDropdown(null);
@@ -745,14 +930,15 @@ export default function HospitalDashboard() {
             <AnimatePresence>
                 {toast && (
                     <motion.div
-                        initial={{ opacity: 0, y: 60, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 40, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 40, scale: 0.95 }}
+                        exit={{ opacity: 0, y: 24, scale: 0.97 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        className={`fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl text-sm font-bold border ${
+                        role="status"
+                        className={`fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium ${
                             toast.type === 'success'
-                                ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20'
-                                : 'bg-rose-600 text-white border-rose-500 shadow-rose-900/20'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-rose-600 text-white'
                         }`}
                     >
                         {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
@@ -761,650 +947,315 @@ export default function HospitalDashboard() {
                 )}
             </AnimatePresence>
 
-            <main className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                    <div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Hospital Command Center</h1>
-                        <p className="text-slate-500 font-medium">Manage your facility operations and patient flow.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black uppercase tracking-widest border border-blue-100 shadow-sm">
-                            {planLabel(stats?.plan)} plan
-                        </div>
-                        <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest border border-emerald-100 shadow-sm">
-                            System Online
-                        </div>
-                        <button
-                            onClick={handleEnableNotifications}
-                            disabled={pushStatus === "Active" || pushStatus === "Checking..." || pushStatus === "Not Supported"}
-                            className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest border shadow-sm transition-all flex items-center gap-1.5 ${
-                                pushStatus === "Active"
-                                    ? "bg-green-50 text-green-600 border-green-100 cursor-default"
-                                    : pushStatus === "Checking..."
-                                    ? "bg-slate-50 text-slate-400 border-slate-100 cursor-default"
-                                    : pushStatus === "Blocked"
-                                    ? "bg-rose-50 text-rose-600 border-rose-100 cursor-not-allowed"
-                                    : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 cursor-pointer animate-pulse"
-                            }`}
-                        >
-                            <span className={`w-1.5 h-1.5 rounded-full ${pushStatus === "Active" ? "bg-green-500" : pushStatus === "Blocked" ? "bg-red-500" : "bg-amber-500"}`}></span>
-                            Notifications: {pushStatus}
-                        </button>
-                    </div>
-                </div>
-
-
-                {/* Action Required Banner for Pending Settlement Payouts */}
-                {pendingSettlements.length > 0 && activeMainTab !== "settlements" && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="p-5 sm:p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shadow-amber-900/10"
-                    >
-                        <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/30 animate-pulse">
-                                <Clock className="w-6 h-6" />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:flex lg:gap-8">
+                {/* Sidebar (computers) */}
+                <aside className="hidden lg:block w-60 shrink-0 py-8">
+                    <div className="sticky top-24 space-y-4">
+                        <nav aria-label="Dashboard sections" className="ui-card p-2">
+                            <div role="tablist" aria-orientation="vertical" aria-label="Hospital Management Tabs" className="space-y-0.5">
+                                {navItems.map((item) => {
+                                    const active = activeMainTab === item.id;
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            role="tab"
+                                            aria-selected={active}
+                                            onClick={() => setActiveMainTab(item.id)}
+                                            className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                                                active ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                            }`}
+                                        >
+                                            <span className={active ? "text-white" : "text-slate-400 group-hover:text-slate-600"}>{item.icon}</span>
+                                            <span className="flex-1 truncate text-left">{item.label}</span>
+                                            {item.badge}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            <div>
-                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/60 text-amber-900 text-[10px] font-black uppercase tracking-wider mb-1">
-                                    Action Required • Settlement Confirmation
-                                </div>
-                                <h4 className="font-black text-slate-950 text-base sm:text-lg">
-                                    Pillora Admin sent a settlement payout of ₹{pendingSettlements[0].netAmount?.toFixed(2)}
-                                </h4>
-                                <p className="text-xs text-slate-700 font-medium mt-0.5 leading-relaxed">
-                                    Transferred via <strong>{pendingSettlements[0].transferMethod}</strong> (UTR: <code className="font-mono bg-white px-1.5 py-0.5 rounded font-bold text-slate-900">{pendingSettlements[0].utrNumber}</code>).
-                                    Please verify your bank account and confirm receipt.
-                                </p>
+                        </nav>
+                        {planBenefits}
+                    </div>
+                </aside>
+
+                <main className="flex-1 min-w-0 py-6 lg:py-8 space-y-6">
+                    {/* Header */}
+                    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="min-w-0">
+                            {hospitalName && <p className="text-sm font-medium text-slate-500">Hospital Command Center</p>}
+                            <h1 className="mt-0.5 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 line-clamp-2">
+                                {hospitalName || "Hospital Command Center"}
+                            </h1>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
+                                    {planLabel(stats?.plan)} plan
+                                </span>
+                                <span className="ui-badge border-emerald-200 bg-emerald-50 text-emerald-700">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> System online
+                                </span>
+                                <button
+                                    onClick={handleEnableNotifications}
+                                    disabled={pushStatus === "Active" || pushStatus === "Checking..." || pushStatus === "Not Supported"}
+                                    className={`ui-badge transition ${
+                                        pushStatus === "Active"
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700 cursor-default"
+                                            : pushStatus === "Checking..."
+                                            ? "border-slate-200 bg-slate-50 text-slate-500 cursor-default"
+                                            : pushStatus === "Blocked"
+                                            ? "border-rose-200 bg-rose-50 text-rose-700 cursor-not-allowed"
+                                            : "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100 cursor-pointer"
+                                    }`}
+                                >
+                                    <span className={`h-1.5 w-1.5 rounded-full ${pushStatus === "Active" ? "bg-emerald-500" : pushStatus === "Blocked" ? "bg-rose-500" : "bg-amber-500"} ${pushStatus === "Setup Required" ? "animate-pulse" : ""}`} />
+                                    Notifications: {pushStatus}
+                                </button>
                             </div>
                         </div>
-                        <button
-                            onClick={() => setActiveMainTab("settlements")}
-                            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-xs font-black shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all shrink-0 active:scale-95"
-                        >
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span>Review & Confirm Settlement →</span>
-                        </button>
-                    </motion.div>
-                )}
+                        {isSelfManaged && (
+                            <button
+                                onClick={() => setShowManualBooking(true)}
+                                className="ui-btn-success w-full sm:w-auto shrink-0 min-h-[44px]"
+                            >
+                                <Plus className="w-4 h-4" /> Book walk-in appointment
+                            </button>
+                        )}
+                    </header>
 
-                {/* Mode Warning & Benefits */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Section tabs (phones and tablets) */}
+                    <div className="lg:hidden sticky top-16 sm:top-20 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 bg-slate-50/95 backdrop-blur border-b border-slate-200/70">
+                        <div
+                            ref={tabStripRef}
+                            role="tablist"
+                            aria-label="Hospital Management Tabs"
+                            className="no-scrollbar flex gap-1.5 overflow-x-auto"
+                        >
+                            {navItems.map((item) => {
+                                const active = activeMainTab === item.id;
+                                return (
+                                    <button
+                                        key={item.id}
+                                        role="tab"
+                                        aria-selected={active}
+                                        onClick={() => setActiveMainTab(item.id)}
+                                        className={`flex shrink-0 items-center gap-2 rounded-full px-3.5 min-h-[40px] text-sm font-medium transition ${
+                                            active ? "bg-slate-900 text-white shadow-sm" : "bg-white text-slate-600 border border-slate-200 hover:text-slate-900"
+                                        }`}
+                                    >
+                                        <span className={active ? "text-white" : "text-slate-400"}>{item.icon}</span>
+                                        {item.short}
+                                        {item.badge}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {!isSelfManaged && (
-                        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-blue-600 text-white p-6 rounded-[2rem] shadow-xl shadow-blue-900/10 flex items-center justify-between gap-6 h-full">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
-                                    <Info className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg">Pillora-Managed</h3>
-                                    <p className="text-blue-100 text-xs font-medium">Only admins can modify your facility&apos;s slots.</p>
-                                </div>
+                        <div className="flex items-center gap-3 rounded-2xl bg-blue-600 p-4 text-white">
+                            <Info className="h-5 w-5 shrink-0" />
+                            <div>
+                                <h3 className="font-semibold">Pillora-Managed</h3>
+                                <p className="text-sm text-blue-100">Only admins can modify your facility&apos;s slots.</p>
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                    
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-blue-900/5 flex items-center justify-between gap-6">
-                        <div className="flex flex-wrap gap-2">
-                            {stats?.is_featured && (
-                                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100">Top of Search</span>
-                            )}
-                            {stats?.has_govt_schemes && (
-                                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-emerald-100">Govt Schemes</span>
-                            )}
-                            {stats?.is_spotlight && (
-                                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-100">Spotlight</span>
-                            )}
-                            {stats?.priority_support && (
-                                <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-rose-100">Priority Support</span>
-                            )}
-                            {!(stats?.is_featured || stats?.has_custom_page || stats?.has_govt_schemes || stats?.is_spotlight || stats?.priority_support) && (
-                                <p className="text-sm text-slate-500 font-medium">
-                                    Standard listing — your hospital page and online booking are live.
-                                </p>
-                            )}
-                        </div>
-                        <div className="text-right">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Plan Benefits</p>
-                            <p className="text-xs font-bold text-primary">Active</p>
-                        </div>
-                    </motion.div>
-                </div>
 
-                {isSelfManaged && (
-                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                                    <Clock className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-lg text-slate-900 leading-tight">Quick Slot & Timing Generator</h3>
-                                    <p className="text-slate-500 text-xs font-medium mt-0.5">Quickly select a doctor to set their available date, start/end timing, and booking slot duration.</p>
+                    {/* Action Required Banner for Pending Settlement Payouts */}
+                    {pendingSettlements.length > 0 && activeMainTab !== "settlements" && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5 md:flex-row md:items-center md:justify-between"
+                        >
+                            <div className="flex items-start gap-3">
+                                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+                                    <Clock className="h-5 w-5" />
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-amber-800">Action required · Settlement confirmation</p>
+                                    <h4 className="mt-0.5 font-semibold text-slate-900">
+                                        Pillora Admin sent a settlement payout of ₹{pendingSettlements[0].netAmount?.toFixed(2)}
+                                    </h4>
+                                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                                        Transferred via <strong className="font-semibold text-slate-800">{pendingSettlements[0].transferMethod}</strong> (UTR: <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs font-semibold text-slate-900">{pendingSettlements[0].utrNumber}</code>).
+                                        Please verify your bank account and confirm receipt.
+                                    </p>
                                 </div>
                             </div>
                             <button
-                                onClick={() => setShowManualBooking(true)}
-                                className="w-full md:w-auto px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-600/10 active:scale-95 shrink-0"
+                                onClick={() => setActiveMainTab("settlements")}
+                                className="ui-btn-success w-full md:w-auto shrink-0"
                             >
-                                <Plus className="w-4 h-4" /> Book Walk-In Appointment
+                                <CheckCircle2 className="w-4 h-4" />
+                                Review &amp; confirm settlement
                             </button>
+                        </motion.div>
+                    )}
+
+                    {/* Low WhatsApp messages / AI minutes warning (hidden when there's enough left) */}
+                    {activeMainTab !== "subscription" && <UsageWarningBanner onOpen={() => setActiveMainTab("subscription")} />}
+
+                    {activeMainTab === "patients" && (
+                        <PatientSearchAdmin />
+                    )}
+
+                    {activeMainTab === "payments" && (
+                        <PaymentAnalytics doctors={doctors} />
+                    )}
+
+                    {activeMainTab === "settlements" && (
+                        <HospitalSettlements
+                            hospitalId={stats?.stats?.hospital?._id || stats?.hospital?._id}
+                            trialEndDate={stats?.stats?.hospital?.trialEndDate || stats?.hospital?.trialEndDate}
+                        />
+                    )}
+
+                    {activeMainTab === "followups" && (
+                        <FollowUpRemindersAdmin
+                            doctors={doctors}
+                            prefillData={followUpPrefillData}
+                            onClosePrefillModal={() => setFollowUpPrefillData(null)}
+                        />
+                    )}
+
+                    {activeMainTab === "subscription" && (
+                        <div className="space-y-6">
+                            <div className="lg:hidden">{planBenefits}</div>
+                            <UsagePanel />
+                            <HospitalSubscriptionDashboard />
                         </div>
-                        <div className="flex flex-col sm:flex-row flex-wrap gap-3">
-                            {doctors.map((doc: any) => (
-                                <button
-                                    key={doc._id}
-                                    onClick={() => setShowSlotGen(doc)}
-                                    className="w-full sm:w-auto px-5 py-4 bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 text-slate-700 hover:text-blue-600 font-black rounded-2xl text-xs flex items-center justify-center sm:justify-start gap-2.5 transition-all shadow-sm hover:shadow active:scale-95 shrink-0"
-                                >
-                                    <Clock className="w-4 h-4" /> Setup Timing for {doctorLabel(doc)}
-                                </button>
-                            ))}
-                            {doctors.length === 0 && (
-                                <div className="text-center py-6 w-full bg-slate-50 rounded-2xl border border-dashed border-slate-100">
-                                    <p className="text-slate-400 text-xs font-bold uppercase tracking-widest italic">Add a doctor below first to configure timings and generate slots.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                    <StatCard label="Total Doctors" value={stats?.stats?.doctors} icon={<Stethoscope className="text-blue-500" />} />
-                    <StatCard label="Total Bookings" value={stats?.stats?.appointments} icon={<Calendar className="text-emerald-500" />} />
-                    <div className="col-span-2 md:col-span-1">
-                        <StatCard label="Pending Review" value={stats?.stats?.pending} icon={<Clock className="text-amber-500" />} />
-                    </div>
-                </div>
+                    {activeMainTab === "settings" && (
+                        <HospitalSettingsModule
+                            hospital={stats?.hospital || stats?.stats?.hospital}
+                            user={user}
+                            onProfileUpdated={fetchData}
+                            onNavigateTab={(tab: string) => {
+                                if (["appointments", "slots", "patients", "payments", "settlements", "followups", "subscription", "settings"].includes(tab)) {
+                                    setActiveMainTab(tab as any);
+                                }
+                            }}
+                        />
+                    )}
 
-                {/* Main Action Tabs */}
-                <div 
-                    role="tablist"
-                    aria-label="Hospital Management Tabs"
-                    className="w-full bg-slate-50 p-1.5 sm:p-2 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 sm:gap-2"
-                >
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "appointments"}
-                        onClick={() => setActiveMainTab("appointments")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
-                            activeMainTab === "appointments" 
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        Appointments & Analytics
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "slots"}
-                        onClick={() => setActiveMainTab("slots")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center relative ${
-                            activeMainTab === "slots" 
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        <span>Slot Management</span>
-                        {!isSubscriptionActive && (
-                            <span className="ml-1 w-2 h-2 rounded-full bg-rose-500" title="Slot generation locked" />
-                        )}
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "patients"}
-                        onClick={() => setActiveMainTab("patients")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
-                            activeMainTab === "patients" 
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        Patient Records
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "payments"}
-                        onClick={() => setActiveMainTab("payments")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
-                            activeMainTab === "payments" 
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        Payments & Collections
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "settlements"}
-                        onClick={() => setActiveMainTab("settlements")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center relative ${
-                            activeMainTab === "settlements" 
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        <span>Settlements</span>
-                        {pendingSettlements.length > 0 && (
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-400 text-slate-950 animate-pulse">
-                                {pendingSettlements.length}
-                            </span>
-                        )}
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "followups"}
-                        onClick={() => setActiveMainTab("followups")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center ${
-                            activeMainTab === "followups" 
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        Follow-Up Reminders
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "subscription"}
-                        onClick={() => setActiveMainTab("subscription")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center relative ${
-                            activeMainTab === "subscription" 
-                                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        <span>Subscription</span>
-                        {subscriptionData?.hospital?.isExpired && (
-                            <span className="ml-1 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-                        )}
-                        {!subscriptionData?.hospital?.isExpired && subscriptionData?.hospital?.subscriptionStatus === 'Pending Payment' && (
-                            <span className="ml-1 w-2 h-2 rounded-full bg-amber-500" />
-                        )}
-                        {subscriptionData?.hospital?.isExpiringSoon && (
-                            <span className="ml-1 w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                        )}
-                    </button>
-                    <button 
-                        role="tab"
-                        aria-selected={activeMainTab === "settings"}
-                        onClick={() => setActiveMainTab("settings")}
-                        className={`w-full py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-center leading-tight transition-all min-h-[44px] flex items-center justify-center gap-1.5 ${
-                            activeMainTab === "settings" 
-                                ? "bg-slate-900 text-white shadow-lg shadow-slate-900/10" 
-                                : "text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        }`}
-                    >
-                        <Settings className="w-3.5 h-3.5" />
-                        <span>Settings</span>
-                    </button>
-                </div>
-
-                {/* Low WhatsApp messages / AI minutes warning (hidden when there's enough left) */}
-                {activeMainTab !== "subscription" && <UsageWarningBanner onOpen={() => setActiveMainTab("subscription")} />}
-
-                {activeMainTab === "patients" && (
-                    <PatientSearchAdmin />
-                )}
-
-                {activeMainTab === "payments" && (
-                    <PaymentAnalytics doctors={doctors} />
-                )}
-
-                {activeMainTab === "settlements" && (
-                    <HospitalSettlements 
-                        hospitalId={stats?.stats?.hospital?._id || stats?.hospital?._id} 
-                        trialEndDate={stats?.stats?.hospital?.trialEndDate || stats?.hospital?.trialEndDate} 
-                    />
-                )}
-
-                {activeMainTab === "followups" && (
-                    <FollowUpRemindersAdmin
-                        doctors={doctors}
-                        prefillData={followUpPrefillData}
-                        onClosePrefillModal={() => setFollowUpPrefillData(null)}
-                    />
-                )}
-
-                {activeMainTab === "subscription" && (
-                    <div className="space-y-8">
-                        <UsagePanel />
-                        <HospitalSubscriptionDashboard />
-                    </div>
-                )}
-
-                {activeMainTab === "settings" && (
-                    <HospitalSettingsModule 
-                        hospital={stats?.hospital || stats?.stats?.hospital}
-                        user={user}
-                        onProfileUpdated={fetchData}
-                        onNavigateTab={(tab: string) => {
-                            if (["appointments", "slots", "patients", "payments", "settlements", "followups", "subscription", "settings"].includes(tab)) {
-                                setActiveMainTab(tab as any);
-                            }
-                        }}
-                    />
-                )}
-
-                {activeMainTab === "appointments" && (
-                    <>
-                        {/* Bookings Analytics & Operational Graphs */}
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div>
-                                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                                    <Activity className="w-6 h-6 text-primary" /> Bookings & Operational Analytics
-                                </h3>
-                                <p className="text-slate-500 text-xs font-semibold mt-1">Real-time performance metrics and doctor appointment distributions.</p>
+                    {activeMainTab === "appointments" && (
+                        <>
+                            {/* Stats */}
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+                                <StatCard label="Total doctors" value={stats?.stats?.doctors} icon={<Stethoscope className="w-5 h-5" />} tone="blue" />
+                                <StatCard label="Total bookings" value={stats?.stats?.appointments} icon={<Calendar className="w-5 h-5" />} tone="emerald" />
+                                <StatCard label="Pending review" value={stats?.stats?.pending} icon={<Clock className="w-5 h-5" />} tone="amber" />
+                                <StatCard
+                                    label="Cancellation rate · this month"
+                                    value={`${cancellationRate?.rate || 0}%`}
+                                    icon={<XCircle className="w-5 h-5" />}
+                                    tone="rose"
+                                    sub={`${cancellationRate?.cancelled || 0} cancelled, out of ${cancellationRate?.total || 0} bookings`}
+                                />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                                {/* Bar Chart: Bookings per Doctor */}
-                                <div className="md:col-span-2 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col h-[320px]">
-                                    <h4 className="text-sm font-extrabold text-slate-800 mb-6 uppercase tracking-wider">Bookings Distribution by Doctor</h4>
-                                    <div className="flex-1 flex items-end gap-6 sm:gap-10 px-4 pb-4 border-b border-slate-200">
-                                        {doctorData.map((d, i) => (
-                                            <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
-                                                <div className="relative w-full flex flex-col items-center justify-end h-full">
-                                                    {/* Count tooltip */}
-                                                    <div className="absolute -top-8 px-2 py-1 bg-slate-900 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-lg shrink-0">
-                                                        {d.count} Bookings
-                                                    </div>
-                                                    {/* Bar */}
-                                                    <motion.div
-                                                        initial={{ height: 0 }}
-                                                        animate={{ height: `${(d.count / maxCount) * 80}%` }}
-                                                        transition={{ duration: 0.8, ease: "easeOut", delay: i * 0.1 }}
-                                                        className="w-full sm:w-10 bg-gradient-to-t from-blue-600 to-indigo-400 rounded-t-xl group-hover:from-blue-700 group-hover:to-indigo-500 transition-colors shadow-lg shadow-blue-500/20"
-                                                    />
-                                                </div>
-                                                <p className="text-[10px] font-black text-slate-400 text-center truncate w-20" title={d.name}>
-                                                    {doctorShortLabel(d)}
-                                                </p>
-                                            </div>
-                                        ))}
-                                        {doctorData.length === 0 && (
-                                            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold italic text-sm">
-                                                No bookings data to display in chart.
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Status Distribution Breakdown */}
-                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col h-[320px] justify-between">
-                                    <div>
-                                        <h4 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider">Status Distribution</h4>
-                                        <div className="space-y-3.5">
-                                            {['confirmed', 'pending', 'checked-in', 'completed', 'cancelled'].map((status) => {
-                                                const count = appointments.filter(a => a.status === status).length;
-                                                const percentage = appointments.length > 0 ? (count / appointments.length) * 100 : 0;
-                                                const color = status === 'completed' || status === 'confirmed' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-500' : status === 'checked-in' ? 'bg-blue-500' : status === 'cancelled' ? 'bg-rose-500' : 'bg-slate-400';
-
-                                                return (
-                                                    <div key={status} className="space-y-1">
-                                                        <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-600">
-                                                            <span>{status}</span>
-                                                            <span>{count} ({Math.round(percentage)}%)</span>
-                                                        </div>
-                                                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                                            <motion.div 
-                                                                initial={{ width: 0 }} 
-                                                                animate={{ width: `${percentage}%` }} 
-                                                                transition={{ duration: 1, ease: "easeOut" }}
-                                                                className={`h-full ${color}`} 
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                    <div className="text-[10px] text-center font-bold text-slate-400 uppercase tracking-widest border-t border-slate-200/60 pt-3">
-                                        Total Monitored: {appointments.length} Appointments
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="mt-8">
-                                {/* Cancellation Rate */}
-                                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex flex-col items-center justify-center h-[220px]">
-                                    <h4 className="text-sm font-extrabold text-slate-800 mb-4 uppercase tracking-wider text-center">Cancellation Rate · This Month</h4>
-                                    <div className="flex items-center gap-10">
-                                        <div className="relative w-36 h-36 flex items-center justify-center">
-                                            <svg className="w-full h-full transform -rotate-90">
-                                                <circle cx="72" cy="72" r="60" className="stroke-slate-200" strokeWidth="12" fill="none" />
-                                                <motion.circle 
-                                                    cx="72" cy="72" r="60" 
-                                                    className="stroke-rose-500" 
-                                                    strokeWidth="12" 
-                                                    fill="none" 
-                                                    strokeLinecap="round"
-                                                    initial={{ strokeDasharray: "377", strokeDashoffset: "377" }}
-                                                    animate={{ strokeDashoffset: 377 - (377 * (cancellationRate?.rate || 0)) / 100 }}
-                                                    transition={{ duration: 1.5, ease: "easeOut" }}
-                                                />
-                                            </svg>
-                                            <div className="absolute flex flex-col items-center justify-center">
-                                                <span className="text-3xl font-black text-slate-800">{cancellationRate?.rate || 0}%</span>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cancellationRate?.cancelled || 0} Cancelled</span>
-                                            </div>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                            Out of {cancellationRate?.total || 0} bookings this month
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Doctors & Specialty Groups List */}
-                            <div className="lg:col-span-1 space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Users className="w-6 h-6 text-primary" />
-                                        <h2 className="text-xl font-black">Staff & Groups</h2>
-                                    </div>
-                                    {isSelfManaged && (
-                                        <button 
-                                            onClick={() => doctorTab === "individual" ? setShowAddDoctor(true) : setShowAddSpecialtyGroup(true)} 
-                                            className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all flex items-center gap-1 text-[10px] font-black uppercase tracking-wider shadow-md shadow-primary/10"
-                                            title={doctorTab === "individual" ? "Add Doctor" : "Add Specialty Group"}
-                                        >
-                                            <Plus className="w-4 h-4" /> Add {doctorTab === "individual" ? "Doc" : "Group"}
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Tabs */}
-                                <div className="bg-slate-50 p-1.5 rounded-2xl border border-slate-100 flex gap-2">
-                                    <button 
-                                        onClick={() => setDoctorTab("individual")} 
-                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                            doctorTab === "individual" 
-                                                ? "bg-white text-slate-800 shadow-sm" 
-                                                : "text-slate-400 hover:text-slate-600"
-                                        }`}
-                                    >
-                                        Individual
-                                    </button>
-                                    <button 
-                                        onClick={() => setDoctorTab("group")} 
-                                        className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                            doctorTab === "group" 
-                                                ? "bg-white text-slate-800 shadow-sm" 
-                                                : "text-slate-400 hover:text-slate-600"
-                                        }`}
-                                    >
-                                        Specialty Groups
-                                    </button>
-                                </div>
-                                
-                                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {filteredDoctors.map((doc: any) => (
-                                        <div key={doc._id} className={`bg-white p-5 rounded-2xl border ${doc.is_active ? 'border-gray-100' : 'border-dashed border-rose-200 bg-rose-50/20'} shadow-sm hover:border-primary/30 transition-all group`}>
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center font-black text-primary text-xl group-hover:bg-primary group-hover:text-white transition-colors">
-                                                    {doc.name.charAt(0)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-bold text-gray-900 truncate">{doc.name}</p>
-                                                    <p className="text-xs text-gray-500 font-bold uppercase tracking-wider truncate">{doc.specialty}</p>
-                                                    {doc.isSpecialtyGroup && doc.department && (
-                                                        <span className="text-[9px] font-black bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full uppercase mt-1 inline-block">
-                                                            {doc.department}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-colors" />
-                                            </div>
-
-                                            {doc.isSpecialtyGroup && (
-                                                <div className="mt-3.5 pt-3.5 border-t border-slate-50 grid grid-cols-2 gap-3 text-[10px] font-bold text-slate-500">
-                                                    <div>
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Max Per Slot</span>
-                                                        <span className="font-extrabold text-slate-700">{doc.maxAppointmentsPerSlot || 1} Patients</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Doctors Pool</span>
-                                                        <span className="font-extrabold text-slate-700">{doc.doctorsCount || 1} Available</span>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className="mt-4 pt-4 border-t border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-                                                <span className="text-sm font-black text-emerald-600 text-center sm:text-left">₹{doc.fee} / Visit</span>
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                                                    {isSelfManaged && (
-                                                        <>
-                                                            <button 
-                                                                onClick={() => toggleDoctorStatus(doc)} 
-                                                                className={`flex-1 min-h-[44px] sm:min-h-0 text-[10px] font-black uppercase tracking-wider px-4 py-2 sm:px-2 sm:py-1 rounded-xl sm:rounded ${
-                                                                    doc.is_active 
-                                                                        ? 'bg-rose-50 text-rose-600 hover:bg-rose-100' 
-                                                                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                                                                }`}
-                                                            >
-                                                                {doc.is_active ? 'Deactivate' : 'Activate'}
-                                                            </button>
-                                                            {doc.is_active && (
-                                                                <button onClick={() => setShowSlotGen(doc)} className="flex-1 min-h-[44px] sm:min-h-0 bg-blue-50 text-blue-600 sm:bg-transparent sm:text-primary sm:hover:underline rounded-xl sm:rounded-none px-4 py-2 sm:p-0 text-[10px] font-black uppercase text-center">
-                                                                    Slots
-                                                                </button>
-                                                            )}
-                                                            <button 
-                                                                onClick={() => handleDeleteDoctor(doc)} 
-                                                                className="flex-1 min-h-[44px] sm:min-h-0 text-[10px] font-black uppercase tracking-wider px-4 py-2 sm:px-2 sm:py-1 rounded-xl sm:rounded bg-slate-50 text-rose-500 hover:bg-rose-100/50"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {filteredDoctors.length === 0 && (
-                                        <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                                            <p className="text-slate-400 font-bold italic text-xs">No {doctorTab === "individual" ? "doctors recruited" : "specialty groups created"} yet.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                            {quickSlotCard}
 
                             {/* Appointments List */}
-                            <div className="lg:col-span-2 space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-xl font-black flex items-center gap-2">
-                                        <Calendar className="w-6 h-6 text-primary" /> Appointments ({filteredAppointments.length})
-                                    </h2>
-                                    <button
-                                        onClick={exportToExcel}
-                                        className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-600/20 active:scale-95 transition-all"
-                                    >
-                                        <Download className="w-4 h-4" /> Export Excel
-                                    </button>
-                                </div>
-
-                                {/* Filters Card */}
-                                <div className="bg-slate-50 p-4 sm:p-5 rounded-[2rem] border border-slate-100 shadow-sm space-y-3">
-                                    <div className="flex sm:hidden justify-between items-center">
-                                        <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest">Filter Appointments</h4>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setShowMobileFilters(!showMobileFilters)} 
-                                            className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider text-slate-600 active:scale-95 transition-all shadow-sm"
+                            <section className="ui-card" aria-labelledby="appointments-heading">
+                                <div className="p-5 sm:p-6 space-y-4 border-b border-slate-100">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <h2 id="appointments-heading" className="ui-title">Appointments</h2>
+                                            <span className="ui-badge border-slate-200 bg-slate-50 text-slate-600">{filteredAppointments.length}</span>
+                                        </div>
+                                        <button
+                                            onClick={exportToExcel}
+                                            className="ui-btn ui-btn-sm min-h-[36px] border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                                         >
-                                            {showMobileFilters ? "Hide Filters" : "Show Filters"}
+                                            <Download className="w-4 h-4" /> Export Excel
                                         </button>
                                     </div>
-                                    <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3.5 ${showMobileFilters ? 'block space-y-3 sm:space-y-0' : 'hidden sm:grid'}`}>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Single Date</label>
-                                            <input 
-                                                type="date" 
-                                                value={filterDate} 
+
+                                    {/* Filters */}
+                                    <div className="sm:hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowMobileFilters(!showMobileFilters)}
+                                            aria-expanded={showMobileFilters}
+                                            className="ui-btn-secondary w-full justify-between"
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+                                                {showMobileFilters ? "Hide filters" : "Filter appointments"}
+                                            </span>
+                                            {activeFilterCount > 0 && (
+                                                <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">{activeFilterCount} active</span>
+                                            )}
+                                        </button>
+                                    </div>
+                                    <div className={`grid-cols-1 sm:grid-cols-3 xl:grid-cols-6 gap-3 ${showMobileFilters ? 'grid' : 'hidden sm:grid'}`}>
+                                        <label className="block">
+                                            <span className="ui-label">Single date</span>
+                                            <input
+                                                type="date"
+                                                value={filterDate}
                                                 onChange={(e) => {
                                                     setFilterDate(e.target.value);
                                                     if (e.target.value) {
                                                         setStartDate("");
                                                         setEndDate("");
                                                     }
-                                                }} 
-                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                                }}
+                                                className="ui-input"
                                             />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Start Date</label>
-                                            <input 
-                                                type="date" 
-                                                value={startDate} 
+                                        </label>
+                                        <label className="block">
+                                            <span className="ui-label">Start date</span>
+                                            <input
+                                                type="date"
+                                                value={startDate}
                                                 onChange={(e) => {
                                                     setStartDate(e.target.value);
                                                     if (e.target.value) setFilterDate("");
-                                                }} 
-                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                                }}
+                                                className="ui-input"
                                             />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">End Date</label>
-                                            <input 
-                                                type="date" 
-                                                value={endDate} 
+                                        </label>
+                                        <label className="block">
+                                            <span className="ui-label">End date</span>
+                                            <input
+                                                type="date"
+                                                value={endDate}
                                                 onChange={(e) => {
                                                     setEndDate(e.target.value);
                                                     if (e.target.value) setFilterDate("");
-                                                }} 
-                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                                }}
+                                                className="ui-input"
                                             />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Specialty</label>
-                                            <input 
-                                                type="text" 
-                                                placeholder="e.g. Dentist" 
-                                                value={filterSpecialty} 
-                                                onChange={(e) => setFilterSpecialty(e.target.value)} 
-                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm" 
+                                        </label>
+                                        <label className="block">
+                                            <span className="ui-label">Specialty</span>
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Dentist"
+                                                value={filterSpecialty}
+                                                onChange={(e) => setFilterSpecialty(e.target.value)}
+                                                className="ui-input"
                                             />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Doctor</label>
-                                            <select 
-                                                value={filterDoctor} 
-                                                onChange={(e) => setFilterDoctor(e.target.value)} 
-                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                        </label>
+                                        <label className="block">
+                                            <span className="ui-label">Doctor</span>
+                                            <select
+                                                value={filterDoctor}
+                                                onChange={(e) => setFilterDoctor(e.target.value)}
+                                                className="ui-input"
                                             >
                                                 <option value="">All Doctors</option>
                                                 {doctors.map(d => <option key={d._id} value={d._id}>{doctorLabel(d)}</option>)}
                                             </select>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-0.5">Status</label>
-                                            <select 
-                                                value={filterStatus} 
-                                                onChange={(e) => setFilterStatus(e.target.value)} 
-                                                className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+                                        </label>
+                                        <label className="block">
+                                            <span className="ui-label">Status</span>
+                                            <select
+                                                value={filterStatus}
+                                                onChange={(e) => setFilterStatus(e.target.value)}
+                                                className="ui-input"
                                             >
                                                 <option value="">All Status</option>
                                                 <option value="pending">Pending</option>
@@ -1414,1196 +1265,1360 @@ export default function HospitalDashboard() {
                                                 <option value="completed">Completed</option>
                                                 <option value="cancelled">Cancelled</option>
                                             </select>
-                                        </div>
+                                        </label>
                                     </div>
                                 </div>
 
-                                <div className="bg-white rounded-[2rem] border border-slate-100 shadow-md overflow-hidden">
-                                    {/* Desktop Table View */}
-                                    <div className="hidden md:block overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead>
-                                                <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                                                    <th className="p-4 pl-6">Token</th>
-                                                    <th className="p-4">Patient</th>
-                                                    <th className="p-4">Doctor</th>
-                                                    <th className="p-4">Specialty</th>
-                                                    <th className="p-4">Date & Time</th>
-                                                    <th className="p-4 pr-6 text-right">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-50 text-xs">
-                                                {filteredAppointments.map((app: any, idx: number) => (
-                                                    <tr key={app._id} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="p-4 pl-6 font-extrabold text-slate-900">{app.tokenNo || `T-${idx + 1001}`}</td>
-                                                        <td className="p-4">
-                                                            <div className="font-bold text-slate-800">
-                                                                {app.patientName || app.patient?.name || 'N/A'}
-                                                                {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
-                                                                    <span className="text-[10px] text-slate-400 font-medium ml-1">
-                                                                        ({app.patientAge || app.patient?.age} yrs)
-                                                                    </span>
-                                                                )}
-                                                                {app.bookingSource === 'ai_call' && <AiCallBadge />}
-                                                                {app.patient?._id && (
-                                                                    <button 
-                                                                        onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
-                                                                        className="ml-2 text-[9px] text-primary hover:underline uppercase tracking-wider font-black"
-                                                                    >
-                                                                        View Records
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-[10px] text-slate-400 font-bold mt-0.5">
-                                                                {app.patientPhone || app.patient?.phone || 'N/A'}
-                                                            </div>
-                                                            {(app.patientEmail || app.patient?.email) && (
-                                                                <div className="text-[9px] text-slate-400 mt-0.5">
-                                                                    {app.patientEmail || app.patient?.email}
-                                                                </div>
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50/80 border-b border-slate-100">
+                                                <th className="ui-th pl-6">Token</th>
+                                                <th className="ui-th">Patient</th>
+                                                <th className="ui-th">Doctor</th>
+                                                <th className="ui-th">Date &amp; time</th>
+                                                <th className="ui-th">Status</th>
+                                                <th className="ui-th pr-6 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {filteredAppointments.map((app: any, idx: number) => (
+                                                <tr key={app._id} className="hover:bg-slate-50/60 transition-colors">
+                                                    <td className="ui-td pl-6 font-semibold text-slate-900 whitespace-nowrap">{app.tokenNo || `T-${idx + 1001}`}</td>
+                                                    <td className="ui-td min-w-[200px]">
+                                                        <div className="font-medium text-slate-900">
+                                                            {app.patientName || app.patient?.name || 'N/A'}
+                                                            {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
+                                                                <span className="text-xs font-normal text-slate-400 ml-1">
+                                                                    ({app.patientAge || app.patient?.age} yrs)
+                                                                </span>
                                                             )}
-                                                        </td>
-                                                        <td className="p-4 font-bold text-slate-700">{doctorLabel(app.doctor)}</td>
-                                                        <td className="p-4 font-bold uppercase tracking-wider text-[10px] text-slate-400">{app.doctor?.specialty}</td>
-                                                        <td className="p-4">
-                                                            <div className="font-bold text-slate-800">{new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</div>
-                                                            <div className="text-[10px] font-black text-slate-500 mt-0.5 uppercase tracking-wide">
-                                                                {app.slot ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` : 'N/A'}
+                                                            {app.bookingSource === 'ai_call' && <AiCallBadge className="ml-1.5" />}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 mt-0.5">
+                                                            {app.patientPhone || app.patient?.phone || 'N/A'}
+                                                        </div>
+                                                        {(app.patientEmail || app.patient?.email) && (
+                                                            <div className="text-xs text-slate-400 mt-0.5 break-all">
+                                                                {app.patientEmail || app.patient?.email}
                                                             </div>
-                                                        </td>
-                                                        <td className="p-4 pr-6">
-                                                            <div className="flex flex-col items-end gap-2">
+                                                        )}
+                                                        {app.patient?._id && (
+                                                            <button
+                                                                onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
+                                                                className="mt-1 text-xs font-semibold text-blue-600 hover:underline"
+                                                            >
+                                                                View records
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                    <td className="ui-td">
+                                                        <div className="font-medium text-slate-800">{doctorLabel(app.doctor)}</div>
+                                                        {app.doctor?.specialty && <div className="text-xs text-slate-500 mt-0.5">{app.doctor.specialty}</div>}
+                                                    </td>
+                                                    <td className="ui-td whitespace-nowrap">
+                                                        <div className="font-medium text-slate-800">{new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</div>
+                                                        <div className="text-xs text-slate-500 mt-0.5">
+                                                            {app.slot ? timeRange(app.slot.startTime, app.slot.endTime) : 'N/A'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="ui-td">{statusPill(app.status)}</td>
+                                                    <td className="ui-td pr-6">
+                                                        <div className="flex flex-col items-end gap-1.5">
+                                                            <div className="flex flex-wrap items-center justify-end gap-1.5">
                                                                 {/* Doctor assign — only for pending/confirmed */}
                                                                 {(app.status === 'pending' || app.status === 'confirmed') && (
                                                                     <select
-                                                                        className="p-1.5 text-[9px] font-black uppercase tracking-wider bg-slate-50 border border-slate-200 rounded-lg text-slate-600 outline-none max-w-[100px] hover:border-slate-300 transition-colors"
+                                                                        className="h-8 max-w-[150px] rounded-lg border border-slate-200 bg-white px-2 text-xs font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-blue-500 transition-colors"
                                                                         value={app.doctor?._id || ""}
                                                                         onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
                                                                         title="Assign/Reassign Doctor"
+                                                                        aria-label="Assign or reassign doctor"
                                                                     >
-                                                                        <option value="" disabled>Assign Doc</option>
+                                                                        <option value="" disabled>Assign doctor</option>
                                                                         {doctors.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                                                                     </select>
                                                                 )}
                                                                 {/* Status progression buttons */}
                                                                 {app.status === 'pending' ? (
                                                                     <div className="flex gap-1">
-                                                                        <button title="Confirm" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className={`p-1.5 rounded-lg ${app.status === 'confirmed' ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'}`}><CheckCircle2 className="w-4 h-4" /></button>
-                                                                        <button title="Check-in" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"><User className="w-4 h-4" /></button>
-                                                                        <button title="No-Show / Cancel" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"><XCircle className="w-4 h-4" /></button>
+                                                                        <button title="Confirm" aria-label="Confirm" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"><CheckCircle2 className="w-4 h-4" /></button>
+                                                                        <button title="Check-in" aria-label="Check in" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"><User className="w-4 h-4" /></button>
+                                                                        <button title="No-Show / Cancel" aria-label="No-show or cancel" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"><XCircle className="w-4 h-4" /></button>
                                                                     </div>
                                                                 ) : app.status === 'checked-in' ? (
-                                                                    <button onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 flex items-center gap-2">
-                                                                        <RefreshCcw className="w-3 h-3 animate-spin" /> Start Consultation
+                                                                    <button onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="ui-btn ui-btn-sm bg-amber-50 text-amber-700 hover:bg-amber-100">
+                                                                        <RefreshCcw className="w-3.5 h-3.5" /> Start consultation
                                                                     </button>
                                                                 ) : app.status === 'in-consultation' ? (
-                                                                    <button onClick={() => handleStatusUpdate(app._id, 'completed')} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center gap-2">
-                                                                        <CheckCircle2 className="w-3 h-3" /> Complete
+                                                                    <button onClick={() => handleStatusUpdate(app._id, 'completed')} className="ui-btn-success ui-btn-sm">
+                                                                        <CheckCircle2 className="w-3.5 h-3.5" /> Complete
                                                                     </button>
                                                                 ) : app.status === 'completed' && (
-                                                                    <div className="flex flex-col gap-1 w-full items-end">
-                                                                        {app.invoiceUrl ? (
-                                                                            <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase text-center bg-emerald-50 border border-emerald-100 text-emerald-600 py-1.5 px-2 rounded-lg shadow-sm">View Invoice</a>
-                                                                        ) : (
-                                                                            <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="text-[9px] font-black uppercase text-center bg-slate-900 text-white py-1.5 px-2 rounded-lg hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50">
-                                                                                {generatingInvoiceId === app._id ? 'Gen...' : 'Gen Invoice'}
-                                                                            </button>
-                                                                        )}
-                                                                    </div>
+                                                                    app.invoiceUrl ? (
+                                                                        <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="ui-btn ui-btn-sm border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                                                                            <FileText className="w-3.5 h-3.5" /> View invoice
+                                                                        </a>
+                                                                    ) : (
+                                                                        <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="ui-btn-dark ui-btn-sm">
+                                                                            <FileText className="w-3.5 h-3.5" /> {generatingInvoiceId === app._id ? 'Generating…' : 'Generate invoice'}
+                                                                        </button>
+                                                                    )
                                                                 )}
+                                                            </div>
 
+                                                            <div className="flex flex-wrap items-center justify-end gap-1.5">
                                                                 {/* Schedule Follow-Up Reminder */}
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => handleScheduleFollowUpFromAppointment(app)}
                                                                     title="Schedule Patient Follow-Up Reminder"
-                                                                    className="flex items-center gap-1 text-[9px] font-black uppercase bg-blue-50 border border-blue-200 text-blue-600 py-1.5 px-2 rounded-lg shadow-sm hover:bg-blue-100 transition-colors"
+                                                                    className="ui-btn ui-btn-sm border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
                                                                 >
-                                                                    <Bell className="w-3 h-3 text-blue-600" /> Follow-Up
+                                                                    <Bell className="w-3.5 h-3.5" /> Follow-up
                                                                 </button>
 
                                                                 {/* Payment status badge — available for ALL statuses, labeled as manual */}
                                                                 <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
                                                                     <button
-                                                                        onClick={() => setOpenPaymentDropdown(openPaymentDropdown === app._id ? null : app._id)}
+                                                                        onClick={(e) => {
+                                                                            if (openPaymentDropdown === app._id) {
+                                                                                setOpenPaymentDropdown(null);
+                                                                                return;
+                                                                            }
+                                                                            paymentAnchorRef.current = e.currentTarget;
+                                                                            placePaymentMenu(e.currentTarget);
+                                                                            setOpenPaymentDropdown(app._id);
+                                                                        }}
                                                                         disabled={paymentUpdatingId === app._id}
                                                                         title="Manually recorded — not verified by payment gateway"
-                                                                        className={`flex items-center gap-1 text-[9px] font-black uppercase py-1.5 px-2 rounded-lg border transition-colors disabled:opacity-50 ${
-                                                                            (app.paymentStatus === 'paid')
-                                                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                                                : (app.paymentStatus === 'partial')
-                                                                                ? 'bg-amber-50 border-amber-200 text-amber-700'
-                                                                                : (app.paymentStatus === 'waived')
-                                                                                ? 'bg-slate-100 border-slate-200 text-slate-500'
-                                                                                : 'bg-rose-50 border-rose-200 text-rose-600'
-                                                                        }`}
+                                                                        aria-haspopup="menu"
+                                                                        aria-expanded={openPaymentDropdown === app._id}
+                                                                        className={`ui-btn ui-btn-sm border ${paymentTone(app.paymentStatus)}`}
                                                                     >
                                                                         {paymentUpdatingId === app._id ? (
                                                                             <RefreshCcw className="w-3 h-3 animate-spin" />
-                                                                        ) : null}
-                                                                        {app.paymentStatus === 'paid' 
-                                                                            ? '💳 Paid' 
-                                                                            : app.paymentStatus === 'partial' 
-                                                                            ? `Advance: ₹${app.advancePaid || ''} • Due: ₹${app.balanceDue !== undefined ? app.balanceDue : ''}` 
-                                                                            : app.paymentStatus === 'waived' 
-                                                                            ? '✦ Revoked' 
-                                                                            : '⚠ Unpaid'}
-                                                                        <span className="text-[7px] opacity-60 ml-0.5">▾</span>
+                                                                        ) : app.paymentStatus === 'paid' ? (
+                                                                            <CreditCard className="w-3.5 h-3.5" />
+                                                                        ) : app.paymentStatus === 'partial' || app.paymentStatus === 'waived' ? null : (
+                                                                            <AlertCircle className="w-3.5 h-3.5" />
+                                                                        )}
+                                                                        {app.paymentStatus === 'paid'
+                                                                            ? 'Paid'
+                                                                            : app.paymentStatus === 'partial'
+                                                                            ? `Advance: ₹${app.advancePaid || ''} • Due: ₹${app.balanceDue !== undefined ? app.balanceDue : ''}`
+                                                                            : app.paymentStatus === 'waived'
+                                                                            ? 'Revoked'
+                                                                            : 'Unpaid'}
+                                                                        <ChevronDown className="w-3 h-3 opacity-60" />
                                                                     </button>
                                                                     {openPaymentDropdown === app._id && (
-                                                                        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden min-w-[140px]">
-                                                                            <div className="px-3 py-1.5 text-[8px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50">Payment Action</div>
+                                                                        <div
+                                                                            role="menu"
+                                                                            style={paymentMenuPos ? { top: paymentMenuPos.top, bottom: paymentMenuPos.bottom, right: paymentMenuPos.right } : undefined}
+                                                                            className={`${paymentMenuPos ? 'fixed' : 'absolute right-0 top-full mt-1'} z-[60] min-w-[180px] overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl`}
+                                                                        >
+                                                                            <p className="px-3 pt-1.5 pb-1 text-[11px] font-medium text-slate-400">Payment action (recorded manually)</p>
                                                                             {app.balanceDue > 0 && (
                                                                                 <button
                                                                                     type="button"
+                                                                                    role="menuitem"
                                                                                     onClick={() => {
                                                                                         setOpenPaymentDropdown(null);
                                                                                         setActiveMainTab("payments");
                                                                                     }}
-                                                                                    className="w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider text-emerald-600 hover:bg-emerald-50 border-b border-slate-100 transition-colors"
+                                                                                    className="block w-full px-3 py-2 text-left text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
                                                                                 >
-                                                                                    Collect Balance
+                                                                                    Collect balance
                                                                                 </button>
                                                                             )}
                                                                             {(['unpaid', 'paid', 'waived'] as const).map(s => (
                                                                                 <button
                                                                                     key={s}
+                                                                                    role="menuitem"
                                                                                     onClick={() => handlePaymentStatusUpdate(app._id, s)}
-                                                                                    className={`w-full text-left px-3 py-2 text-[10px] font-black uppercase tracking-wider hover:bg-slate-50 transition-colors ${
-                                                                                        s === 'paid' ? 'text-emerald-600' : s === 'waived' ? 'text-slate-500' : 'text-rose-500'
-                                                                                    } ${app.paymentStatus === s ? 'bg-slate-50 font-extrabold' : ''}`}
+                                                                                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm font-medium hover:bg-slate-50 transition-colors ${
+                                                                                        s === 'paid' ? 'text-emerald-700' : s === 'waived' ? 'text-slate-600' : 'text-rose-600'
+                                                                                    } ${app.paymentStatus === s ? 'bg-slate-50' : ''}`}
                                                                                 >
-                                                                                    {s === 'paid' ? '💳 Paid' : s === 'waived' ? '✦ Revoke' : '⚠ Unpaid'}
-                                                                                    {app.paymentStatus === s && <span className="ml-1 text-[8px]">✓</span>}
+                                                                                    {s === 'paid' ? 'Paid' : s === 'waived' ? 'Revoke' : 'Unpaid'}
+                                                                                    {app.paymentStatus === s && <Check className="w-3.5 h-3.5" />}
                                                                                 </button>
                                                                             ))}
                                                                         </div>
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {filteredAppointments.length === 0 && (
+                                        <div className="px-6 py-14 text-center text-sm text-slate-500">
+                                            No appointments found in this category.
+                                        </div>
+                                    )}
+                                </div>
 
-                                    {/* Mobile Card List View */}
-                                    <div className="block md:hidden divide-y divide-slate-100">
-                                        {filteredAppointments.map((app: any, idx: number) => (
-                                            <div key={app._id} className="p-5 space-y-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <span className="px-2.5 py-1 bg-slate-900 text-white font-mono text-[9px] rounded-lg font-black tracking-wider">
+                                {/* Mobile Card List View */}
+                                <div className="md:hidden divide-y divide-slate-100">
+                                    {filteredAppointments.map((app: any, idx: number) => (
+                                        <div key={app._id} className="p-4 space-y-3">
+                                            <div className="flex justify-between items-start gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        <span className="px-2 py-0.5 bg-slate-900 text-white font-mono text-[11px] rounded-md font-semibold">
                                                             {app.tokenNo || `T-${idx + 1001}`}
                                                         </span>
-                                                        <h4 className="font-extrabold text-slate-800 mt-2 text-sm">
-                                                            {app.patientName || app.patient?.name || 'N/A'}
-                                                            {app.bookingSource === 'ai_call' && <AiCallBadge />}
-                                                            {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
-                                                                <span className="text-[10px] text-slate-400 font-medium ml-1">
-                                                                    ({app.patientAge || app.patient?.age} yrs)
-                                                                </span>
-                                                            )}
-                                                            {app.patient?._id && (
-                                                                <button 
-                                                                    onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
-                                                                    className="ml-2 text-[9px] text-primary hover:underline uppercase tracking-wider font-black"
-                                                                >
-                                                                    View Records
-                                                                </button>
-                                                            )}
-                                                        </h4>
-                                                        <p className="text-[10px] text-slate-400 font-bold">{app.patientPhone || app.patient?.phone || 'N/A'}</p>
-                                                        {(app.patientEmail || app.patient?.email) && (
-                                                            <p className="text-[9px] text-slate-400 mt-0.5">{app.patientEmail || app.patient?.email}</p>
-                                                        )}
+                                                        {app.bookingSource === 'ai_call' && <AiCallBadge />}
                                                     </div>
-                                                    <span className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                                        app.status === 'completed' || app.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : app.status === 'pending' ? 'bg-amber-50 text-amber-600 border border-amber-100' : app.status === 'checked-in' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-rose-50 text-rose-600 border border-rose-100'
-                                                    }`}>
-                                                        {app.status}
+                                                    <h4 className="font-semibold text-slate-900 mt-2">
+                                                        {app.patientName || app.patient?.name || 'N/A'}
+                                                        {(app.patientAge !== undefined || app.patient?.age !== undefined) && (
+                                                            <span className="text-xs text-slate-400 font-normal ml-1">
+                                                                ({app.patientAge || app.patient?.age} yrs)
+                                                            </span>
+                                                        )}
+                                                    </h4>
+                                                    <p className="text-xs text-slate-500">{app.patientPhone || app.patient?.phone || 'N/A'}</p>
+                                                    {(app.patientEmail || app.patient?.email) && (
+                                                        <p className="text-xs text-slate-400 mt-0.5 break-all">{app.patientEmail || app.patient?.email}</p>
+                                                    )}
+                                                    {app.patient?._id && (
+                                                        <button
+                                                            onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
+                                                            className="mt-1 text-xs font-semibold text-blue-600 hover:underline min-h-[32px]"
+                                                        >
+                                                            View records
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                {statusPill(app.status)}
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
+                                                <div className="min-w-0">
+                                                    <span className="block text-[11px] font-medium text-slate-500 mb-0.5">Doctor</span>
+                                                    <span className="block text-sm font-medium text-slate-800 truncate">{doctorLabel(app.doctor)}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="block text-[11px] font-medium text-slate-500 mb-0.5">Schedule slot</span>
+                                                    <span className="block text-sm font-medium text-slate-800">{new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
+                                                    <span className="block text-xs text-slate-500 mt-0.5">
+                                                        {app.slot ? timeRange(app.slot.startTime, app.slot.endTime) : 'N/A'}
                                                     </span>
                                                 </div>
-                                                <div className="pt-3 border-t border-slate-50 flex justify-between text-xs font-bold text-slate-600">
-                                                    <div>
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Doctor</span>
-                                                        <span className="font-extrabold text-slate-700">{doctorLabel(app.doctor)}</span>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Schedule Slot</span>
-                                                        <span className="font-extrabold text-slate-700">{new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
-                                                        <span className="block text-[9px] text-slate-500 font-black mt-0.5">
-                                                            {app.slot ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` : 'N/A'}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                
-                                                {/* Mobile Actions block */}
-                                                <div className="pt-3 border-t border-slate-50 space-y-2">
-                                                    {/* Doctor assign — only for pending/confirmed */}
-                                                    {(app.status === 'pending' || app.status === 'confirmed') && (
-                                                        <select
-                                                            className="w-full min-h-[44px] py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none text-center hover:border-slate-300 transition-colors"
-                                                            value={app.doctor?._id || ""}
-                                                            onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
-                                                        >
-                                                            <option value="" disabled>-- Assign / Reassign Doctor --</option>
-                                                            {doctors.map(d => <option key={d._id} value={d._id}>{doctorLabel(d)}</option>)}
-                                                        </select>
-                                                    )}
-                                                    {/* Status progression */}
-                                                    {app.status === 'pending' ? (
-                                                        <div className="flex flex-col gap-2 w-full">
-                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="w-full min-h-[44px] bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-1.5 border border-emerald-100 active:scale-95 transition-all shadow-sm"><CheckCircle2 className="w-3.5 h-3.5" /> Confirm</button>
-                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="w-full min-h-[44px] bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl hover:bg-blue-100 flex items-center justify-center gap-1.5 border border-blue-100 active:scale-95 transition-all shadow-sm"><User className="w-3.5 h-3.5" /> Check-in</button>
-                                                            <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="w-full min-h-[44px] bg-rose-50 text-rose-600 font-black text-[10px] uppercase rounded-xl hover:bg-rose-100 flex items-center justify-center gap-1.5 border border-rose-100 active:scale-95 transition-all shadow-sm"><XCircle className="w-3.5 h-3.5" /> Cancel</button>
-                                                        </div>
-                                                    ) : app.status === 'checked-in' ? (
-                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="w-full min-h-[44px] bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 flex items-center justify-center gap-2 border border-amber-100 active:scale-95 transition-all">
-                                                            <RefreshCcw className="w-3.5 h-3.5 animate-spin" /> Start Consultation
-                                                        </button>
-                                                    ) : app.status === 'in-consultation' ? (
-                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="w-full min-h-[44px] bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/15 active:scale-95 transition-all">
-                                                            <CheckCircle2 className="w-3.5 h-3.5" /> Complete Consultation
-                                                        </button>
-                                                    ) : app.status === 'completed' && (
-                                                        <div className="flex flex-col gap-2 w-full">
-                                                            {app.invoiceUrl ? (
-                                                                <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="w-full min-h-[44px] flex items-center justify-center bg-emerald-50 text-emerald-600 font-black text-[10px] uppercase rounded-xl border border-emerald-100 text-center shadow-sm">View Invoice</a>
-                                                            ) : (
-                                                                <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="w-full min-h-[44px] bg-slate-900 text-white font-black text-[10px] uppercase rounded-xl shadow-sm hover:bg-slate-800 disabled:opacity-50">
-                                                                    {generatingInvoiceId === app._id ? 'Generating...' : 'Gen Invoice'}
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                            </div>
 
+                                            {/* Mobile Actions block */}
+                                            <div className="space-y-2">
+                                                {/* Doctor assign — only for pending/confirmed */}
+                                                {(app.status === 'pending' || app.status === 'confirmed') && (
+                                                    <select
+                                                        className="ui-input text-center"
+                                                        value={app.doctor?._id || ""}
+                                                        onChange={(e) => handleAssignDoctor(app._id, e.target.value)}
+                                                        aria-label="Assign or reassign doctor"
+                                                    >
+                                                        <option value="" disabled>-- Assign / Reassign Doctor --</option>
+                                                        {doctors.map(d => <option key={d._id} value={d._id}>{doctorLabel(d)}</option>)}
+                                                    </select>
+                                                )}
+                                                {/* Status progression */}
+                                                {app.status === 'pending' ? (
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="ui-btn min-h-[44px] px-2 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"><CheckCircle2 className="w-4 h-4" /> Confirm</button>
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="ui-btn min-h-[44px] px-2 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"><User className="w-4 h-4" /> Check-in</button>
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="ui-btn min-h-[44px] px-2 bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100"><XCircle className="w-4 h-4" /> Cancel</button>
+                                                    </div>
+                                                ) : app.status === 'checked-in' ? (
+                                                    <button type="button" onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="ui-btn w-full min-h-[44px] bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100">
+                                                        <RefreshCcw className="w-4 h-4" /> Start consultation
+                                                    </button>
+                                                ) : app.status === 'in-consultation' ? (
+                                                    <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="ui-btn-success w-full min-h-[44px]">
+                                                        <CheckCircle2 className="w-4 h-4" /> Complete consultation
+                                                    </button>
+                                                ) : app.status === 'completed' && (
+                                                    app.invoiceUrl ? (
+                                                        <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="ui-btn w-full min-h-[44px] bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                                            <FileText className="w-4 h-4" /> View invoice
+                                                        </a>
+                                                    ) : (
+                                                        <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="ui-btn-dark w-full min-h-[44px]">
+                                                            <FileText className="w-4 h-4" /> {generatingInvoiceId === app._id ? 'Generating...' : 'Generate invoice'}
+                                                        </button>
+                                                    )
+                                                )}
+
+                                                <div className="grid grid-cols-2 gap-2">
                                                     {/* Schedule Follow-Up Reminder — Mobile */}
                                                     <button
                                                         type="button"
                                                         onClick={() => handleScheduleFollowUpFromAppointment(app)}
-                                                        className="w-full min-h-[44px] flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-black text-[10px] uppercase rounded-xl border border-blue-200 hover:bg-blue-100 shadow-sm transition-colors"
+                                                        className="ui-btn min-h-[44px] px-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
                                                     >
-                                                        <Bell className="w-3.5 h-3.5 text-blue-600" /> Schedule Follow-Up
+                                                        <Bell className="w-4 h-4" /> Follow-up
                                                     </button>
 
-                                                    {/* Payment status badge + dropdown — ALL statuses */}
+                                                    {/* Payment status — ALL statuses */}
                                                     <div className="relative">
                                                         <select
                                                             value={app.paymentStatus || 'unpaid'}
                                                             disabled={paymentUpdatingId === app._id}
                                                             onChange={(e) => handlePaymentStatusUpdate(app._id, e.target.value as any)}
                                                             title="Manually recorded — not verified by payment gateway"
-                                                            className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl border font-black text-[10px] uppercase outline-none text-center appearance-none cursor-pointer transition-colors disabled:opacity-50 ${
-                                                                app.paymentStatus === 'paid'
-                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                                    : app.paymentStatus === 'waived'
-                                                                    ? 'bg-slate-100 border-slate-200 text-slate-500'
-                                                                    : 'bg-rose-50 border-rose-200 text-rose-600'
-                                                            }`}
+                                                            aria-label="Payment status"
+                                                            className={`w-full min-h-[44px] pl-3 pr-8 rounded-xl border text-sm font-semibold outline-none text-center appearance-none cursor-pointer transition-colors disabled:opacity-50 ${paymentTone(app.paymentStatus)}`}
                                                         >
-                                                            <option value="unpaid">⚠ Unpaid</option>
-                                                            <option value="paid">💳 Paid</option>
-                                                            <option value="waived">✦ Revoke</option>
+                                                            <option value="unpaid">Unpaid</option>
+                                                            <option value="paid">Paid</option>
+                                                            <option value="waived">Revoke</option>
                                                         </select>
-                                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[8px] opacity-60">
-                                                            ▼
-                                                        </div>
+                                                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 opacity-60" />
                                                     </div>
                                                 </div>
                                             </div>
-                                        ))}
-                                        {filteredAppointments.length === 0 && (
-                                            <div className="text-center py-12 text-slate-400 font-bold italic text-xs">
-                                                No appointments found in this category.
+                                        </div>
+                                    ))}
+                                    {filteredAppointments.length === 0 && (
+                                        <div className="text-center py-12 px-4 text-sm text-slate-500">
+                                            No appointments found in this category.
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+
+                            {/* Bookings Analytics & Operational Graphs */}
+                            <section aria-labelledby="analytics-heading" className="space-y-4">
+                                <div>
+                                    <h2 id="analytics-heading" className="ui-title flex items-center gap-2">
+                                        <Activity className="w-5 h-5 text-blue-600" /> Bookings &amp; operational analytics
+                                    </h2>
+                                    <p className="ui-subtitle">Performance metrics and doctor appointment distributions.</p>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                                    {/* Bar Chart: Bookings per Doctor */}
+                                    <div className="ui-card p-5 sm:p-6 lg:col-span-2 flex flex-col h-[300px]">
+                                        <h3 className="text-sm font-semibold text-slate-800 mb-4">Bookings by doctor</h3>
+                                        <div className="flex-1 flex items-end gap-4 sm:gap-8 px-2 border-b border-slate-200">
+                                            {doctorData.map((d, i) => (
+                                                <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end min-w-0">
+                                                    <div className="relative w-full flex flex-col items-center justify-end h-full">
+                                                        <span className="mb-1 text-xs font-semibold text-slate-600">{d.count}</span>
+                                                        <motion.div
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: `${(d.count / maxCount) * 80}%` }}
+                                                            transition={{ duration: 0.8, ease: "easeOut", delay: i * 0.1 }}
+                                                            title={`${d.count} Bookings`}
+                                                            className="w-full max-w-[44px] bg-gradient-to-t from-blue-600 to-indigo-400 rounded-t-lg hover:from-blue-700 hover:to-indigo-500 transition-colors"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {doctorData.length === 0 && (
+                                                <div className="w-full h-full flex items-center justify-center text-sm text-slate-400">
+                                                    No bookings data to display in chart.
+                                                </div>
+                                            )}
+                                        </div>
+                                        {doctorData.length > 0 && (
+                                            <div className="flex gap-4 sm:gap-8 px-2 pt-2">
+                                                {doctorData.map((d, i) => (
+                                                    <p key={i} className="flex-1 min-w-0 text-[11px] font-medium text-slate-500 text-center truncate" title={d.name}>
+                                                        {doctorShortLabel(d)}
+                                                    </p>
+                                                ))}
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                )}
 
-                {activeMainTab === "slots" && (
-                    /* SLOT MANAGEMENT SECTION */
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                        <div className="flex flex-col gap-4">
+                                    {/* Status Distribution Breakdown */}
+                                    <div className="ui-card p-5 sm:p-6 flex flex-col justify-between">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-slate-800 mb-4">Status distribution</h3>
+                                            <div className="space-y-3.5">
+                                                {['confirmed', 'pending', 'checked-in', 'completed', 'cancelled'].map((status) => {
+                                                    const count = appointments.filter(a => a.status === status).length;
+                                                    const percentage = appointments.length > 0 ? (count / appointments.length) * 100 : 0;
+                                                    const color = status === 'completed' || status === 'confirmed' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-500' : status === 'checked-in' ? 'bg-blue-500' : status === 'cancelled' ? 'bg-rose-500' : 'bg-slate-400';
+
+                                                    return (
+                                                        <div key={status} className="space-y-1.5">
+                                                            <div className="flex items-center justify-between text-sm">
+                                                                <span className="capitalize text-slate-600">{status.replace('-', ' ')}</span>
+                                                                <span className="font-medium text-slate-800">{count} <span className="text-slate-400 font-normal">({Math.round(percentage)}%)</span></span>
+                                                            </div>
+                                                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                <motion.div
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ width: `${percentage}%` }}
+                                                                    transition={{ duration: 1, ease: "easeOut" }}
+                                                                    className={`h-full rounded-full ${color}`}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-500 border-t border-slate-100 pt-3 mt-5">
+                                            Total monitored: <span className="font-medium text-slate-700">{appointments.length} appointments</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </section>
+
+                            {/* Doctors & Specialty Groups List */}
+                            <section className="ui-card p-5 sm:p-6 space-y-5" aria-labelledby="staff-heading">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Users className="w-5 h-5 text-blue-600" />
+                                        <h2 id="staff-heading" className="ui-title">Staff &amp; groups</h2>
+                                    </div>
+                                    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+                                        <div className="ui-segmented w-full sm:w-auto">
+                                            <button
+                                                onClick={() => setDoctorTab("individual")}
+                                                className={`ui-segment flex-1 sm:flex-none ${doctorTab === "individual" ? "ui-segment-active" : ""}`}
+                                            >
+                                                Individual
+                                            </button>
+                                            <button
+                                                onClick={() => setDoctorTab("group")}
+                                                className={`ui-segment flex-1 sm:flex-none ${doctorTab === "group" ? "ui-segment-active" : ""}`}
+                                            >
+                                                Specialty groups
+                                            </button>
+                                        </div>
+                                        {isSelfManaged && (
+                                            <button
+                                                onClick={() => doctorTab === "individual" ? setShowAddDoctor(true) : setShowAddSpecialtyGroup(true)}
+                                                className="ui-btn-primary"
+                                                title={doctorTab === "individual" ? "Add Doctor" : "Add Specialty Group"}
+                                            >
+                                                <Plus className="w-4 h-4" /> Add {doctorTab === "individual" ? "doctor" : "group"}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                                    {filteredDoctors.map((doc: any) => (
+                                        <div key={doc._id} className={`rounded-xl border p-4 transition-colors ${doc.is_active ? 'border-slate-200 bg-white hover:border-blue-200' : 'border-dashed border-rose-200 bg-rose-50/40'}`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center font-semibold text-blue-600 shrink-0">
+                                                    {doc.name.charAt(0)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-semibold text-slate-900 truncate">{doc.name}</p>
+                                                    <p className="text-xs text-slate-500 truncate">{doc.specialty}</p>
+                                                </div>
+                                                {!doc.is_active && <span className="ui-badge border-rose-200 bg-rose-50 text-rose-700">Inactive</span>}
+                                            </div>
+                                            {doc.isSpecialtyGroup && doc.department && (
+                                                <span className="ui-badge border-blue-100 bg-blue-50 text-blue-700 mt-3 max-w-full truncate">
+                                                    {doc.department}
+                                                </span>
+                                            )}
+
+                                            {doc.isSpecialtyGroup && (
+                                                <div className="mt-3 grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-2.5">
+                                                    <div>
+                                                        <span className="block text-[11px] font-medium text-slate-500">Max per slot</span>
+                                                        <span className="text-sm font-semibold text-slate-800">{doc.maxAppointmentsPerSlot || 1} Patients</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[11px] font-medium text-slate-500">Doctors pool</span>
+                                                        <span className="text-sm font-semibold text-slate-800">{doc.doctorsCount || 1} Available</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                                                <span className="text-sm font-semibold text-emerald-600">₹{doc.fee} / visit</span>
+                                                {isSelfManaged && (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <button
+                                                            onClick={() => toggleDoctorStatus(doc)}
+                                                            className={`ui-btn ui-btn-sm min-h-[36px] ${
+                                                                doc.is_active
+                                                                    ? 'bg-rose-50 text-rose-600 hover:bg-rose-100'
+                                                                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                                            }`}
+                                                        >
+                                                            {doc.is_active ? 'Deactivate' : 'Activate'}
+                                                        </button>
+                                                        {doc.is_active && (
+                                                            <button onClick={() => setShowSlotGen(doc)} className="ui-btn ui-btn-sm min-h-[36px] bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                                                Slots
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={() => handleDeleteDoctor(doc)}
+                                                            className="ui-btn ui-btn-sm min-h-[36px] text-rose-600 hover:bg-rose-50"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {filteredDoctors.length === 0 && (
+                                        <p className="ui-empty sm:col-span-2 xl:col-span-3">
+                                            No {doctorTab === "individual" ? "doctors recruited" : "specialty groups created"} yet.
+                                        </p>
+                                    )}
+                                </div>
+                            </section>
+                        </>
+                    )}
+
+                    {activeMainTab === "slots" && (
+                        /* SLOT MANAGEMENT SECTION */
+                        <>
                             {/* Subscription restriction warning banner */}
                             {!isSubscriptionActive && (
-                                <div className="p-5 bg-rose-50 border-2 border-rose-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-rose-800">
+                                <div className="p-4 sm:p-5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-rose-800">
                                     <div className="flex items-start gap-3">
-                                        <ShieldAlert className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
+                                        <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                                         <div className="space-y-0.5">
-                                            <p className="font-bold text-sm text-rose-900">Slot Generation Locked</p>
-                                            <p className="text-xs font-semibold leading-relaxed">
+                                            <p className="font-semibold text-sm text-rose-900">Slot generation locked</p>
+                                            <p className="text-sm leading-relaxed">
                                                 {restrictionMessage}
                                             </p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={() => setActiveMainTab("subscription")}
-                                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap self-start sm:self-auto shrink-0 shadow-sm active:scale-95"
+                                        className="ui-btn-danger shrink-0 self-start sm:self-auto"
                                     >
-                                        View Subscription & Billing
+                                        View subscription &amp; billing
                                     </button>
                                 </div>
                             )}
 
-                            {/* Title row */}
-                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                                        <Clock className="w-6 h-6 text-primary" /> Proactive Slot Management
-                                    </h3>
-                                    <p className="text-slate-500 text-xs font-semibold mt-1">Schedule new slots, configure recurrence, and cancel upcoming appointments in emergency scenarios.</p>
-                                </div>
-                                {isSelfManaged && (
-                                    <button 
-                                        onClick={() => {
-                                            if (!isSubscriptionActive) {
-                                                alert(restrictionMessage);
-                                                return;
-                                            }
-                                            if (doctors.length === 0) {
-                                                alert("Please recruit a doctor or specialty group first before adding slots.");
-                                                return;
-                                            }
-                                            setAddSlotDoctorId(doctors[0]._id);
-                                            setShowAddSlot(true);
-                                        }}
-                                        className={`px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all shrink-0 ${
-                                            !isSubscriptionActive 
-                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
-                                                : 'bg-primary hover:bg-primary/95 text-white shadow-primary/20 active:scale-95'
-                                        }`}
-                                    >
-                                        <Plus className="w-4 h-4" /> Add New Slot
-                                    </button>
-                                )}
-                            </div>
+                            {quickSlotCard}
 
-                            {/* Date filter row */}
-                            <div className="flex flex-wrap items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                    <label htmlFor="slot-date-filter" className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">
-                                        Filter by Date
-                                    </label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                                        <input
-                                            id="slot-date-filter"
-                                            type="date"
-                                            value={slotDateFilter}
-                                            onChange={e => setSlotDateFilter(e.target.value)}
-                                            className="pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-primary/40 focus:bg-white transition-all"
-                                        />
+                            <section className="ui-card" aria-labelledby="slots-heading">
+                                <div className="p-5 sm:p-6 space-y-4 border-b border-slate-100">
+                                    {/* Title row */}
+                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                                <CalendarClock className="h-5 w-5" />
+                                            </span>
+                                            <div>
+                                                <h2 id="slots-heading" className="ui-title">Proactive slot management</h2>
+                                                <p className="ui-subtitle">Schedule new slots, configure recurrence, and cancel upcoming appointments in emergency scenarios.</p>
+                                            </div>
+                                        </div>
+                                        {isSelfManaged && (
+                                            <button
+                                                onClick={() => {
+                                                    if (!isSubscriptionActive) {
+                                                        alert(restrictionMessage);
+                                                        return;
+                                                    }
+                                                    if (doctors.length === 0) {
+                                                        alert("Please recruit a doctor or specialty group first before adding slots.");
+                                                        return;
+                                                    }
+                                                    setAddSlotDoctorId(doctors[0]._id);
+                                                    setShowAddSlot(true);
+                                                }}
+                                                className={`shrink-0 ${
+                                                    !isSubscriptionActive
+                                                        ? 'ui-btn bg-slate-200 text-slate-500 cursor-not-allowed'
+                                                        : 'ui-btn-primary'
+                                                }`}
+                                            >
+                                                <Plus className="w-4 h-4" /> Add new slot
+                                            </button>
+                                        )}
                                     </div>
+
+                                    {/* Sub tabs + date filter */}
+                                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                        <div className="ui-segmented w-full md:w-auto">
+                                            <button
+                                                onClick={() => setActiveSlotSubTab("upcoming")}
+                                                className={`ui-segment flex-1 md:flex-none ${activeSlotSubTab === "upcoming" ? "ui-segment-active" : ""}`}
+                                            >
+                                                Active / upcoming
+                                            </button>
+                                            <button
+                                                onClick={() => setActiveSlotSubTab("cancelled")}
+                                                className={`ui-segment flex-1 md:flex-none ${activeSlotSubTab === "cancelled" ? "ui-segment-active" : ""}`}
+                                            >
+                                                Cancelled
+                                            </button>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <label htmlFor="slot-date-filter" className="text-[13px] font-medium text-slate-600 whitespace-nowrap">
+                                                Filter by date
+                                            </label>
+                                            <div className="relative">
+                                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                                                <input
+                                                    id="slot-date-filter"
+                                                    type="date"
+                                                    value={slotDateFilter}
+                                                    onChange={e => setSlotDateFilter(e.target.value)}
+                                                    className="ui-input min-h-[40px] py-2 pl-9 w-auto"
+                                                />
+                                            </div>
+                                            {slotDateFilter && (
+                                                <button
+                                                    onClick={() => setSlotDateFilter("")}
+                                                    className="ui-btn-soft ui-btn-sm min-h-[40px]"
+                                                >
+                                                    <XCircle className="w-3.5 h-3.5" /> All dates
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {slotDateFilter && (
+                                        <p className="text-sm text-blue-700">
+                                            Showing: <span className="font-semibold">{new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        </p>
+                                    )}
                                 </div>
-                                {slotDateFilter && (
-                                    <button
-                                        onClick={() => setSlotDateFilter("")}
-                                        className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                                    >
-                                        <XCircle className="w-3 h-3" /> All Dates
-                                    </button>
-                                )}
-                                {slotDateFilter && (
-                                    <span className="text-[10px] font-bold text-primary bg-primary/5 border border-primary/10 px-2.5 py-1 rounded-lg">
-                                        Showing: {new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </span>
-                                )}
-                            </div>
-                        </div>
 
-                        {/* Sub Tabs */}
-                        <div className="flex border-b border-slate-100 gap-6">
-                            <button 
-                                onClick={() => setActiveSlotSubTab("upcoming")}
-                                className={`pb-4 text-xs font-black uppercase tracking-widest relative ${
-                                    activeSlotSubTab === "upcoming" ? "text-slate-900 border-b-2 border-slate-900 font-extrabold" : "text-slate-400 hover:text-slate-600"
-                                }`}
-                            >
-                                Active / Upcoming Slots
-                            </button>
-                            <button 
-                                onClick={() => setActiveSlotSubTab("cancelled")}
-                                className={`pb-4 text-xs font-black uppercase tracking-widest relative ${
-                                    activeSlotSubTab === "cancelled" ? "text-slate-900 border-b-2 border-slate-900 font-extrabold" : "text-slate-400 hover:text-slate-600"
-                                }`}
-                            >
-                                Cancelled Slots
-                            </button>
-                        </div>
-
-                        {/* Slot Table Layout */}
-                        <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
-                            {/* Desktop Table View */}
-                            <div className="hidden md:block overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                                            <th className="p-4 pl-6">Doctor / Group</th>
-                                            <th className="p-4">Date</th>
-                                            <th className="p-4">Time Range</th>
-                                            <th className="p-4">Bookings Count</th>
-                                            <th className="p-4">Status</th>
-                                            <th className="p-4 pr-6 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-50 text-xs">
-                                        {slots
-                                            .filter((slot: any) => {
-                                                const isCancelled = slot.status === 'cancelled';
-                                                const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
-                                                if (!tabMatch) return false;
-                                                // Upcoming = not yet ended (pick a date in the filter to see past slots)
-                                                if (activeSlotSubTab === 'upcoming' && !slotDateFilter && new Date(slot.endTime || slot.startTime).getTime() < Date.now()) return false;
-                                                // Date filter: compare slot's local date (YYYY-MM-DD) against the filter
-                                                if (slotDateFilter) {
-                                                    const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA'); // YYYY-MM-DD
-                                                    if (slotLocalDate !== slotDateFilter) return false;
-                                                }
-                                                return true;
-                                            })
-                                            .map((slot: any) => {
+                                {/* Desktop Table View */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <table className="w-full text-left border-collapse [&_td]:align-middle">
+                                        <thead>
+                                            <tr className="bg-slate-50/80 border-b border-slate-100">
+                                                <th className="ui-th pl-6">Doctor / group</th>
+                                                <th className="ui-th">Date</th>
+                                                <th className="ui-th">Time range</th>
+                                                <th className="ui-th">Bookings</th>
+                                                <th className="ui-th">Status</th>
+                                                <th className="ui-th pr-6 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {visibleSlots.map((slot: any) => {
                                                 const slotDateStr = new Date(slot.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-                                                const timeRangeStr = `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                                                const timeRangeStr = timeRange(slot.startTime, slot.endTime);
                                                 const isUpcoming = new Date(slot.endTime) >= new Date();
                                                 const isBooked = slot.status === 'booked';
-                                                
+
                                                 // Cancellable only if not cancelled and hasn't passed and not in progress
                                                 const isCancellable = slot.status !== 'cancelled' && new Date(slot.startTime) > new Date();
 
                                                 return (
-                                                    <tr key={slot._id} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="p-4 pl-6 font-bold text-slate-900">
+                                                    <tr key={slot._id} className="hover:bg-slate-50/60 transition-colors">
+                                                        <td className="ui-td pl-6 font-medium text-slate-900">
                                                             {slot.doctor ? doctorLabel(slot.doctor) : "Specialty Group"}
                                                             {slot.doctor?.isSpecialtyGroup && (
-                                                                <span className="ml-2 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-black uppercase tracking-wider rounded-md">Group</span>
+                                                                <span className="ui-badge ml-2 border-blue-100 bg-blue-50 text-blue-700">Group</span>
                                                             )}
                                                         </td>
-                                                        <td className="p-4 font-semibold text-slate-600">{slotDateStr}</td>
-                                                        <td className="p-4 font-semibold text-slate-600">{timeRangeStr}</td>
-                                                        <td className="p-4">
-                                                            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${slot.bookingCount > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                                {slot.bookingCount || 0} Booked
+                                                        <td className="ui-td whitespace-nowrap">{slotDateStr}</td>
+                                                        <td className="ui-td whitespace-nowrap">{timeRangeStr}</td>
+                                                        <td className="ui-td">
+                                                            <span className={`ui-badge ${slot.bookingCount > 0 ? 'border-indigo-100 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                                                                {slot.bookingCount || 0} booked
                                                             </span>
                                                         </td>
-                                                        <td className="p-4">
+                                                        <td className="ui-td">
                                                             {slot.status === 'cancelled' ? (
-                                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Cancelled</span>
+                                                                <span className="ui-badge border-rose-200 bg-rose-50 text-rose-700">Cancelled</span>
                                                             ) : !isUpcoming ? (
-                                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-slate-100 text-slate-500">Past Slot</span>
+                                                                <span className="ui-badge border-slate-200 bg-slate-100 text-slate-500">Past slot</span>
                                                             ) : isBooked ? (
-                                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100 font-bold">Fully Booked</span>
+                                                                <span className="ui-badge border-amber-200 bg-amber-50 text-amber-700">Fully booked</span>
                                                             ) : (
-                                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-amber-100 font-bold">Available / Active</span>
+                                                                <span className="ui-badge border-emerald-200 bg-emerald-50 text-emerald-700">Available / active</span>
                                                             )}
                                                         </td>
-                                                        <td className="p-4 pr-6 text-right">
-                                                            {isSelfManaged && activeSlotSubTab === 'upcoming' && (
-                                                                <>
-                                                                <button
-                                                                    disabled={!isCancellable}
-                                                                    onClick={() => setShowCancelSlotModal(slot)}
-                                                                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                                                                        isCancellable 
-                                                                            ? "bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white" 
-                                                                            : "bg-slate-50 text-slate-300 cursor-not-allowed"
-                                                                    }`}
-                                                                >
-                                                                    Cancel Slot
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleDeleteSlot(slot._id)}
-                                                                    className="px-3 py-1.5 ml-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
-                                                                >
-                                                                    Delete Slot
-                                                                </button>
-                                                            </>
-                                                            )}
-                                                            {activeSlotSubTab === 'cancelled' && slot.cancellationReason && (
-                                                                <span className="text-[10px] text-slate-400 font-medium italic block" title={`Reason: ${slot.cancellationReason}`}>
-                                                                    Reason: {slot.cancellationReason}
-                                                                </span>
-                                                            )}
-                                                            {activeSlotSubTab === 'cancelled' && (
-                                                                <button
-                                                                    onClick={() => handleDeleteSlot(slot._id)}
-                                                                    className="px-3 py-1.5 mt-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
-                                                                >
-                                                                    Delete Slot
-                                                                </button>
-                                                            )}
+                                                        <td className="ui-td pr-6">
+                                                            <div className="flex flex-wrap items-center justify-end gap-1.5">
+                                                                {isSelfManaged && activeSlotSubTab === 'upcoming' && (
+                                                                    <>
+                                                                        <button
+                                                                            disabled={!isCancellable}
+                                                                            onClick={() => setShowCancelSlotModal(slot)}
+                                                                            className={`ui-btn ui-btn-sm ${
+                                                                                isCancellable
+                                                                                    ? "bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white"
+                                                                                    : "bg-slate-50 text-slate-300 cursor-not-allowed"
+                                                                            }`}
+                                                                        >
+                                                                            Cancel slot
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteSlot(slot._id)}
+                                                                            className="ui-btn ui-btn-sm border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white"
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" /> Delete slot
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                                {activeSlotSubTab === 'cancelled' && slot.cancellationReason && (
+                                                                    <span className="text-xs text-slate-500 italic max-w-[220px] text-right" title={`Reason: ${slot.cancellationReason}`}>
+                                                                        Reason: {slot.cancellationReason}
+                                                                    </span>
+                                                                )}
+                                                                {activeSlotSubTab === 'cancelled' && (
+                                                                    <button
+                                                                        onClick={() => handleDeleteSlot(slot._id)}
+                                                                        className="ui-btn ui-btn-sm border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" /> Delete slot
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 );
                                             })}
-                                        {slots.filter(s => {
-                                            const tabMatch = activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled';
-                                            if (!tabMatch) return false;
-                                            if (slotDateFilter) {
-                                                const slotLocalDate = new Date(s.startTime).toLocaleDateString('en-CA');
-                                                if (slotLocalDate !== slotDateFilter) return false;
+                                        </tbody>
+                                    </table>
+                                    {visibleSlots.length === 0 && (
+                                        <div className="px-6 py-14 text-center text-sm text-slate-500">
+                                            {slotDateFilter
+                                                ? `No slots found for ${new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
+                                                : 'No slots found in this category.'
                                             }
-                                            return true;
-                                        }).length === 0 && (
-                                            <tr>
-                                                <td colSpan={6} className="p-12 text-center text-slate-400 font-bold italic">
-                                                    {slotDateFilter
-                                                        ? `No slots found for ${new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
-                                                        : 'No slots found in this category.'
-                                                    }
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </div>
+                                    )}
+                                </div>
 
-                            {/* Mobile Card List View */}
-                            <div className="block md:hidden divide-y divide-slate-100">
-                                {slots
-                                    .filter((slot: any) => {
-                                        const isCancelled = slot.status === 'cancelled';
-                                        const tabMatch = activeSlotSubTab === 'upcoming' ? !isCancelled : isCancelled;
-                                        if (!tabMatch) return false;
-                                        // Upcoming = not yet ended (pick a date in the filter to see past slots)
-                                        if (activeSlotSubTab === 'upcoming' && !slotDateFilter && new Date(slot.endTime || slot.startTime).getTime() < Date.now()) return false;
-                                        if (slotDateFilter) {
-                                            const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA');
-                                            if (slotLocalDate !== slotDateFilter) return false;
-                                        }
-                                        return true;
-                                    })
-                                    .map((slot: any) => {
+                                {/* Mobile Card List View */}
+                                <div className="md:hidden divide-y divide-slate-100">
+                                    {visibleSlots.map((slot: any) => {
                                         const slotDateStr = new Date(slot.startTime).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-                                        const timeRangeStr = `${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                                        const timeRangeStr = timeRange(slot.startTime, slot.endTime);
                                         const isUpcoming = new Date(slot.endTime) >= new Date();
                                         const isBooked = slot.status === 'booked';
                                         const isCancellable = slot.status !== 'cancelled' && new Date(slot.startTime) > new Date();
 
                                         return (
-                                            <div key={slot._id} className="p-5 space-y-4">
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <h4 className="font-extrabold text-slate-800 text-sm">{slot.doctor ? doctorLabel(slot.doctor) : "Specialty Group"}</h4>
+                                            <div key={slot._id} className="p-4 space-y-3">
+                                                <div className="flex justify-between items-start gap-3">
+                                                    <div className="min-w-0">
+                                                        <h4 className="font-semibold text-slate-900">{slot.doctor ? doctorLabel(slot.doctor) : "Specialty Group"}</h4>
                                                         {slot.doctor?.isSpecialtyGroup && (
-                                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-[9px] font-black uppercase tracking-wider rounded-md mt-1 inline-block">Specialty Group</span>
+                                                            <span className="ui-badge border-blue-100 bg-blue-50 text-blue-700 mt-1">Specialty group</span>
                                                         )}
                                                     </div>
                                                     {slot.status === 'cancelled' ? (
-                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-rose-50 text-rose-600 border border-rose-100">Cancelled</span>
+                                                        <span className="ui-badge border-rose-200 bg-rose-50 text-rose-700">Cancelled</span>
                                                     ) : !isUpcoming ? (
-                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-slate-100 text-slate-500">Past Slot</span>
+                                                        <span className="ui-badge border-slate-200 bg-slate-100 text-slate-500">Past slot</span>
                                                     ) : isBooked ? (
-                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-amber-50 text-amber-600 border border-amber-100 font-bold">Fully Booked</span>
+                                                        <span className="ui-badge border-amber-200 bg-amber-50 text-amber-700">Fully booked</span>
                                                     ) : (
-                                                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black uppercase bg-emerald-50 text-emerald-600 border border-emerald-100 font-bold">Active</span>
+                                                        <span className="ui-badge border-emerald-200 bg-emerald-50 text-emerald-700">Active</span>
                                                     )}
                                                 </div>
-                                                <div className="pt-3 border-t border-slate-50 grid grid-cols-2 gap-3 text-xs font-bold text-slate-600">
+                                                <div className="grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3">
                                                     <div>
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Date</span>
-                                                        <span className="font-extrabold text-slate-700">{slotDateStr}</span>
+                                                        <span className="block text-[11px] font-medium text-slate-500 mb-0.5">Date</span>
+                                                        <span className="text-sm font-medium text-slate-800">{slotDateStr}</span>
                                                     </div>
                                                     <div>
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Time Range</span>
-                                                        <span className="font-extrabold text-slate-700">{timeRangeStr}</span>
+                                                        <span className="block text-[11px] font-medium text-slate-500 mb-0.5">Time range</span>
+                                                        <span className="text-sm font-medium text-slate-800">{timeRangeStr}</span>
                                                     </div>
                                                 </div>
-                                                <div className="pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-bold text-slate-600">
-                                                    <div>
-                                                        <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Bookings Count</span>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase mt-1 inline-block ${slot.bookingCount > 0 ? 'bg-indigo-50 text-indigo-700' : 'bg-slate-100 text-slate-500'}`}>
-                                                            {slot.bookingCount || 0} Booked
-                                                        </span>
-                                                    </div>
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <span className={`ui-badge ${slot.bookingCount > 0 ? 'border-indigo-100 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                                                        {slot.bookingCount || 0} booked
+                                                    </span>
                                                     {activeSlotSubTab === 'cancelled' && slot.cancellationReason && (
-                                                        <div className="text-right">
-                                                            <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Reason</span>
-                                                            <span className="text-[10px] text-slate-400 font-medium italic block" title={`Reason: ${slot.cancellationReason}`}>
-                                                                {slot.cancellationReason}
-                                                            </span>
-                                                        </div>
+                                                        <p className="text-xs text-slate-500 italic text-right" title={`Reason: ${slot.cancellationReason}`}>
+                                                            Reason: {slot.cancellationReason}
+                                                        </p>
                                                     )}
                                                 </div>
-                                                
+
                                                 {/* Actions */}
                                                 {isSelfManaged && (
-                                                    <div className="pt-3 border-t border-slate-50 flex justify-end gap-2">
+                                                    <div className="flex gap-2">
                                                         {activeSlotSubTab === 'upcoming' && (
                                                             <button
                                                                 type="button"
                                                                 disabled={!isCancellable}
                                                                 onClick={() => setShowCancelSlotModal(slot)}
-                                                                className={`flex-1 min-h-[44px] py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border ${
-                                                                    isCancellable 
-                                                                        ? "bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white" 
+                                                                className={`ui-btn flex-1 min-h-[44px] border ${
+                                                                    isCancellable
+                                                                        ? "bg-rose-50 border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white"
                                                                         : "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed"
                                                                 }`}
                                                             >
-                                                                Cancel Slot
+                                                                Cancel slot
                                                             </button>
                                                         )}
                                                         <button
                                                             type="button"
                                                             onClick={() => handleDeleteSlot(slot._id)}
-                                                            className="flex-1 min-h-[44px] py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-center border border-red-200 text-red-600 hover:bg-red-600 hover:text-white"
+                                                            className="ui-btn flex-1 min-h-[44px] border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white"
                                                         >
-                                                            Delete Slot
+                                                            <Trash2 className="w-4 h-4" /> Delete slot
                                                         </button>
                                                     </div>
                                                 )}
                                             </div>
                                         );
                                     })}
-                                {slots.filter(s => {
-                                        const tabMatch = activeSlotSubTab === 'upcoming' ? s.status !== 'cancelled' : s.status === 'cancelled';
-                                        if (!tabMatch) return false;
-                                        if (slotDateFilter) {
-                                            const slotLocalDate = new Date(s.startTime).toLocaleDateString('en-CA');
-                                            if (slotLocalDate !== slotDateFilter) return false;
-                                        }
-                                        return true;
-                                    }).length === 0 && (
-                                    <div className="text-center py-12 text-slate-400 font-bold italic text-xs">
-                                        {slotDateFilter
-                                            ? `No slots found for ${new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
-                                            : 'No slots found in this category.'
-                                        }
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </main>
+                                    {visibleSlots.length === 0 && (
+                                        <div className="text-center py-12 px-4 text-sm text-slate-500">
+                                            {slotDateFilter
+                                                ? `No slots found for ${new Date(slotDateFilter + 'T00:00:00').toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`
+                                                : 'No slots found in this category.'
+                                            }
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+                        </>
+                    )}
+                </main>
+            </div>
 
-            {/* Modals for Add Doctor and Slot Gen would go here */}
+            {/* Slot generator */}
             {showSlotGen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col">
-                        <div className="flex items-center justify-between mb-8 shrink-0">
-                            <h3 className="text-2xl font-black">Generate Slots</h3>
-                            <button onClick={() => setShowSlotGen(null)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            <SlotGenTool 
-                                doctor={showSlotGen} 
-                                subscriptionStatus={subscriptionData?.hospital?.subscriptionStatus}
-                                onClose={() => { setShowSlotGen(null); fetchData(); }} 
-                            />
-                        </div>
-                    </motion.div>
-                </div>
+                <Modal title="Generate slots" onClose={() => setShowSlotGen(null)} bodyClassName="p-0">
+                    <div className="h-full px-5 pt-5 sm:px-6">
+                        <SlotGenTool
+                            doctor={showSlotGen}
+                            subscriptionStatus={subscriptionData?.hospital?.subscriptionStatus}
+                            onClose={() => { setShowSlotGen(null); fetchData(); }}
+                        />
+                    </div>
+                </Modal>
             )}
 
             {showAddDoctor && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col">
-                        <div className="flex items-center justify-between mb-8 shrink-0">
-                            <h3 className="text-2xl font-black text-slate-900">Recruit New Doctor</h3>
-                            <button onClick={() => setShowAddDoctor(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
+                <Modal title="Recruit new doctor" icon={<UserPlus className="w-5 h-5" />} onClose={() => setShowAddDoctor(false)}>
+                    <form onSubmit={handleAddDoctorSubmit} className="space-y-4">
+                        <Field label="Doctor name">
+                            <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="ui-input" />
+                        </Field>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Field label="Email">
+                                <input type="email" placeholder="doctor@example.com" value={newDoctor.email} onChange={e => setNewDoctor({...newDoctor, email: e.target.value})} className="ui-input" />
+                            </Field>
+                            <Field label="Phone">
+                                <input type="tel" placeholder="+91 9876543210" value={newDoctor.phone} onChange={e => setNewDoctor({...newDoctor, phone: e.target.value})} className="ui-input" />
+                            </Field>
                         </div>
-                        <form onSubmit={handleAddDoctorSubmit} className="space-y-6 flex-1 flex flex-col justify-between">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Doctor Name</label>
-                                <input required type="text" placeholder="Dr. Jane Smith" value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                                    <input type="email" placeholder="doctor@example.com" value={newDoctor.email} onChange={e => setNewDoctor({...newDoctor, email: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone</label>
-                                    <input type="tel" placeholder="+91 9876543210" value={newDoctor.phone} onChange={e => setNewDoctor({...newDoctor, phone: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty</label>
-                                <input required type="text" placeholder="Cardiologist" value={newDoctor.specialty} onChange={e => setNewDoctor({...newDoctor, specialty: e.target.value})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Consultation Fee (₹)</label>
-                                <input required type="number" value={newDoctor.fee} onChange={e => setNewDoctor({...newDoctor, fee: Number(e.target.value)})} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none text-xs" />
-                            </div>
-                            <button className="w-full py-4 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all text-xs uppercase tracking-wider">
-                                Recruit Doctor
+                        <Field label="Specialty">
+                            <input required type="text" placeholder="Cardiologist" value={newDoctor.specialty} onChange={e => setNewDoctor({...newDoctor, specialty: e.target.value})} className="ui-input" />
+                        </Field>
+                        <Field label="Consultation fee (₹)">
+                            <input required type="number" value={newDoctor.fee} onChange={e => setNewDoctor({...newDoctor, fee: Number(e.target.value)})} className="ui-input" />
+                        </Field>
+                        <ModalActions>
+                            <button className="ui-btn-dark w-full min-h-[48px]">
+                                Recruit doctor
                             </button>
-                        </form>
-                    </motion.div>
-                </div>
+                        </ModalActions>
+                    </form>
+                </Modal>
             )}
 
             {showAddSpecialtyGroup && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sm:my-8 overflow-y-auto custom-scrollbar flex flex-col">
-                        <div className="flex items-center justify-between mb-6 shrink-0">
-                            <h3 className="text-2xl font-black">Create Specialty Group</h3>
-                            <button onClick={() => setShowAddSpecialtyGroup(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
+                <Modal title="Create specialty group" icon={<Users className="w-5 h-5" />} onClose={() => setShowAddSpecialtyGroup(false)}>
+                    <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4">
+                        <Field label="Specialty name">
+                            <input required type="text" placeholder="e.g. Cardiology" value={groupName} onChange={e => setGroupName(e.target.value)} className="ui-input" />
+                        </Field>
+                        <Field label="Department">
+                            <input required type="text" placeholder="e.g. Department of Cardiac Sciences" value={groupDept} onChange={e => setGroupDept(e.target.value)} className="ui-input" />
+                        </Field>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <Field label="Fee (₹)">
+                                <input required type="number" value={groupFee} onChange={e => setGroupFee(Number(e.target.value))} className="ui-input" />
+                            </Field>
+                            <Field label="Max per slot">
+                                <input required type="number" value={groupMaxSlots} onChange={e => setGroupMaxSlots(Number(e.target.value))} className="ui-input" />
+                            </Field>
+                            <Field label="Doctors count">
+                                <input required type="number" value={groupDocsCount} onChange={e => setGroupDocsCount(Number(e.target.value))} className="ui-input" />
+                            </Field>
                         </div>
-                        <form onSubmit={handleAddSpecialtyGroupSubmit} className="space-y-4 pr-2 flex-1 flex flex-col custom-scrollbar">
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Specialty Name</label>
-                                <input required type="text" placeholder="e.g. Cardiology" value={groupName} onChange={e => setGroupName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Department</label>
-                                <input required type="text" placeholder="e.g. Department of Cardiac Sciences" value={groupDept} onChange={e => setGroupDept(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Fee (₹)</label>
-                                    <input required type="number" value={groupFee} onChange={e => setGroupFee(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Max Per Slot</label>
-                                    <input required type="number" value={groupMaxSlots} onChange={e => setGroupMaxSlots(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Docs Count</label>
-                                    <input required type="number" value={groupDocsCount} onChange={e => setGroupDocsCount(Number(e.target.value))} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                            </div>
-                            
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Availability Schedule</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-[8px] font-bold text-slate-400 uppercase ml-0.5">Start Time</label>
-                                        <input type="time" value={groupStartTime} onChange={e => setGroupStartTime(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[8px] font-bold text-slate-400 uppercase ml-0.5">End Time</label>
-                                        <input type="time" value={groupEndTime} onChange={e => setGroupEndTime(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Available Days</label>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
-                                        <label key={day} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 cursor-pointer select-none">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={groupDays.includes(day)} 
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setGroupDays([...groupDays, day]);
-                                                    } else {
-                                                        setGroupDays(groupDays.filter(d => d !== day));
-                                                    }
-                                                }}
-                                                className="rounded text-primary"
-                                            />
-                                            <span className="text-[10px] font-bold text-slate-700">{day}</span>
-                                        </label>
-                                    ))}
-                                </div>
+                        <fieldset>
+                            <legend className="ui-label">Availability schedule</legend>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Field label="Start time" className="[&>span]:text-xs [&>span]:text-slate-500">
+                                    <input type="time" value={groupStartTime} onChange={e => setGroupStartTime(e.target.value)} className="ui-input" />
+                                </Field>
+                                <Field label="End time" className="[&>span]:text-xs [&>span]:text-slate-500">
+                                    <input type="time" value={groupEndTime} onChange={e => setGroupEndTime(e.target.value)} className="ui-input" />
+                                </Field>
                             </div>
+                        </fieldset>
 
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Description / Notes</label>
-                                <textarea placeholder="General details about the group or department..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs h-20 resize-none" />
-                            </div>
+                        <fieldset>
+                            <legend className="ui-label">Available days</legend>
+                            <DayPicker
+                                selected={groupDays}
+                                onToggle={(day, checked) => {
+                                    if (checked) {
+                                        setGroupDays([...groupDays, day]);
+                                    } else {
+                                        setGroupDays(groupDays.filter(d => d !== day));
+                                    }
+                                }}
+                            />
+                        </fieldset>
 
-                            <button className="w-full py-4 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all text-xs uppercase tracking-wider">
-                                Create Specialty Group
+                        <Field label="Description / notes">
+                            <textarea placeholder="General details about the group or department..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} className="ui-input h-24 resize-none" />
+                        </Field>
+
+                        <ModalActions>
+                            <button className="ui-btn-dark w-full min-h-[48px]">
+                                Create specialty group
                             </button>
-                        </form>
-                    </motion.div>
-                </div>
+                        </ModalActions>
+                    </form>
+                </Modal>
             )}
 
             {showAddSlot && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sm:my-8 overflow-y-auto custom-scrollbar flex flex-col">
-                        <div className="flex items-center justify-between mb-6 shrink-0">
-                            <h3 className="text-2xl font-black text-slate-900">Add New Slot</h3>
-                            <button onClick={() => setShowAddSlot(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
+                <Modal title="Add new slot" icon={<CalendarClock className="w-5 h-5" />} onClose={() => setShowAddSlot(false)}>
+                    <form onSubmit={handleAddSlotSubmit} className="space-y-4">
+                        <Field label="Doctor / specialty group">
+                            <select required value={addSlotDoctorId} onChange={e => setAddSlotDoctorId(e.target.value)} className="ui-input">
+                                {doctors.map((doc: any) => (
+                                    <option key={doc._id} value={doc._id}>
+                                        {doc.name} ({doc.specialty})
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field label="Date">
+                            <input required type="date" min={new Date().toISOString().split("T")[0]} value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} className="ui-input" />
+                        </Field>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Start time">
+                                <input required type="time" value={addSlotStartTime} onChange={e => setAddSlotStartTime(e.target.value)} className="ui-input" />
+                            </Field>
+                            <Field label="End time">
+                                <input required type="time" value={addSlotEndTime} onChange={e => setAddSlotEndTime(e.target.value)} className="ui-input" />
+                            </Field>
                         </div>
-                        <form onSubmit={handleAddSlotSubmit} className="space-y-4 pr-2 flex-1 flex flex-col custom-scrollbar">
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Doctor / Specialty Group</label>
-                                <select required value={addSlotDoctorId} onChange={e => setAddSlotDoctorId(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
-                                    {doctors.map((doc: any) => (
-                                        <option key={doc._id} value={doc._id}>
-                                            {doc.name} ({doc.specialty})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Date</label>
-                                <input required type="date" min={new Date().toISOString().split("T")[0]} value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Start Time</label>
-                                    <input required type="time" value={addSlotStartTime} onChange={e => setAddSlotStartTime(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">End Time</label>
-                                    <input required type="time" value={addSlotEndTime} onChange={e => setAddSlotEndTime(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Recurrence</label>
-                                <select value={addSlotRecurrenceType} onChange={e => setAddSlotRecurrenceType(e.target.value as any)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
-                                    <option value="none">Does not repeat</option>
-                                    <option value="daily">Repeat Daily</option>
-                                    <option value="weekly">Repeat on Selected Days</option>
-                                </select>
-                            </div>
-                            {addSlotRecurrenceType === "weekly" && (
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Repeat on Days</label>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
-                                            <label key={day} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100 cursor-pointer select-none">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={addSlotRecurrenceDays.includes(day)} 
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setAddSlotRecurrenceDays([...addSlotRecurrenceDays, day]);
-                                                        } else {
-                                                            setAddSlotRecurrenceDays(addSlotRecurrenceDays.filter(d => d !== day));
-                                                        }
-                                                    }}
-                                                    className="rounded text-primary"
-                                                />
-                                                <span className="text-[10px] font-bold text-slate-700">{day}</span>
-                                            </label>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {addSlotRecurrenceType !== "none" && (
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Repeat Until Date</label>
-                                    <input required type="date" min={addSlotDate} value={addSlotRecurrenceUntil} onChange={e => setAddSlotRecurrenceUntil(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                            )}
-                            <button className="w-full py-4 bg-slate-900 text-white font-black rounded-[2rem] shadow-2xl hover:-translate-y-1 transition-all text-xs uppercase tracking-wider">
-                                Save Slot(s)
+                        <Field label="Recurrence">
+                            <select value={addSlotRecurrenceType} onChange={e => setAddSlotRecurrenceType(e.target.value as any)} className="ui-input">
+                                <option value="none">Does not repeat</option>
+                                <option value="daily">Repeat Daily</option>
+                                <option value="weekly">Repeat on Selected Days</option>
+                            </select>
+                        </Field>
+                        {addSlotRecurrenceType === "weekly" && (
+                            <fieldset>
+                                <legend className="ui-label">Repeat on days</legend>
+                                <DayPicker
+                                    selected={addSlotRecurrenceDays}
+                                    onToggle={(day, checked) => {
+                                        if (checked) {
+                                            setAddSlotRecurrenceDays([...addSlotRecurrenceDays, day]);
+                                        } else {
+                                            setAddSlotRecurrenceDays(addSlotRecurrenceDays.filter(d => d !== day));
+                                        }
+                                    }}
+                                />
+                            </fieldset>
+                        )}
+                        {addSlotRecurrenceType !== "none" && (
+                            <Field label="Repeat until date">
+                                <input required type="date" min={addSlotDate} value={addSlotRecurrenceUntil} onChange={e => setAddSlotRecurrenceUntil(e.target.value)} className="ui-input" />
+                            </Field>
+                        )}
+                        <ModalActions>
+                            <button className="ui-btn-dark w-full min-h-[48px]">
+                                Save slot(s)
                             </button>
-                        </form>
-                    </motion.div>
-                </div>
+                        </ModalActions>
+                    </form>
+                </Modal>
             )}
 
             {showCancelSlotModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl overflow-y-auto custom-scrollbar flex flex-col">
-                        <div className="flex items-center justify-between mb-8 shrink-0">
-                            <h3 className="text-2xl font-black text-slate-900">Cancel Slot</h3>
-                            <button onClick={() => setShowCancelSlotModal(null)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
+                <Modal title="Cancel slot" icon={<ShieldAlert className="w-5 h-5" />} iconTone="rose" onClose={() => setShowCancelSlotModal(null)}>
+                    <form onSubmit={handleCancelSlotSubmit} className="space-y-4">
+                        <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl">
+                            <p className="text-sm leading-relaxed text-rose-700">
+                                Warning: Cancelling this slot will automatically cancel all associated appointments for this doctor/specialty group on this date, and the patients will be automatically notified of the emergency cancellation.
+                            </p>
                         </div>
-                        <form onSubmit={handleCancelSlotSubmit} className="space-y-6 flex-1 flex flex-col justify-between">
-                            <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl">
-                                <p className="text-xs font-bold text-rose-600">
-                                    Warning: Cancelling this slot will automatically cancel all associated appointments for this doctor/specialty group on this date, and the patients will be automatically notified of the emergency cancellation.
-                                </p>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Cancellation Reason</label>
-                                <textarea required placeholder="Emergency meeting, doctor unavailable..." value={cancellationReason} onChange={e => setCancellationReason(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none h-28 resize-none text-xs" />
-                            </div>
-                            <button className="w-full py-5 bg-rose-600 text-white font-black rounded-[2rem] shadow-2xl hover:bg-rose-700 transition-all text-xs uppercase tracking-wider">
-                                Confirm Cancellation
+                        <Field label="Cancellation reason">
+                            <textarea required placeholder="Emergency meeting, doctor unavailable..." value={cancellationReason} onChange={e => setCancellationReason(e.target.value)} className="ui-input h-28 resize-none" />
+                        </Field>
+                        <ModalActions>
+                            <button className="ui-btn-danger w-full min-h-[48px]">
+                                Confirm cancellation
                             </button>
-                        </form>
-                    </motion.div>
-                </div>
+                        </ModalActions>
+                    </form>
+                </Modal>
             )}
 
             {showManualBooking && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm overflow-y-auto">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-lg h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sm:my-8 overflow-y-auto custom-scrollbar flex flex-col">
-                        <div className="flex items-center justify-between mb-6 shrink-0">
-                            <h3 className="text-2xl font-black text-slate-900">Book Walk-In Appointment</h3>
-                            <button onClick={() => setShowManualBooking(false)} className="p-2 -mr-2 text-slate-400 hover:text-slate-900"><XCircle className="w-6 h-6" /></button>
+                <Modal title="Book walk-in appointment" icon={<Plus className="w-5 h-5" />} iconTone="emerald" onClose={() => setShowManualBooking(false)}>
+                    <form onSubmit={handleManualBookingSubmit} className="space-y-4">
+                        <Field label="Patient full name">
+                            <input required type="text" placeholder="John Doe" value={manualPatientName} onChange={e => setManualPatientName(e.target.value)} className="ui-input" />
+                        </Field>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Field label="Patient email address">
+                                <input required type="email" placeholder="john@example.com" value={manualPatientEmail} onChange={e => setManualPatientEmail(e.target.value)} className="ui-input" />
+                            </Field>
+                            <Field label="Patient phone number">
+                                <input type="tel" placeholder="e.g. +91 98765 43210" value={manualPatientPhone} onChange={e => setManualPatientPhone(e.target.value)} className="ui-input" />
+                            </Field>
                         </div>
-                        <form onSubmit={handleManualBookingSubmit} className="space-y-4 pr-2 flex-1 flex flex-col custom-scrollbar">
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Full Name</label>
-                                <input required type="text" placeholder="John Doe" value={manualPatientName} onChange={e => setManualPatientName(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Email Address</label>
-                                    <input required type="email" placeholder="john@example.com" value={manualPatientEmail} onChange={e => setManualPatientEmail(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Patient Phone Number</label>
-                                    <input type="tel" placeholder="e.g. +91 98765 43210" value={manualPatientPhone} onChange={e => setManualPatientPhone(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Assign Doctor / Specialty Group</label>
-                                <select required value={manualDoctorId} onChange={e => { setManualDoctorId(e.target.value); setManualSlotId(""); }} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
-                                    <option value="">-- Choose Staff / Group --</option>
-                                    {doctors.map((doc: any) => (
-                                        <option key={doc._id} value={doc._id}>
-                                            {doc.name} ({doc.specialty})
-                                        </option>
-                                    ))}
+                        <Field label="Assign doctor / specialty group">
+                            <select required value={manualDoctorId} onChange={e => { setManualDoctorId(e.target.value); setManualSlotId(""); }} className="ui-input">
+                                <option value="">-- Choose Staff / Group --</option>
+                                {doctors.map((doc: any) => (
+                                    <option key={doc._id} value={doc._id}>
+                                        {doc.name} ({doc.specialty})
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <Field label="Appointment date">
+                                <input required type="date" min={new Date().toISOString().split("T")[0]} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="ui-input" />
+                            </Field>
+                            <Field label="Clinic payment status">
+                                <select value={manualPaymentStatus} onChange={e => setManualPaymentStatus(e.target.value)} className="ui-input">
+                                    <option value="pending">Pending Payment</option>
+                                    <option value="paid">Paid (Collected at Hospital)</option>
                                 </select>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Appointment Date</label>
-                                    <input required type="date" min={new Date().toISOString().split("T")[0]} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Clinic Payment Status</label>
-                                    <select value={manualPaymentStatus} onChange={e => setManualPaymentStatus(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
-                                        <option value="pending">Pending Payment</option>
-                                        <option value="paid">Paid (Collected at Hospital)</option>
-                                    </select>
-                                </div>
-                            </div>
+                            </Field>
+                        </div>
 
-                            {manualPaymentStatus === "paid" && (
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Payment Method</label>
-                                    <select value={manualPaymentMethod} onChange={e => setManualPaymentMethod(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
-                                        <option value="cash">Cash Collection</option>
-                                        <option value="upi">UPI / QR Code</option>
-                                        <option value="card">Debit / Credit Card</option>
-                                        <option value="other_online">Other Online Collection</option>
-                                    </select>
-                                </div>
-                            )}
+                        {manualPaymentStatus === "paid" && (
+                            <Field label="Payment method">
+                                <select value={manualPaymentMethod} onChange={e => setManualPaymentMethod(e.target.value)} className="ui-input">
+                                    <option value="cash">Cash Collection</option>
+                                    <option value="upi">UPI / QR Code</option>
+                                    <option value="card">Debit / Credit Card</option>
+                                    <option value="other_online">Other Online Collection</option>
+                                </select>
+                            </Field>
+                        )}
 
-                            {manualDoctorId && (
-                                <div className="space-y-1">
-                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Select Available Slot</label>
-                                    <select required value={manualSlotId} onChange={e => setManualSlotId(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs">
+                        {manualDoctorId && (
+                            <div>
+                                <Field label="Select available slot">
+                                    <select required value={manualSlotId} onChange={e => setManualSlotId(e.target.value)} className="ui-input">
                                         <option value="">-- Select Slot Time --</option>
-                                        {slots.filter((s: any) => {
-                                            const matchDoc = s.doctor?._id === manualDoctorId;
-                                            const slotDate = new Date(s.startTime).toISOString().split("T")[0];
-                                            const matchDate = slotDate === manualBookingDate;
-                                            const isAvailable = s.status === "available";
-                                            const maxAppts = s.max_appointments || 1;
-                                            const bookingCount = s.bookingCount || 0;
-                                            const hasCapacity = bookingCount < maxAppts;
-                                            return matchDoc && matchDate && isAvailable && hasCapacity;
-                                        }).map((s: any) => {
-                                            const timeRangeStr = `${new Date(s.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(s.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+                                        {manualSlotOptions.map((s: any) => {
                                             const remaining = (s.max_appointments || 1) - (s.bookingCount || 0);
                                             return (
                                                 <option key={s._id} value={s._id}>
-                                                    {timeRangeStr} ({remaining} remaining spots)
+                                                    {timeRange(s.startTime, s.endTime)} ({remaining} remaining spots)
                                                 </option>
                                             );
                                         })}
                                     </select>
-                                    {slots.filter((s: any) => {
-                                        const matchDoc = s.doctor?._id === manualDoctorId;
-                                        const slotDate = new Date(s.startTime).toISOString().split("T")[0];
-                                        const matchDate = slotDate === manualBookingDate;
-                                        const isAvailable = s.status === "available";
-                                        const maxAppts = s.max_appointments || 1;
-                                        const bookingCount = s.bookingCount || 0;
-                                        const hasCapacity = bookingCount < maxAppts;
-                                        return matchDoc && matchDate && isAvailable && hasCapacity;
-                                    }).length === 0 && (
-                                        <p className="text-[10px] font-bold text-rose-500 mt-1 italic">
-                                            No available slots found for this doctor on this date. Configure and generate slots first!
-                                        </p>
-                                    )}
-                                </div>
-                            )}
-
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Booking Notes / Symptoms</label>
-                                <textarea placeholder="Patient notes, reason for visit, walk-in comments..." value={manualBookingNotes} onChange={e => setManualBookingNotes(e.target.value)} className="w-full p-3.5 bg-slate-50 border border-slate-100 rounded-xl font-bold outline-none text-xs h-20 resize-none" />
+                                </Field>
+                                {manualSlotOptions.length === 0 && (
+                                    <p className="mt-1.5 text-xs font-medium text-rose-600">
+                                        No available slots found for this doctor on this date. Configure and generate slots first!
+                                    </p>
+                                )}
                             </div>
+                        )}
 
-                            <button type="submit" className="w-full py-4 bg-emerald-600 text-white font-black rounded-[2rem] shadow-2xl hover:bg-emerald-700 transition-all text-xs uppercase tracking-wider">
-                                Confirm Walk-in Booking
+                        <Field label="Booking notes / symptoms">
+                            <textarea placeholder="Patient notes, reason for visit, walk-in comments..." value={manualBookingNotes} onChange={e => setManualBookingNotes(e.target.value)} className="ui-input h-24 resize-none" />
+                        </Field>
+
+                        <ModalActions>
+                            <button type="submit" className="ui-btn-success w-full min-h-[48px]">
+                                Confirm walk-in booking
                             </button>
-                        </form>
-                    </motion.div>
-                </div>
+                        </ModalActions>
+                    </form>
+                </Modal>
             )}
 
             {selectedPatientId && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-gray-900/40 backdrop-blur-sm">
-                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl flex flex-col">
-                        <div className="flex items-center justify-between mb-6 shrink-0">
-                            <div>
-                                <h3 className="text-xl sm:text-2xl font-black text-slate-900">Patient Records</h3>
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1">{selectedPatientName}</p>
-                            </div>
-                            <button onClick={() => { setSelectedPatientId(null); setSelectedPatientName(""); setPatientNotes([]); setNewNoteContent(""); }} className="p-2 -mr-2 text-slate-400 hover:text-rose-500 transition-colors"><XCircle className="w-6 h-6" /></button>
-                        </div>
-                        
-                        {/* Notes List */}
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-6 custom-scrollbar">
-                            {patientNotes.length === 0 ? (
-                                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 font-bold text-xs">
-                                    No records found for this patient.
-                                </div>
-                            ) : (
-                                patientNotes.map((note, i) => (
-                                    <div key={i} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div>
-                                                <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{note.doctor ? doctorLabel(note.doctor) : 'Hospital Staff'}</span>
-                                                {note.doctor?.specialty && <span className="ml-2 text-[9px] font-bold text-primary bg-blue-50 px-2 py-0.5 rounded-full">{note.doctor.specialty}</span>}
-                                            </div>
-                                            <span className="text-[9px] font-bold text-slate-400">{new Date(note.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
+                <Modal
+                    title="Patient records"
+                    description={selectedPatientName}
+                    icon={<FileText className="w-5 h-5" />}
+                    maxWidth="sm:max-w-2xl"
+                    onClose={() => { setSelectedPatientId(null); setSelectedPatientName(""); setPatientNotes([]); setNewNoteContent(""); }}
+                >
+                    {/* Notes List */}
+                    <div className="space-y-3">
+                        {patientNotes.length === 0 ? (
+                            <p className="ui-empty">No records found for this patient.</p>
+                        ) : (
+                            patientNotes.map((note, i) => (
+                                <div key={i} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="text-sm font-semibold text-slate-800">{note.doctor ? doctorLabel(note.doctor) : 'Hospital Staff'}</span>
+                                            {note.doctor?.specialty && <span className="ui-badge border-blue-100 bg-blue-50 text-blue-700">{note.doctor.specialty}</span>}
                                         </div>
-                                        <p className="text-xs font-medium text-slate-700 whitespace-pre-wrap">{note.note}</p>
+                                        <span className="text-xs text-slate-400">{new Date(note.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</span>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                    <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{note.note}</p>
+                                </div>
+                            ))
+                        )}
+                    </div>
 
-                        {/* Add Note Form */}
-                        <form onSubmit={handleAddNote} className="shrink-0 pt-4 border-t border-slate-100">
-                            <textarea
-                                required
-                                value={newNoteContent}
-                                onChange={e => setNewNoteContent(e.target.value)}
-                                placeholder="Add a new note, observation, or diagnosis..."
-                                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold outline-none text-xs h-24 resize-none mb-4 focus:border-primary transition-colors"
-                            />
-                            <button type="submit" className="w-full py-3.5 bg-slate-900 text-white font-black rounded-2xl shadow-lg hover:bg-slate-800 transition-all text-xs uppercase tracking-wider">
-                                Save Record
-                            </button>
-                        </form>
-                    </motion.div>
-                </div>
+                    {/* Add Note Form */}
+                    <form onSubmit={handleAddNote} className="sticky -bottom-5 -mx-5 sm:-mx-6 -mb-5 mt-5 px-5 sm:px-6 pt-4 pb-5 bg-white border-t border-slate-100">
+                        <textarea
+                            required
+                            value={newNoteContent}
+                            onChange={e => setNewNoteContent(e.target.value)}
+                            placeholder="Add a new note, observation, or diagnosis..."
+                            aria-label="New note"
+                            className="ui-input h-24 resize-none mb-3"
+                        />
+                        <button type="submit" className="ui-btn-dark w-full min-h-[44px]">
+                            Save record
+                        </button>
+                    </form>
+                </Modal>
             )}
 
             {/* Payment Modal */}
             <AnimatePresence>
                 {paymentModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                            onClick={() => setPaymentModalOpen(false)}
-                        />
-                        <motion.div
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-white rounded-none sm:rounded-[2.5rem] p-6 sm:p-10 max-w-md w-full relative z-10 shadow-2xl h-[100dvh] sm:h-auto flex flex-col"
-                        >
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                                    <IndianRupee className="w-6 h-6 text-emerald-500" /> Record Payment
-                                </h3>
-                                <button
-                                    onClick={() => setPaymentModalOpen(false)}
-                                    className="p-2 -mr-2 text-slate-400 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 rounded-full"
-                                >
-                                    <XCircle className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <form onSubmit={handlePaymentSubmit} className="flex-1 flex flex-col justify-between">
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Payment Mode</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => setPaymentMode("online")}
-                                                className={`p-4 rounded-2xl border-2 font-bold transition-all flex flex-col items-center gap-2 ${
-                                                    paymentMode === "online" 
-                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
-                                                    : "border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
-                                                }`}
-                                            >
-                                                <CreditCard className="w-6 h-6" /> Online
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setPaymentMode("offline")}
-                                                className={`p-4 rounded-2xl border-2 font-bold transition-all flex flex-col items-center gap-2 ${
-                                                    paymentMode === "offline" 
-                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-700" 
-                                                    : "border-slate-100 text-slate-500 hover:border-slate-200 hover:bg-slate-50"
-                                                }`}
-                                            >
-                                                <IndianRupee className="w-6 h-6" /> Offline (Cash)
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Amount (₹)</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                <span className="text-slate-400 font-bold text-lg">₹</span>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                required
-                                                min="0"
-                                                value={paymentAmount}
-                                                onChange={(e) => setPaymentAmount(e.target.value ? Number(e.target.value) : "")}
-                                                placeholder="0.00"
-                                                className="w-full pl-10 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-xl focus:bg-white focus:border-emerald-200 focus:ring-4 focus:ring-emerald-50 outline-none transition-all"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-10">
+                    <Modal
+                        title="Record payment"
+                        icon={<IndianRupee className="w-5 h-5" />}
+                        iconTone="emerald"
+                        maxWidth="sm:max-w-md"
+                        closeOnBackdrop
+                        onClose={() => setPaymentModalOpen(false)}
+                    >
+                        <form onSubmit={handlePaymentSubmit} className="space-y-5">
+                            <div>
+                                <span className="ui-label">Payment mode</span>
+                                <div className="grid grid-cols-2 gap-3">
                                     <button
-                                        type="submit"
-                                        disabled={paymentSubmitting || paymentAmount === ""}
-                                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg rounded-2xl transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                                        type="button"
+                                        onClick={() => setPaymentMode("online")}
+                                        aria-pressed={paymentMode === "online"}
+                                        className={`p-4 rounded-xl border-2 text-sm font-semibold transition-all flex flex-col items-center gap-2 ${
+                                            paymentMode === "online"
+                                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                        }`}
                                     >
-                                        {paymentSubmitting ? (
-                                            <RefreshCcw className="w-6 h-6 animate-spin" />
-                                        ) : (
-                                            "Save Payment"
-                                        )}
+                                        <CreditCard className="w-6 h-6" /> Online
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentMode("offline")}
+                                        aria-pressed={paymentMode === "offline"}
+                                        className={`p-4 rounded-xl border-2 text-sm font-semibold transition-all flex flex-col items-center gap-2 ${
+                                            paymentMode === "offline"
+                                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50"
+                                        }`}
+                                    >
+                                        <IndianRupee className="w-6 h-6" /> Offline (Cash)
                                     </button>
                                 </div>
-                            </form>
-                        </motion.div>
-                    </div>
+                            </div>
+
+                            <label className="block">
+                                <span className="ui-label">Amount (₹)</span>
+                                <div className="relative">
+                                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 font-semibold text-lg">₹</span>
+                                    <input
+                                        type="number"
+                                        required
+                                        min="0"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value ? Number(e.target.value) : "")}
+                                        placeholder="0.00"
+                                        className="ui-input pl-10 min-h-[52px] text-xl font-semibold"
+                                    />
+                                </div>
+                            </label>
+
+                            <ModalActions>
+                                <button
+                                    type="submit"
+                                    disabled={paymentSubmitting || paymentAmount === ""}
+                                    className="ui-btn-success w-full min-h-[48px] text-base"
+                                >
+                                    {paymentSubmitting ? (
+                                        <RefreshCcw className="w-5 h-5 animate-spin" />
+                                    ) : (
+                                        "Save payment"
+                                    )}
+                                </button>
+                            </ModalActions>
+                        </form>
+                    </Modal>
                 )}
             </AnimatePresence>
         </div>
     );
 }
 
-function StatCard({ label, value, icon }: any) {
+const STAT_TONES = {
+    blue: "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    amber: "bg-amber-50 text-amber-600",
+    rose: "bg-rose-50 text-rose-600",
+} as const;
+
+function StatCard({ label, value, icon, tone = "blue", sub }: { label: string; value: React.ReactNode; icon: React.ReactNode; tone?: keyof typeof STAT_TONES; sub?: string }) {
     return (
-        <div className="bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border border-gray-100 shadow-lg shadow-blue-900/5 flex items-center gap-3 sm:gap-5">
-            <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gray-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-2xl shrink-0">
-                {icon}
+        <div className="ui-card p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+                <p className="text-[13px] font-medium leading-snug text-slate-500">{label}</p>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${STAT_TONES[tone]}`}>{icon}</span>
             </div>
-            <div>
-                <h4 className="text-xl sm:text-3xl font-black text-gray-900 leading-tight">{value || 0}</h4>
-                <p className="text-[9px] sm:text-xs font-black text-gray-400 uppercase tracking-widest leading-none mt-1">{label}</p>
-            </div>
+            <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">{value || 0}</p>
+            {sub && <p className="mt-1 text-xs leading-snug text-slate-500">{sub}</p>}
         </div>
     );
 }
 
 /** Label for appointments booked by the AI phone receptionist (bookingSource 'ai_call'). */
-function AiCallBadge() {
+function AiCallBadge({ className = "" }: { className?: string }) {
     return (
         <span
             title="Booked by the AI phone receptionist"
-            className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 align-middle text-[9px] font-black uppercase tracking-wider text-violet-700 border border-violet-100"
+            className={`inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 align-middle text-[11px] font-semibold text-violet-700 border border-violet-100 ${className}`}
         >
-            <span aria-hidden="true">📞</span> AI call
+            <PhoneCall className="w-3 h-3" aria-hidden="true" /> AI call
         </span>
+    );
+}
+
+const ICON_TONES = {
+    blue: "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    rose: "bg-rose-50 text-rose-600",
+} as const;
+
+/** Dialog shell shared by the dashboard forms: bottom sheet on phones, centred card on larger screens. */
+function Modal({
+    title,
+    description,
+    icon,
+    iconTone = "blue",
+    maxWidth = "sm:max-w-lg",
+    closeOnBackdrop = false,
+    bodyClassName = "px-5 py-5 sm:px-6",
+    onClose,
+    children,
+}: {
+    title: string;
+    description?: string;
+    icon?: React.ReactNode;
+    iconTone?: keyof typeof ICON_TONES;
+    maxWidth?: string;
+    closeOnBackdrop?: boolean;
+    bodyClassName?: string;
+    onClose: () => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="ui-overlay"
+            onClick={(e) => {
+                if (closeOnBackdrop && e.target === e.currentTarget) onClose();
+            }}
+        >
+            <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 24, scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={title}
+                className={`ui-dialog ${maxWidth}`}
+            >
+                <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6 shrink-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                        {icon && (
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${ICON_TONES[iconTone]}`}>{icon}</span>
+                        )}
+                        <div className="min-w-0">
+                            <h3 className="text-lg font-semibold text-slate-900 leading-tight">{title}</h3>
+                            {description && <p className="mt-0.5 text-sm text-slate-500 truncate">{description}</p>}
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="-mr-2 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                        aria-label="Close"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className={`flex-1 overflow-y-auto ${bodyClassName}`}>{children}</div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+/** Keeps a form's main button visible at the bottom of a scrolling dialog. */
+function ModalActions({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="sticky -bottom-5 -mx-5 sm:-mx-6 -mb-5 mt-2 px-5 sm:px-6 py-4 bg-white/95 backdrop-blur border-t border-slate-100">
+            {children}
+        </div>
+    );
+}
+
+function Field({ label, className = "", children }: { label: string; className?: string; children: React.ReactNode }) {
+    return (
+        <label className={`block ${className}`}>
+            <span className="ui-label">{label}</span>
+            {children}
+        </label>
+    );
+}
+
+const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+function DayPicker({ selected, onToggle }: { selected: string[]; onToggle: (day: string, checked: boolean) => void }) {
+    return (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {WEEK_DAYS.map(day => {
+                const checked = selected.includes(day);
+                return (
+                    <label
+                        key={day}
+                        className={`flex min-h-[40px] items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer select-none transition-colors ${
+                            checked ? "border-blue-200 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => onToggle(day, e.target.checked)}
+                            aria-label={day}
+                            className="h-4 w-4 rounded border-slate-300 text-blue-600 accent-blue-600"
+                        />
+                        <span className="font-medium" aria-hidden="true">{day.slice(0, 3)}</span>
+                    </label>
+                );
+            })}
+        </div>
     );
 }

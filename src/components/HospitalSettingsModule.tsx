@@ -550,159 +550,151 @@ export default function HospitalSettingsModule({
     };
 
     const sectionsNav = [
-        { id: "profile" as SettingsSection, label: "Hospital Profile", icon: Building2, desc: "Name, branding, location, hours & identity" },
-        { id: "staff" as SettingsSection, label: "Doctors & Staff", icon: Users, desc: "Doctor roster, employee accounts & RBAC roles" },
-        { id: "appointments" as SettingsSection, label: "Appointment Settings", icon: CalendarClock, desc: "Durations, buffer times, booking rules & holidays" },
-        { id: "payments" as SettingsSection, label: "Payment & Bank", icon: Landmark, desc: "Masked bank account, payout ledger & 2.36% charges" },
+        { id: "profile" as SettingsSection, label: "Hospital profile", icon: Building2, desc: "Name, branding, location, hours & identity" },
+        { id: "staff" as SettingsSection, label: "Doctors & staff", icon: Users, desc: "Doctor roster, employee accounts & RBAC roles" },
+        { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Durations, buffer times, booking rules & holidays" },
+        { id: "payments" as SettingsSection, label: "Payment & bank", icon: Landmark, desc: "Masked bank account, payout ledger & 2.36% charges" },
         { id: "notifications" as SettingsSection, label: "Notifications", icon: BellRing, desc: "Channels & preference toggles for all 8 events" },
-        { id: "security" as SettingsSection, label: "Security & Login", icon: ShieldCheck, desc: "Password change, sessions, 2FA & login logs" },
-        { id: "reports" as SettingsSection, label: "Reports & Data", icon: FileSpreadsheet, desc: "One-click CSV/Excel downloads & export audit" },
-        { id: "support" as SettingsSection, label: "Support & Account", icon: LifeBuoy, desc: "Help tickets, subscription tier & account status" }
+        { id: "security" as SettingsSection, label: "Security & login", icon: ShieldCheck, desc: "Password change, sessions, 2FA & login logs" },
+        { id: "reports" as SettingsSection, label: "Reports & data", icon: FileSpreadsheet, desc: "One-click CSV/Excel downloads & export audit" },
+        { id: "support" as SettingsSection, label: "Support & account", icon: LifeBuoy, desc: "Help tickets, subscription tier & account status" }
     ];
 
     if (loading) {
         return (
-            <div className="bg-white rounded-3xl p-12 border border-slate-100 shadow-xl shadow-blue-900/5 flex flex-col items-center justify-center min-h-[400px]">
-                <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mb-4" />
-                <p className="text-sm font-black text-slate-700">Loading Hospital Settings Module...</p>
-                <p className="text-xs text-slate-400 mt-1">Retrieving profile, permissions, and configurable preferences</p>
+            <div className="ui-card flex min-h-[400px] flex-col items-center justify-center p-12 text-center">
+                <RefreshCw className="mb-4 h-8 w-8 animate-spin text-blue-600" />
+                <p className="text-sm font-semibold text-slate-700">Loading Hospital Settings Module...</p>
+                <p className="mt-1 text-sm text-slate-500">Retrieving profile, permissions, and configurable preferences</p>
             </div>
         );
     }
 
     return (
         <div className="space-y-6">
-            {/* Toast Notification */}
+            {/* Toast notification (same look as the dashboard toast) */}
             <AnimatePresence>
                 {toast && (
                     <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 40, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 text-xs font-black border ${
-                            toast.type === "success" 
-                                ? "bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20" 
+                        exit={{ opacity: 0, y: 24, scale: 0.97 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        role="status"
+                        className={`fixed bottom-4 left-4 right-4 z-[9999] flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium shadow-lg sm:bottom-6 sm:left-auto sm:right-6 ${
+                            toast.type === "success"
+                                ? "bg-emerald-600 text-white"
                                 : toast.type === "error"
-                                ? "bg-rose-600 text-white border-rose-500 shadow-rose-900/20"
-                                : "bg-blue-600 text-white border-blue-500 shadow-blue-900/20"
+                                ? "bg-rose-600 text-white"
+                                : "bg-blue-600 text-white"
                         }`}
                     >
-                        {toast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                        {toast.type === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
                         <span>{toast.message}</span>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Header Banner */}
-            <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-                <div className="absolute right-0 top-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-black uppercase tracking-wider mb-2 border border-blue-400/20">
-                            <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                            <span>Pillora Healthcare SaaS • Settings Center</span>
+            {/* Header */}
+            <div className="ui-card p-5 sm:p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                            <ShieldCheck className="h-5 w-5" />
+                        </span>
+                        <div className="min-w-0">
+                            <p className="text-xs font-medium text-slate-500">Pillora Healthcare SaaS • Settings Center</p>
+                            <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+                                Facility settings & configuration
+                            </h2>
+                            <p className="ui-subtitle">
+                                Configure your hospital profile, doctors, appointment availability, notifications, security, and financial accounts.
+                            </p>
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                            Facility Settings & Configuration
-                        </h2>
-                        <p className="text-xs sm:text-sm text-slate-300 font-medium mt-1">
-                            Configure your hospital profile, doctors, appointment availability, notifications, security, and financial accounts.
-                        </p>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="px-3.5 py-1.5 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-xs font-black text-white flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <div className="flex flex-wrap items-center gap-2 md:shrink-0 md:justify-end">
+                        <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             <span>{planLabel(settingsData?.subscription?.plan)} plan</span>
-                        </div>
+                        </span>
                         {settingsData?.hospital?.is_verified ? (
-                            <div className="px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-black flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                                <span>Verified Facility</span>
-                            </div>
+                            <span className="ui-badge border-emerald-200 bg-emerald-50 text-emerald-700">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span>Verified facility</span>
+                            </span>
                         ) : (
-                            <div className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-black flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Verification Pending</span>
-                            </div>
+                            <span className="ui-badge border-amber-200 bg-amber-50 text-amber-700">
+                                <Clock className="h-3.5 w-3.5" />
+                                <span>Verification pending</span>
+                            </span>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* Main Settings Grid: Navigation Sidebar + Active Section Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
-                {/* 1. Sections Sidebar Navigation (3 cols) */}
-                <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-3xl p-3 sm:p-4 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-1.5 sticky top-24">
-                    <div className="px-3 py-2 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        Settings Sections
+            {/* Settings navigation + active section */}
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:gap-6">
+
+                {/* 1. Section navigation: one scrollable row on phones and tablets, a compact list on computers */}
+                <nav aria-label="Settings sections" className="min-w-0 xl:sticky xl:top-24 xl:w-56 xl:shrink-0">
+                    <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:-mx-6 sm:px-6 lg:mx-0 lg:px-0 xl:flex-col xl:gap-0.5 xl:overflow-visible xl:rounded-2xl xl:border xl:border-slate-200/80 xl:bg-white xl:p-2 xl:shadow-sm">
+                        <div className="hidden px-3 pb-1.5 pt-2 text-xs font-medium text-slate-500 xl:block">
+                            Settings sections
+                        </div>
+
+                        {sectionsNav.map(sec => {
+                            const Icon = sec.icon;
+                            const isActive = activeSection === sec.id;
+                            return (
+                                <button
+                                    key={sec.id}
+                                    onClick={() => setActiveSection(sec.id)}
+                                    title={sec.desc}
+                                    aria-current={isActive ? "true" : undefined}
+                                    className={`group flex min-h-[40px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3.5 text-sm font-medium transition xl:w-full xl:gap-3 xl:rounded-xl xl:border-0 xl:px-3 xl:text-left ${
+                                        isActive
+                                            ? "border-blue-200 bg-blue-50 text-blue-700"
+                                            : "border-slate-200 bg-white text-slate-600 hover:text-slate-900 xl:bg-transparent xl:hover:bg-slate-50"
+                                    }`}
+                                >
+                                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} />
+                                    <span className="xl:truncate">{sec.label}</span>
+                                </button>
+                            );
+                        })}
                     </div>
+                </nav>
 
-                    {sectionsNav.map(sec => {
-                        const Icon = sec.icon;
-                        const isActive = activeSection === sec.id;
-                        return (
-                            <button
-                                key={sec.id}
-                                onClick={() => setActiveSection(sec.id)}
-                                className={`w-full text-left p-3 rounded-2xl transition-all flex items-start gap-3 relative group ${
-                                    isActive 
-                                        ? "bg-slate-900 text-white shadow-lg shadow-slate-900/15" 
-                                        : "hover:bg-slate-50 text-slate-700"
-                                }`}
-                            >
-                                <div className={`p-2 rounded-xl shrink-0 transition-colors ${
-                                    isActive ? "bg-white/10 text-white" : "bg-slate-100 text-slate-600 group-hover:bg-blue-50 group-hover:text-blue-600"
-                                }`}>
-                                    <Icon className="w-4 h-4" />
-                                </div>
-                                <div className="flex-1 min-w-0 pr-2">
-                                    <h4 className={`text-xs font-black leading-tight ${isActive ? "text-white" : "text-slate-900"}`}>
-                                        {sec.label}
-                                    </h4>
-                                    <p className={`text-[10px] font-medium leading-snug truncate mt-0.5 ${isActive ? "text-slate-300" : "text-slate-400"}`}>
-                                        {sec.desc}
-                                    </p>
-                                </div>
-                                <ChevronRight className={`w-4 h-4 shrink-0 self-center transition-transform ${
-                                    isActive ? "text-white translate-x-0.5" : "text-slate-300 opacity-0 group-hover:opacity-100"
-                                }`} />
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* 2. Active Section Main Canvas (9 cols) */}
-                <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+                {/* 2. Active section */}
+                <div className="min-w-0 flex-1 space-y-6">
 
                     {/* ========================================================================= */}
                     {/* SECTION A: HOSPITAL PROFILE */}
                     {/* ========================================================================= */}
                     {activeSection === "profile" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900">Hospital Profile & Branding</h3>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        Manage public identity, registration details, location, and official emergency contacts.
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
+                            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                                <SectionHeading
+                                    icon={<Building2 className="h-5 w-5" />}
+                                    title="Hospital profile & branding"
+                                    description="Manage public identity, registration details, location, and official emergency contacts."
+                                />
+                                <div className="flex items-center gap-2 sm:shrink-0">
                                     {!isEditingProfile ? (
                                         <button
                                             type="button"
                                             onClick={() => setIsEditingProfile(true)}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95"
+                                            className="ui-btn-primary w-full sm:w-auto"
                                         >
-                                            <Edit2 className="w-3.5 h-3.5" />
-                                            <span>Edit Profile</span>
+                                            <Edit2 className="h-4 w-4" />
+                                            <span>Edit profile</span>
                                         </button>
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={() => setIsEditingProfile(false)}
-                                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                                            className="ui-btn-secondary w-full sm:w-auto"
                                         >
                                             Cancel
                                         </button>
@@ -710,33 +702,34 @@ export default function HospitalSettingsModule({
                                 </div>
                             </div>
 
-                            {/* Logo Upload Strip */}
-                            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 p-1.5 flex items-center justify-center shrink-0 shadow-sm relative overflow-hidden">
+                            {/* Logo upload strip */}
+                            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex min-w-0 items-center gap-4">
+                                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white p-1.5">
                                         {settingsData?.hospital?.image ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
                                             <img
                                                 src={settingsData.hospital.image}
                                                 alt="Hospital Logo"
-                                                className="w-full h-full object-contain rounded-xl"
+                                                className="h-full w-full rounded-lg object-contain"
                                             />
                                         ) : (
-                                            <Building2 className="w-8 h-8 text-slate-400" />
+                                            <Building2 className="h-7 w-7 text-slate-400" />
                                         )}
                                         {logoUploading && (
-                                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
-                                                <RefreshCw className="w-5 h-5 text-white animate-spin" />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+                                                <RefreshCw className="h-5 w-5 animate-spin text-white" />
                                             </div>
                                         )}
                                     </div>
-                                    <div>
-                                        <h4 className="text-xs font-black text-slate-900">Hospital Facility Logo</h4>
-                                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                    <div className="min-w-0">
+                                        <h4 className="text-sm font-semibold text-slate-900">Hospital facility logo</h4>
+                                        <p className="mt-0.5 text-sm leading-relaxed text-slate-500">
                                             PNG, JPG or WEBP under 5MB. Displayed on patient booking and receipts.
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 sm:shrink-0">
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -748,20 +741,20 @@ export default function HospitalSettingsModule({
                                         type="button"
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={logoUploading}
-                                        className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-800 rounded-xl text-xs font-bold border border-slate-200 shadow-sm flex items-center gap-2 transition-all disabled:opacity-50"
+                                        className="ui-btn-secondary w-full sm:w-auto"
                                     >
-                                        <Upload className="w-3.5 h-3.5 text-blue-600" />
-                                        <span>{logoUploading ? "Uploading..." : "Change Logo"}</span>
+                                        <Upload className="h-4 w-4 text-blue-600" />
+                                        <span>{logoUploading ? "Uploading..." : "Change logo"}</span>
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Verified Warning */}
+                            {/* Verified notice */}
                             {settingsData?.hospital?.is_verified && (
-                                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-blue-900">
-                                    <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                                <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm leading-relaxed text-blue-800">
+                                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
                                     <div>
-                                        <span className="font-bold block">Verified Facility Notice:</span>
+                                        <span className="block font-semibold text-blue-900">Verified facility notice:</span>
                                         <span>
                                             Your hospital is officially verified by Pillora. Legal name and registration changes are recorded in the audit log and subject to Pillora Admin validation.
                                         </span>
@@ -769,12 +762,12 @@ export default function HospitalSettingsModule({
                                 </div>
                             )}
 
-                            {/* Profile Form */}
+                            {/* Profile form */}
                             <form onSubmit={handleSaveProfile} className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Hospital Legal Name <span className="text-rose-500">*</span>
+                                        <label className="ui-label">
+                                            Hospital legal name <span className="text-rose-500">*</span>
                                         </label>
                                         <input
                                             type="text"
@@ -782,13 +775,13 @@ export default function HospitalSettingsModule({
                                             disabled={!isEditingProfile}
                                             value={profileForm.name || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Registration / Accreditation No.
+                                        <label className="ui-label">
+                                            Registration / accreditation no.
                                         </label>
                                         <input
                                             type="text"
@@ -796,15 +789,15 @@ export default function HospitalSettingsModule({
                                             placeholder="e.g. NABH-2026-GUJ-1029"
                                             value={profileForm.registrationNumber || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, registrationNumber: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <div className="sm:col-span-2">
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Facility Address <span className="text-rose-500">*</span>
+                                        <label className="ui-label">
+                                            Facility address <span className="text-rose-500">*</span>
                                         </label>
                                         <input
                                             type="text"
@@ -812,12 +805,12 @@ export default function HospitalSettingsModule({
                                             disabled={!isEditingProfile}
                                             value={profileForm.address || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                        <label className="ui-label">
                                             City <span className="text-rose-500">*</span>
                                         </label>
                                         <input
@@ -826,14 +819,14 @@ export default function HospitalSettingsModule({
                                             disabled={!isEditingProfile}
                                             value={profileForm.city || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                        <label className="ui-label">
                                             State
                                         </label>
                                         <input
@@ -842,13 +835,13 @@ export default function HospitalSettingsModule({
                                             placeholder="e.g. Gujarat"
                                             value={profileForm.state || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            PIN Code
+                                        <label className="ui-label">
+                                            PIN code
                                         </label>
                                         <input
                                             type="text"
@@ -856,19 +849,19 @@ export default function HospitalSettingsModule({
                                             placeholder="380009"
                                             value={profileForm.pincode || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, pincode: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Hospital Type
+                                        <label className="ui-label">
+                                            Hospital type
                                         </label>
                                         <select
                                             disabled={!isEditingProfile}
                                             value={profileForm.hospitalType || "Private"}
                                             onChange={(e) => setProfileForm({ ...profileForm, hospitalType: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         >
                                             <option value="Private">Private Hospital</option>
                                             <option value="Government">Government / Public</option>
@@ -878,36 +871,36 @@ export default function HospitalSettingsModule({
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Official Email
+                                        <label className="ui-label">
+                                            Official email
                                         </label>
                                         <input
                                             type="email"
                                             disabled={!isEditingProfile}
                                             value={profileForm.email || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Contact Number
+                                        <label className="ui-label">
+                                            Contact number
                                         </label>
                                         <input
                                             type="text"
                                             disabled={!isEditingProfile}
                                             value={profileForm.contactNumber || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, contactNumber: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Emergency / Ambulance Line
+                                        <label className="ui-label">
+                                            Emergency / ambulance line
                                         </label>
                                         <input
                                             type="text"
@@ -915,14 +908,14 @@ export default function HospitalSettingsModule({
                                             placeholder="+91 108"
                                             value={profileForm.ambulanceContact || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, ambulanceContact: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                                        <label className="ui-label">
                                             Website URL
                                         </label>
                                         <input
@@ -931,13 +924,13 @@ export default function HospitalSettingsModule({
                                             placeholder="https://examplehospital.in"
                                             value={profileForm.website || ""}
                                             onChange={(e) => setProfileForm({ ...profileForm, website: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className={PROFILE_INPUT}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                            Operating Hours
+                                        <label className="ui-label">
+                                            Operating hours
                                         </label>
                                         <div className="flex items-center gap-3">
                                             <input
@@ -946,169 +939,176 @@ export default function HospitalSettingsModule({
                                                 placeholder="09:00 AM - 08:00 PM"
                                                 value={profileForm.operatingHours || ""}
                                                 onChange={(e) => setProfileForm({ ...profileForm, operatingHours: e.target.value })}
-                                                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className={`${PROFILE_INPUT} min-w-0 flex-1`}
                                             />
-                                            <label className="flex items-center gap-1.5 shrink-0 text-xs font-bold text-slate-700 cursor-pointer">
+                                            <label className="flex min-h-[44px] shrink-0 cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                                                 <input
                                                     type="checkbox"
                                                     disabled={!isEditingProfile}
                                                     checked={Boolean(profileForm.isOpen24Hours)}
                                                     onChange={(e) => setProfileForm({ ...profileForm, isOpen24Hours: e.target.checked })}
-                                                    className="w-4 h-4 text-blue-600 rounded"
+                                                    className="h-4 w-4 rounded border-slate-300 accent-blue-600 disabled:cursor-default"
                                                 />
-                                                <span>24/7 Open</span>
+                                                <span>24/7 open</span>
                                             </label>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                        Hospital Description & Facility Overview
+                                    <label className="ui-label">
+                                        Hospital description & facility overview
                                     </label>
                                     <textarea
                                         rows={3}
                                         disabled={!isEditingProfile}
                                         value={profileForm.description || ""}
                                         onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 disabled:opacity-70 disabled:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={`${PROFILE_INPUT} h-24 resize-none`}
                                     />
                                 </div>
 
                                 {isEditingProfile && (
-                                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                                    <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                                         <button
                                             type="button"
                                             onClick={() => setIsEditingProfile(false)}
-                                            className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all"
+                                            className="ui-btn-secondary"
                                         >
                                             Cancel
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={saving}
-                                            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-lg shadow-blue-600/25 flex items-center gap-2 transition-all disabled:opacity-50"
+                                            className="ui-btn-primary"
                                         >
-                                            {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                            <span>Save Profile Changes</span>
+                                            {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                            <span>Save profile changes</span>
                                         </button>
                                     </div>
                                 )}
                             </form>
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION B: DOCTORS & STAFF MANAGEMENT */}
                     {/* ========================================================================= */}
                     {activeSection === "staff" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900">Doctors & Staff Management</h3>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        Manage medical staff, receptionist accounts, and role-based permissions.
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
+                            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                                <SectionHeading
+                                    icon={<Users className="h-5 w-5" />}
+                                    title="Doctors & staff management"
+                                    description="Manage medical staff, receptionist accounts, and role-based permissions."
+                                />
+                                <div className="flex items-center gap-2 empty:hidden sm:shrink-0">
                                     {staffSubTab === "doctors" && (
                                         <button
                                             type="button"
                                             onClick={() => setShowAddDoctorModal(true)}
-                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center gap-1.5"
+                                            className="ui-btn-primary w-full sm:w-auto"
                                         >
-                                            <Plus className="w-4 h-4" />
-                                            <span>Add Doctor</span>
+                                            <Plus className="h-4 w-4" />
+                                            <span>Add doctor</span>
                                         </button>
                                     )}
                                     {staffSubTab === "staff" && (
                                         <button
                                             type="button"
                                             onClick={() => setShowAddStaffModal(true)}
-                                            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5"
+                                            className="ui-btn-dark w-full sm:w-auto"
                                         >
-                                            <Plus className="w-4 h-4" />
-                                            <span>Add Staff Member</span>
+                                            <Plus className="h-4 w-4" />
+                                            <span>Add staff member</span>
                                         </button>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Sub-Navigation */}
-                            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                                <button
-                                    onClick={() => setStaffSubTab("doctors")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                        staffSubTab === "doctors" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    Doctors Directory ({doctorList.length})
-                                </button>
-                                <button
-                                    onClick={() => setStaffSubTab("staff")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                        staffSubTab === "staff" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    Staff Accounts ({staffList.length})
-                                </button>
-                                <button
-                                    onClick={() => setStaffSubTab("rbac")}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
-                                        staffSubTab === "rbac" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    Role Permissions Matrix
-                                </button>
+                            {/* Sub-navigation (scrolls sideways on phones) */}
+                            <div className="no-scrollbar -mx-5 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+                                <div className="ui-segmented">
+                                    <button
+                                        onClick={() => setStaffSubTab("doctors")}
+                                        className={`ui-segment whitespace-nowrap ${
+                                            staffSubTab === "doctors" ? "ui-segment-active" : ""
+                                        }`}
+                                    >
+                                        Doctors directory ({doctorList.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setStaffSubTab("staff")}
+                                        className={`ui-segment whitespace-nowrap ${
+                                            staffSubTab === "staff" ? "ui-segment-active" : ""
+                                        }`}
+                                    >
+                                        Staff accounts ({staffList.length})
+                                    </button>
+                                    <button
+                                        onClick={() => setStaffSubTab("rbac")}
+                                        className={`ui-segment whitespace-nowrap ${
+                                            staffSubTab === "rbac" ? "ui-segment-active" : ""
+                                        }`}
+                                    >
+                                        Role permissions matrix
+                                    </button>
+                                </div>
                             </div>
 
                             {/* 1. Doctors Table */}
                             {staffSubTab === "doctors" && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 border-b border-slate-100">
-                                            <tr>
-                                                <th className="py-3 px-4">Doctor Name</th>
-                                                <th className="py-3 px-4">Specialty & Dept</th>
-                                                <th className="py-3 px-4">Fee (₹)</th>
-                                                <th className="py-3 px-4">Availability</th>
-                                                <th className="py-3 px-4 text-center">Status</th>
-                                                <th className="py-3 px-4 text-center">Action</th>
+                                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                    <table className="w-full min-w-[640px] text-left">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/80">
+                                                <th className="ui-th">Doctor name</th>
+                                                <th className="ui-th">Specialty & dept</th>
+                                                <th className="ui-th">Fee (₹)</th>
+                                                <th className="ui-th">Availability</th>
+                                                <th className="ui-th text-center">Status</th>
+                                                <th className="ui-th text-center">Action</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 font-medium">
+                                        <tbody className="divide-y divide-slate-100">
                                             {doctorList.map((doc: any) => (
-                                                <tr key={doc._id} className="hover:bg-slate-50">
-                                                    <td className="py-3.5 px-4 font-bold text-slate-900 flex items-center gap-2">
-                                                        <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-black">
-                                                            {doc.name.charAt(0)}
+                                                <tr key={doc._id} className="transition-colors hover:bg-slate-50/60">
+                                                    <td className="ui-td">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-semibold text-blue-600">
+                                                                {doc.name.charAt(0)}
+                                                            </div>
+                                                            <span className="font-medium text-slate-900">{doc.name}</span>
                                                         </div>
-                                                        <span>{doc.name}</span>
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-slate-600">
-                                                        <div className="font-bold">{doc.specialty}</div>
-                                                        <div className="text-[10px] text-slate-400">{doc.department || "General"}</div>
+                                                    <td className="ui-td">
+                                                        <div className="font-medium text-slate-800">{doc.specialty}</div>
+                                                        <div className="mt-0.5 text-xs text-slate-500">{doc.department || "General"}</div>
                                                     </td>
-                                                    <td className="py-3.5 px-4 font-black text-slate-900">
+                                                    <td className="ui-td whitespace-nowrap font-semibold text-slate-900">
                                                         ₹{doc.fee}
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-slate-500 text-[11px]">
+                                                    <td className="ui-td max-w-[240px] text-xs leading-relaxed text-slate-500">
                                                         {(doc.availability || []).map((a: any) => a.day).join(", ") || "Mon - Fri"}
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-center">
-                                                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                            doc.is_active ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"
+                                                    <td className="ui-td text-center">
+                                                        <span className={`ui-badge ${
+                                                            doc.is_active ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-100 text-slate-500"
                                                         }`}>
                                                             {doc.is_active ? "Active" : "Inactive"}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-center">
+                                                    <td className="ui-td text-center">
                                                         <button
                                                             onClick={async () => {
                                                                 await api.put(`/hospital/dashboard/doctors/${doc._id}`, { is_active: !doc.is_active });
                                                                 fetchStaffAndDoctors();
                                                             }}
-                                                            className="text-xs font-bold text-blue-600 hover:underline"
+                                                            className={`ui-btn ui-btn-sm min-h-[36px] ${
+                                                                doc.is_active
+                                                                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                                                                    : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                                            }`}
                                                         >
                                                             {doc.is_active ? "Deactivate" : "Activate"}
                                                         </button>
@@ -1122,58 +1122,58 @@ export default function HospitalSettingsModule({
 
                             {/* 2. Staff Accounts Table */}
                             {staffSubTab === "staff" && (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400 border-b border-slate-100">
-                                            <tr>
-                                                <th className="py-3 px-4">Staff Member</th>
-                                                <th className="py-3 px-4">Email & Phone</th>
-                                                <th className="py-3 px-4">Assigned Role</th>
-                                                <th className="py-3 px-4 text-center">Status</th>
-                                                <th className="py-3 px-4 text-right">Actions</th>
+                                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                    <table className="w-full min-w-[600px] text-left">
+                                        <thead>
+                                            <tr className="border-b border-slate-100 bg-slate-50/80">
+                                                <th className="ui-th">Staff member</th>
+                                                <th className="ui-th">Email & phone</th>
+                                                <th className="ui-th">Assigned role</th>
+                                                <th className="ui-th text-center">Status</th>
+                                                <th className="ui-th text-right">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100 font-medium">
+                                        <tbody className="divide-y divide-slate-100">
                                             {staffList.map((st: any) => (
-                                                <tr key={st._id} className="hover:bg-slate-50">
-                                                    <td className="py-3.5 px-4 font-bold text-slate-900">
-                                                        <div>{st.name}</div>
+                                                <tr key={st._id} className="transition-colors hover:bg-slate-50/60">
+                                                    <td className="ui-td">
+                                                        <div className="font-medium text-slate-900">{st.name}</div>
                                                         {st.isOwner && (
-                                                            <span className="text-[10px] font-black text-blue-600 uppercase">Primary Owner</span>
+                                                            <span className="ui-badge mt-1 border-blue-200 bg-blue-50 text-blue-700">Primary owner</span>
                                                         )}
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-slate-600">
-                                                        <div>{st.email}</div>
-                                                        <div className="text-[10px] text-slate-400">{st.phone || "No phone"}</div>
+                                                    <td className="ui-td">
+                                                        <div className="text-slate-700">{st.email}</div>
+                                                        <div className="mt-0.5 text-xs text-slate-500">{st.phone || "No phone"}</div>
                                                     </td>
-                                                    <td className="py-3.5 px-4">
-                                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 text-slate-700">
+                                                    <td className="ui-td">
+                                                        <span className="ui-badge border-slate-200 bg-slate-50 capitalize text-slate-700">
                                                             {st.role}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-center">
-                                                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                                            st.isActive ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                                                    <td className="ui-td text-center">
+                                                        <span className={`ui-badge ${
+                                                            st.isActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700"
                                                         }`}>
                                                             {st.isActive ? "Active" : "Disabled"}
                                                         </span>
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-right space-x-2">
+                                                    <td className="ui-td text-right">
                                                         {!st.isOwner && (
-                                                            <>
+                                                            <div className="flex items-center justify-end gap-1.5">
                                                                 <button
                                                                     onClick={() => handleToggleStaffStatus(st._id, st.isActive)}
-                                                                    className="text-xs font-bold text-slate-600 hover:text-slate-900"
+                                                                    className="ui-btn-soft ui-btn-sm min-h-[36px]"
                                                                 >
                                                                     {st.isActive ? "Disable" : "Enable"}
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDeleteStaff(st._id, st.name)}
-                                                                    className="text-xs font-bold text-rose-600 hover:underline"
+                                                                    className="ui-btn ui-btn-sm min-h-[36px] text-rose-600 hover:bg-rose-50"
                                                                 >
                                                                     Remove
                                                                 </button>
-                                                            </>
+                                                            </div>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -1186,24 +1186,24 @@ export default function HospitalSettingsModule({
                             {/* 3. Role Permissions Matrix */}
                             {staffSubTab === "rbac" && (
                                 <div className="space-y-4">
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs text-slate-600">
-                                        <p className="font-bold text-slate-900 mb-1">Role-Based Access Control (RBAC) Architecture</p>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+                                        <p className="mb-1 font-semibold text-slate-900">Role-based access control (RBAC) architecture</p>
                                         <p>Each staff login is strictly enforced server-side. Users cannot access modules beyond their granted role.</p>
                                     </div>
 
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs border border-slate-200 rounded-2xl overflow-hidden">
-                                            <thead className="bg-slate-900 text-white text-[10px] font-black uppercase">
-                                                <tr>
-                                                    <th className="py-3 px-4">Feature / Area</th>
-                                                    <th className="py-3 px-4 text-center">Owner</th>
-                                                    <th className="py-3 px-4 text-center">Administrator</th>
-                                                    <th className="py-3 px-4 text-center">Receptionist</th>
-                                                    <th className="py-3 px-4 text-center">Doctor</th>
-                                                    <th className="py-3 px-4 text-center">Accounts</th>
+                                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                                        <table className="w-full min-w-[600px] text-left">
+                                            <thead>
+                                                <tr className="border-b border-slate-100 bg-slate-50/80">
+                                                    <th className="ui-th">Feature / area</th>
+                                                    <th className="ui-th text-center">Owner</th>
+                                                    <th className="ui-th text-center">Administrator</th>
+                                                    <th className="ui-th text-center">Receptionist</th>
+                                                    <th className="ui-th text-center">Doctor</th>
+                                                    <th className="ui-th text-center">Accounts</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-200 font-medium">
+                                            <tbody className="divide-y divide-slate-100">
                                                 {[
                                                     { area: "Full Facility Settings & Bank Details", roles: [true, false, false, false, false] },
                                                     { area: "Doctor & Staff Account Management", roles: [true, true, false, false, false] },
@@ -1214,14 +1214,16 @@ export default function HospitalSettingsModule({
                                                     { area: "Financial Reports & Settlement Approval", roles: [true, true, false, false, true] },
                                                     { area: "Support Tickets & Closure Requests", roles: [true, true, false, false, false] }
                                                 ].map((row, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50">
-                                                        <td className="py-3 px-4 font-bold text-slate-900">{row.area}</td>
+                                                    <tr key={i} className="transition-colors hover:bg-slate-50/60">
+                                                        <td className="ui-td align-middle font-medium text-slate-900">{row.area}</td>
                                                         {row.roles.map((granted, j) => (
-                                                            <td key={j} className="py-3 px-4 text-center">
+                                                            <td key={j} className="ui-td text-center align-middle">
                                                                 {granted ? (
-                                                                    <Check className="w-4 h-4 text-emerald-600 mx-auto" />
+                                                                    <span className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                                                                        <Check className="h-3.5 w-3.5" />
+                                                                    </span>
                                                                 ) : (
-                                                                    <X className="w-4 h-4 text-slate-300 mx-auto" />
+                                                                    <X className="mx-auto h-4 w-4 text-slate-300" />
                                                                 )}
                                                             </td>
                                                         ))}
@@ -1232,126 +1234,134 @@ export default function HospitalSettingsModule({
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION C: APPOINTMENT SETTINGS */}
                     {/* ========================================================================= */}
                     {activeSection === "appointments" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900">Appointment & Slot Preferences</h3>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        Configure appointment durations, buffer times, advance booking windows, and cancellation rules.
-                                    </p>
-                                </div>
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
+                            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                                <SectionHeading
+                                    icon={<CalendarClock className="h-5 w-5" />}
+                                    title="Appointment & slot preferences"
+                                    description="Configure appointment durations, buffer times, advance booking windows, and cancellation rules."
+                                />
                                 <button
                                     type="button"
                                     onClick={handleSaveAppointmentSettings}
                                     disabled={saving}
-                                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                                    className="ui-btn-primary w-full sm:w-auto sm:shrink-0"
                                 >
-                                    {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                    <span>Save Appointment Settings</span>
+                                    {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                    <span>Save appointment settings</span>
                                 </button>
                             </div>
 
                             {/* Booking Channels */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-slate-900">Online Booking via Pillora</h4>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">Accept appointments from Pillora.in</p>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={Boolean(apptForm.isOnlineBookingEnabled)}
-                                        onChange={(e) => setApptForm({ ...apptForm, isOnlineBookingEnabled: e.target.checked })}
-                                        className="w-5 h-5 text-blue-600 rounded"
-                                    />
-                                </div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-slate-300">
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-semibold text-slate-900">Online booking via Pillora</span>
+                                        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">Accept appointments from Pillora.in</span>
+                                    </span>
+                                    <span className="relative inline-flex shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(apptForm.isOnlineBookingEnabled)}
+                                            onChange={(e) => setApptForm({ ...apptForm, isOnlineBookingEnabled: e.target.checked })}
+                                            className="peer sr-only"
+                                        />
+                                        <SwitchVisual />
+                                    </span>
+                                </label>
 
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-slate-900">Offline Walk-in Booking</h4>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">Allow receptionist counter bookings</p>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={Boolean(apptForm.isOfflineBookingEnabled)}
-                                        onChange={(e) => setApptForm({ ...apptForm, isOfflineBookingEnabled: e.target.checked })}
-                                        className="w-5 h-5 text-blue-600 rounded"
-                                    />
-                                </div>
+                                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-slate-300">
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-semibold text-slate-900">Offline walk-in booking</span>
+                                        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">Allow receptionist counter bookings</span>
+                                    </span>
+                                    <span className="relative inline-flex shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(apptForm.isOfflineBookingEnabled)}
+                                            onChange={(e) => setApptForm({ ...apptForm, isOfflineBookingEnabled: e.target.checked })}
+                                            className="peer sr-only"
+                                        />
+                                        <SwitchVisual />
+                                    </span>
+                                </label>
 
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                                    <div>
-                                        <h4 className="text-xs font-black text-slate-900">Same-Day Appointments</h4>
-                                        <p className="text-[10px] text-slate-500 mt-0.5">Allow patients to book on current date</p>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={Boolean(apptForm.allowSameDayBooking)}
-                                        onChange={(e) => setApptForm({ ...apptForm, allowSameDayBooking: e.target.checked })}
-                                        className="w-5 h-5 text-blue-600 rounded"
-                                    />
-                                </div>
+                                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-slate-300">
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-semibold text-slate-900">Same-day appointments</span>
+                                        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">Allow patients to book on current date</span>
+                                    </span>
+                                    <span className="relative inline-flex shrink-0">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(apptForm.allowSameDayBooking)}
+                                            onChange={(e) => setApptForm({ ...apptForm, allowSameDayBooking: e.target.checked })}
+                                            className="peer sr-only"
+                                        />
+                                        <SwitchVisual />
+                                    </span>
+                                </label>
                             </div>
 
                             {/* Durations & Buffer Times */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                 <div>
-                                    <label className="block text-xs font-black text-slate-900 mb-2">
-                                        Default Appointment Duration (Minutes)
+                                    <label className="ui-label">
+                                        Default appointment duration (minutes)
                                     </label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="ui-segmented grid w-full grid-cols-4 gap-1">
                                         {[10, 15, 20, 30].map(dur => (
                                             <button
                                                 key={dur}
                                                 type="button"
                                                 onClick={() => setApptForm({ ...apptForm, defaultSlotDuration: dur })}
-                                                className={`py-3 px-2 rounded-xl text-xs font-black transition-all border ${
+                                                className={`ui-segment min-h-[40px] px-2 ${
                                                     apptForm.defaultSlotDuration === dur
-                                                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/20"
-                                                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                                                        ? "ui-segment-active"
+                                                        : ""
                                                 }`}
                                             >
-                                                {dur} Mins
+                                                {dur} mins
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-black text-slate-900 mb-2">
-                                        Buffer Time Between Appointments
+                                    <label className="ui-label">
+                                        Buffer time between appointments
                                     </label>
-                                    <div className="grid grid-cols-4 gap-2">
+                                    <div className="ui-segmented grid w-full grid-cols-4 gap-1">
                                         {[0, 5, 10, 15].map(buf => (
                                             <button
                                                 key={buf}
                                                 type="button"
                                                 onClick={() => setApptForm({ ...apptForm, bufferTimeBetweenSlots: buf })}
-                                                className={`py-3 px-2 rounded-xl text-xs font-black transition-all border ${
+                                                className={`ui-segment min-h-[40px] px-2 ${
                                                     apptForm.bufferTimeBetweenSlots === buf
-                                                        ? "bg-slate-900 text-white border-slate-900 shadow-md"
-                                                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                                                        ? "ui-segment-active"
+                                                        : ""
                                                 }`}
                                             >
-                                                {buf === 0 ? "None" : `${buf} Mins`}
+                                                {buf === 0 ? "None" : `${buf} mins`}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Booking Notice & Windows */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {/* Booking Notice & Windows (the window select gets extra room for its long option text) */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_minmax(0,1fr)]">
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                        Max Patients Per Slot
+                                    <label className="ui-label">
+                                        Max patients per slot
                                     </label>
                                     <input
                                         type="number"
@@ -1359,19 +1369,19 @@ export default function HospitalSettingsModule({
                                         max={10}
                                         value={apptForm.maxAppointmentsPerSlot || 1}
                                         onChange={(e) => setApptForm({ ...apptForm, maxAppointmentsPerSlot: Number(e.target.value) })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                                        className="ui-input"
                                     />
-                                    <span className="text-[10px] text-slate-400 mt-1 block">Usually 1 to avoid overlapping</span>
+                                    <span className="ui-hint block">Usually 1 to avoid overlapping</span>
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                        Advance Booking Window
+                                    <label className="ui-label">
+                                        Advance booking window
                                     </label>
                                     <select
                                         value={apptForm.advanceBookingWindowDays || 30}
                                         onChange={(e) => setApptForm({ ...apptForm, advanceBookingWindowDays: Number(e.target.value) })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                                        className="ui-input"
                                     >
                                         <option value={7}>Up to 7 Days Ahead</option>
                                         <option value={14}>Up to 14 Days Ahead</option>
@@ -1382,13 +1392,13 @@ export default function HospitalSettingsModule({
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
-                                        Minimum Notice Required
+                                    <label className="ui-label">
+                                        Minimum notice required
                                     </label>
                                     <select
                                         value={apptForm.minBookingNoticeHours ?? 1}
                                         onChange={(e) => setApptForm({ ...apptForm, minBookingNoticeHours: Number(e.target.value) })}
-                                        className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
+                                        className="ui-input"
                                     >
                                         <option value={0}>Immediate (0 Hours)</option>
                                         <option value={1}>At least 1 Hour prior</option>
@@ -1400,16 +1410,16 @@ export default function HospitalSettingsModule({
                             </div>
 
                             {/* Policies: Cancellation & Rescheduling */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                                    <label className="block text-xs font-black text-slate-900 mb-1">
-                                        Patient Cancellation Window
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                                    <label className="block text-sm font-semibold text-slate-900">
+                                        Patient cancellation window
                                     </label>
-                                    <p className="text-[11px] text-slate-500 mb-2">How many hours before appointment can patient cancel?</p>
+                                    <p className="mb-3 mt-0.5 text-xs leading-relaxed text-slate-500">How many hours before appointment can patient cancel?</p>
                                     <select
                                         value={apptForm.cancellationPolicyHours ?? 2}
                                         onChange={(e) => setApptForm({ ...apptForm, cancellationPolicyHours: Number(e.target.value) })}
-                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+                                        className="ui-input"
                                     >
                                         <option value={1}>Up to 1 hour before</option>
                                         <option value={2}>Up to 2 hours before</option>
@@ -1419,15 +1429,15 @@ export default function HospitalSettingsModule({
                                     </select>
                                 </div>
 
-                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
-                                    <label className="block text-xs font-black text-slate-900 mb-1">
-                                        Patient Rescheduling Window
+                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                                    <label className="block text-sm font-semibold text-slate-900">
+                                        Patient rescheduling window
                                     </label>
-                                    <p className="text-[11px] text-slate-500 mb-2">How many hours before appointment can patient reschedule?</p>
+                                    <p className="mb-3 mt-0.5 text-xs leading-relaxed text-slate-500">How many hours before appointment can patient reschedule?</p>
                                     <select
                                         value={apptForm.reschedulePolicyHours ?? 2}
                                         onChange={(e) => setApptForm({ ...apptForm, reschedulePolicyHours: Number(e.target.value) })}
-                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+                                        className="ui-input"
                                     >
                                         <option value={1}>Up to 1 hour before</option>
                                         <option value={2}>Up to 2 hours before</option>
@@ -1440,8 +1450,8 @@ export default function HospitalSettingsModule({
 
                             {/* Weekly Holidays */}
                             <div>
-                                <label className="block text-xs font-black text-slate-900 mb-2">
-                                    Standard Weekly Closed Days (Facility Holidays)
+                                <label className="ui-label">
+                                    Standard weekly closed days (facility holidays)
                                 </label>
                                 <div className="flex flex-wrap gap-2">
                                     {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => {
@@ -1455,10 +1465,11 @@ export default function HospitalSettingsModule({
                                                     const updated = isClosed ? cur.filter((d: string) => d !== day) : [...cur, day];
                                                     setApptForm({ ...apptForm, weeklyHolidays: updated });
                                                 }}
-                                                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                                                aria-pressed={isClosed}
+                                                className={`inline-flex min-h-[40px] items-center rounded-xl border px-3.5 text-sm font-medium transition-colors ${
                                                     isClosed
-                                                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                                                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                                                        ? "border-rose-200 bg-rose-50 text-rose-700"
+                                                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                                                 }`}
                                             >
                                                 {day} {isClosed && "(Closed)"}
@@ -1467,74 +1478,79 @@ export default function HospitalSettingsModule({
                                     })}
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION D: PAYMENT & BANK SETTINGS */}
                     {/* ========================================================================= */}
                     {activeSection === "payments" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900">Payment & Bank Account Settings</h3>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        Configure bank accounts for automatic payouts and review transaction fee architecture.
-                                    </p>
-                                </div>
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
+                            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                                <SectionHeading
+                                    icon={<Landmark className="h-5 w-5" />}
+                                    title="Payment & bank account settings"
+                                    description="Configure bank accounts for automatic payouts and review transaction fee architecture."
+                                />
                                 <button
                                     type="button"
                                     onClick={() => setShowBankModal(true)}
-                                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black shadow-md flex items-center gap-1.5"
+                                    className="ui-btn-dark w-full sm:w-auto sm:shrink-0"
                                 >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                    <span>Update Bank Account</span>
+                                    <Edit2 className="h-4 w-4" />
+                                    <span>Update bank account</span>
                                 </button>
                             </div>
 
                             {/* Masked Bank Account Card */}
-                            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-6 sm:p-8 rounded-3xl shadow-xl space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Landmark className="w-5 h-5 text-blue-400" />
-                                        <span className="text-xs font-black uppercase tracking-wider text-slate-300">
-                                            Designated Settlement Bank Account
+                            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 ring-1 ring-slate-200">
+                                            <Landmark className="h-4 w-4" />
+                                        </span>
+                                        <span className="text-sm font-semibold text-slate-900">
+                                            Designated settlement bank account
                                         </span>
                                     </div>
-                                    <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-400/30">
+                                    <span className={`ui-badge ${
+                                        settingsData?.hospital?.bankDetails?.verificationStatus === "Verified"
+                                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                            : "border-amber-200 bg-amber-50 text-amber-700"
+                                    }`}>
                                         {settingsData?.hospital?.bankDetails?.verificationStatus || "Pending Verification"}
                                     </span>
                                 </div>
 
-                                <div className="pt-2">
-                                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Account Number</p>
-                                    <p className="text-2xl sm:text-3xl font-mono font-black tracking-widest text-white mt-1">
+                                <div className="mt-4">
+                                    <p className="text-xs font-medium text-slate-500">Account number</p>
+                                    <p className="mt-1 break-all font-mono text-xl font-semibold tracking-wider text-slate-900 sm:text-2xl">
                                         {settingsData?.hospital?.bankDetails?.accountNumberMasked || "•••• •••• ••••"}
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-white/10 text-xs">
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Account Holder</span>
-                                        <span className="font-bold text-white mt-0.5 block truncate">
+                                <div className="mt-4 grid grid-cols-2 gap-4 border-t border-slate-200 pt-4 sm:grid-cols-4">
+                                    <div className="min-w-0">
+                                        <span className="block text-xs font-medium text-slate-500">Account holder</span>
+                                        <span className="mt-0.5 block truncate text-sm font-medium text-slate-900">
                                             {settingsData?.hospital?.bankDetails?.accountHolderName || "Not Configured"}
                                         </span>
                                     </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Bank Name</span>
-                                        <span className="font-bold text-white mt-0.5 block truncate">
+                                    <div className="min-w-0">
+                                        <span className="block text-xs font-medium text-slate-500">Bank name</span>
+                                        <span className="mt-0.5 block truncate text-sm font-medium text-slate-900">
                                             {settingsData?.hospital?.bankDetails?.bankName || "Not Configured"}
                                         </span>
                                     </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] uppercase font-bold">IFSC Code</span>
-                                        <span className="font-mono font-bold text-white mt-0.5 block">
+                                    <div className="min-w-0">
+                                        <span className="block text-xs font-medium text-slate-500">IFSC code</span>
+                                        <span className="mt-0.5 block truncate font-mono text-sm font-medium text-slate-900">
                                             {settingsData?.hospital?.bankDetails?.ifscCode || "Not Configured"}
                                         </span>
                                     </div>
-                                    <div>
-                                        <span className="text-slate-400 block text-[10px] uppercase font-bold">UPI ID (Optional)</span>
-                                        <span className="font-mono font-bold text-white mt-0.5 block truncate">
+                                    <div className="min-w-0">
+                                        <span className="block text-xs font-medium text-slate-500">UPI ID (optional)</span>
+                                        <span className="mt-0.5 block truncate font-mono text-sm font-medium text-slate-900">
                                             {settingsData?.hospital?.bankDetails?.upiId || "N/A"}
                                         </span>
                                     </div>
@@ -1543,78 +1559,80 @@ export default function HospitalSettingsModule({
 
                             {/* Pending Bank Review Alert */}
                             {settingsData?.bankDetailsPendingApproval?.status === "pending" && (
-                                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 text-xs text-amber-900">
-                                    <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                                    <div>
-                                        <span className="font-bold block">Bank Update Under Review:</span>
+                                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
+                                        <Clock className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0 text-sm leading-relaxed text-amber-800">
+                                        <span className="block font-semibold text-amber-900">Bank update under review:</span>
                                         <span>
                                             You submitted an update for bank account ending in{" "}
-                                            <strong>{settingsData.bankDetailsPendingApproval.accountNumber?.slice(-4)}</strong>. Pillora Admin is verifying this account for settlement compliance.
+                                            <strong className="font-semibold text-amber-900">{settingsData.bankDetailsPendingApproval.accountNumber?.slice(-4)}</strong>. Pillora Admin is verifying this account for settlement compliance.
                                         </span>
                                     </div>
                                 </div>
                             )}
 
                             {/* Platform Charges Explainer (2.36%) */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="p-5 rounded-2xl bg-blue-50/50 border border-blue-100">
-                                    <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase mb-1">
-                                        <CreditCard className="w-4 h-4" />
-                                        <span>Pillora Zero Commission Policy</span>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 sm:p-5">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-blue-800">
+                                        <CreditCard className="h-4 w-4 shrink-0" />
+                                        <span>Pillora zero commission policy</span>
                                     </div>
-                                    <p className="text-xs text-slate-600 leading-relaxed mt-1">
-                                        Pillora operates on a transparent model. <strong>100% of doctor consultation fees belong to your hospital.</strong> We do not take commissions on consultations.
+                                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                        Pillora operates on a transparent model. <strong className="font-semibold text-slate-800">100% of doctor consultation fees belong to your hospital.</strong> We do not take commissions on consultations.
                                     </p>
                                 </div>
 
-                                <div className="p-5 rounded-2xl bg-rose-50/50 border border-rose-100">
-                                    <div className="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase mb-1">
-                                        <Landmark className="w-4 h-4" />
-                                        <span>Gateway Deduction (2.36%)</span>
+                                <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-4 sm:p-5">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-rose-700">
+                                        <Landmark className="h-4 w-4 shrink-0" />
+                                        <span>Gateway deduction (2.36%)</span>
                                     </div>
-                                    <p className="text-xs text-slate-600 leading-relaxed mt-1">
-                                        Online advance payments incur <strong>2.00% Razorpay processing fee + 18% GST (2.36% total)</strong>. This is deducted directly by the banking switch before payout.
+                                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                                        Online advance payments incur <strong className="font-semibold text-slate-800">2.00% Razorpay processing fee + 18% GST (2.36% total)</strong>. This is deducted directly by the banking switch before payout.
                                     </p>
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION E: NOTIFICATION SETTINGS */}
                     {/* ========================================================================= */}
                     {activeSection === "notifications" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900">Notification Channel Preferences</h3>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        Configure individual delivery channels (Email, SMS, WhatsApp, and In-Dashboard) for every operational event.
-                                    </p>
-                                </div>
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
+                            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                                <SectionHeading
+                                    icon={<BellRing className="h-5 w-5" />}
+                                    title="Notification channel preferences"
+                                    description="Configure individual delivery channels (Email, SMS, WhatsApp, and In-Dashboard) for every operational event."
+                                />
                                 <button
                                     type="button"
                                     onClick={handleSaveNotificationPreferences}
                                     disabled={saving}
-                                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                                    className="ui-btn-primary w-full sm:w-auto sm:shrink-0"
                                 >
-                                    {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                    <span>Save Notification Rules</span>
+                                    {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                    <span>Save notification rules</span>
                                 </button>
                             </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left text-xs border border-slate-200 rounded-2xl overflow-hidden">
-                                    <thead className="bg-slate-900 text-white text-[10px] font-black uppercase">
-                                        <tr>
-                                            <th className="py-3 px-4">Notification Event</th>
-                                            <th className="py-3 px-4 text-center">Email</th>
-                                            <th className="py-3 px-4 text-center">SMS</th>
-                                            <th className="py-3 px-4 text-center">WhatsApp</th>
-                                            <th className="py-3 px-4 text-center">In-Dashboard</th>
+                            {/* Phones: one card per event with the four channels in a row. md and up: a regular table. */}
+                            <div className="overflow-hidden rounded-xl border border-slate-200">
+                                <table className="block w-full text-left md:table">
+                                    <thead className="hidden md:table-header-group">
+                                        <tr className="border-b border-slate-100 bg-slate-50/80">
+                                            <th className="ui-th">Notification event</th>
+                                            <th className="ui-th text-center">Email</th>
+                                            <th className="ui-th text-center">SMS</th>
+                                            <th className="ui-th text-center">WhatsApp</th>
+                                            <th className="ui-th text-center">In-Dashboard</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-200 font-medium">
+                                    <tbody className="block divide-y divide-slate-100 md:table-row-group">
                                         {[
                                             { key: "newAppointment", label: "New Appointment Booked", desc: "Instant alert when patient reserves a slot" },
                                             { key: "appointmentCancellation", label: "Appointment Cancellation", desc: "When a patient or doctor cancels" },
@@ -1627,36 +1645,42 @@ export default function HospitalSettingsModule({
                                         ].map(item => {
                                             const channels = notifForm[item.key] || { email: true, sms: true, whatsapp: true, inApp: true };
                                             return (
-                                                <tr key={item.key} className="hover:bg-slate-50">
-                                                    <td className="py-3.5 px-4">
-                                                        <div className="font-bold text-slate-900 flex items-center gap-2">
+                                                <tr key={item.key} className="grid grid-cols-4 gap-x-1.5 gap-y-3 p-4 transition-colors hover:bg-slate-50/60 md:table-row md:p-0">
+                                                    <td className="col-span-4 md:table-cell md:px-4 md:py-3.5 md:align-middle">
+                                                        <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
                                                             <span>{item.label}</span>
                                                             {item.mandatory && (
-                                                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-700">
+                                                                <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
                                                                     Required
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="text-[10px] text-slate-400">{item.desc}</div>
+                                                        <div className="mt-0.5 text-xs text-slate-500">{item.desc}</div>
                                                     </td>
                                                     {(["email", "sms", "whatsapp", "inApp"] as const).map(ch => (
-                                                        <td key={ch} className="py-3.5 px-4 text-center">
-                                                            <input
-                                                                type="checkbox"
-                                                                disabled={item.mandatory}
-                                                                checked={Boolean(channels[ch])}
-                                                                onChange={(e) => {
-                                                                    const updated = {
-                                                                        ...notifForm,
-                                                                        [item.key]: {
-                                                                            ...channels,
-                                                                            [ch]: e.target.checked
-                                                                        }
-                                                                    };
-                                                                    setNotifForm(updated);
-                                                                }}
-                                                                className="w-4 h-4 text-blue-600 rounded disabled:opacity-60 cursor-pointer"
-                                                            />
+                                                        <td key={ch} className="md:table-cell md:px-4 md:py-3.5 md:text-center md:align-middle">
+                                                            <label className="flex h-full min-h-[52px] cursor-pointer flex-col items-center justify-start gap-1 rounded-lg border border-slate-200 bg-white px-0.5 pb-1.5 pt-2.5 has-[:disabled]:cursor-not-allowed md:inline-flex md:h-10 md:min-h-0 md:w-10 md:justify-center md:border-0 md:bg-transparent md:p-0">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    disabled={item.mandatory}
+                                                                    checked={Boolean(channels[ch])}
+                                                                    onChange={(e) => {
+                                                                        const updated = {
+                                                                            ...notifForm,
+                                                                            [item.key]: {
+                                                                                ...channels,
+                                                                                [ch]: e.target.checked
+                                                                            }
+                                                                        };
+                                                                        setNotifForm(updated);
+                                                                    }}
+                                                                    aria-label={`${item.label}: ${CHANNEL_LABELS[ch]}`}
+                                                                    className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+                                                                />
+                                                                <span aria-hidden="true" className="text-center text-[11px] font-medium leading-tight text-slate-500 md:hidden">
+                                                                    {CHANNEL_LABELS[ch]}
+                                                                </span>
+                                                            </label>
                                                         </td>
                                                     ))}
                                                 </tr>
@@ -1665,32 +1689,33 @@ export default function HospitalSettingsModule({
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION F: SECURITY & LOGIN SETTINGS */}
                     {/* ========================================================================= */}
                     {activeSection === "security" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="border-b border-slate-100 pb-5">
-                                <h3 className="text-xl font-black text-slate-900">Security & Login Sessions</h3>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                    Manage password, authorized devices, and active login credentials.
-                                </p>
+                                <SectionHeading
+                                    icon={<ShieldCheck className="h-5 w-5" />}
+                                    title="Security & login sessions"
+                                    description="Manage password, authorized devices, and active login credentials."
+                                />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
                                 {/* Change Password Form */}
-                                <form onSubmit={handleChangePassword} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                                    <div className="flex items-center gap-2 text-slate-900 font-bold text-xs uppercase">
-                                        <Key className="w-4 h-4 text-blue-600" />
-                                        <span>Change Password</span>
+                                <form onSubmit={handleChangePassword} className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                        <Key className="h-4 w-4 text-blue-600" />
+                                        <span>Change password</span>
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                                            Current Password
+                                        <label className="ui-label">
+                                            Current password
                                         </label>
                                         <div className="relative">
                                             <input
@@ -1698,21 +1723,22 @@ export default function HospitalSettingsModule({
                                                 required
                                                 value={pwdForm.currentPassword}
                                                 onChange={(e) => setPwdForm({ ...pwdForm, currentPassword: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium pr-10"
+                                                className="ui-input pr-11"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowCurrentPwd(!showCurrentPwd)}
-                                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                                                aria-label="Toggle password visibility"
+                                                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                                             >
-                                                {showCurrentPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                {showCurrentPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                             </button>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                                            New Password (Min 8 Chars)
+                                        <label className="ui-label">
+                                            New password (min 8 chars)
                                         </label>
                                         <div className="relative">
                                             <input
@@ -1721,82 +1747,83 @@ export default function HospitalSettingsModule({
                                                 minLength={8}
                                                 value={pwdForm.newPassword}
                                                 onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
-                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium pr-10"
+                                                className="ui-input pr-11"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => setShowNewPwd(!showNewPwd)}
-                                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                                                aria-label="Toggle password visibility"
+                                                className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
                                             >
-                                                {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                                {showNewPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                             </button>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                                            Confirm New Password
+                                        <label className="ui-label">
+                                            Confirm new password
                                         </label>
                                         <input
                                             type="password"
                                             required
                                             value={pwdForm.confirmPassword}
                                             onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                                            className="ui-input"
                                         />
                                     </div>
 
                                     <button
                                         type="submit"
                                         disabled={pwdUpdating}
-                                        className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                        className="ui-btn-primary w-full"
                                     >
-                                        {pwdUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                        <span>Update Password</span>
+                                        {pwdUpdating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                        <span>Update password</span>
                                     </button>
                                 </form>
 
                                 {/* 2FA & Active Sessions */}
                                 <div className="space-y-4">
-                                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                                        <div>
-                                            <h4 className="text-xs font-black text-slate-900">Two-Factor Authentication (2FA)</h4>
-                                            <p className="text-[11px] text-slate-500 mt-0.5">Require additional security code upon login</p>
+                                    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                        <div className="min-w-0">
+                                            <h4 className="text-sm font-semibold text-slate-900">Two-factor authentication (2FA)</h4>
+                                            <p className="mt-0.5 text-xs leading-relaxed text-slate-500">Require additional security code upon login</p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={handleToggle2FA}
-                                            className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
-                                                securityData?.twoFactorAuthEnabled 
-                                                    ? "bg-emerald-600 text-white" 
-                                                    : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                                            className={`shrink-0 ${
+                                                securityData?.twoFactorAuthEnabled
+                                                    ? "ui-btn-success"
+                                                    : "ui-btn-secondary"
                                             }`}
                                         >
                                             {securityData?.twoFactorAuthEnabled ? "Enabled" : "Disabled"}
                                         </button>
                                     </div>
 
-                                    <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200">
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h4 className="text-xs font-black text-slate-900">Active Login Sessions</h4>
+                                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                            <h4 className="text-sm font-semibold text-slate-900">Active login sessions</h4>
                                             <button
                                                 type="button"
                                                 onClick={handleLogoutAllDevices}
-                                                className="text-[11px] font-bold text-rose-600 hover:underline flex items-center gap-1"
+                                                className="ui-btn ui-btn-sm min-h-[36px] bg-rose-50 text-rose-700 hover:bg-rose-100"
                                             >
-                                                <LogOut className="w-3 h-3" />
-                                                <span>Logout All Other Devices</span>
+                                                <LogOut className="h-3.5 w-3.5" />
+                                                <span>Logout all other devices</span>
                                             </button>
                                         </div>
 
                                         <div className="space-y-2">
                                             {(securityData?.activeSessions || []).slice(0, 3).map((sess: any, idx: number) => (
-                                                <div key={idx} className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs flex items-center justify-between">
-                                                    <div>
-                                                        <div className="font-bold text-slate-900">{sess.ipAddress}</div>
-                                                        <div className="text-[10px] text-slate-400">{sess.userAgent?.slice(0, 35)}...</div>
+                                                <div key={idx} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                                                    <div className="min-w-0">
+                                                        <div className="text-sm font-medium text-slate-900">{sess.ipAddress}</div>
+                                                        <div className="truncate text-xs text-slate-500">{sess.userAgent?.slice(0, 35)}...</div>
                                                     </div>
-                                                    <span className="text-[10px] font-bold text-slate-500">
+                                                    <span className="shrink-0 text-xs font-medium text-slate-500">
                                                         {new Date(sess.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                                     </span>
                                                 </div>
@@ -1805,112 +1832,118 @@ export default function HospitalSettingsModule({
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION G: REPORTS & DATA MANAGEMENT */}
                     {/* ========================================================================= */}
                     {activeSection === "reports" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                                <div>
-                                    <h3 className="text-xl font-black text-slate-900">Reports & Data Exports</h3>
-                                    <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                        One-click CSV downloads for appointments, financial payments, doctors, and settlement history.
-                                    </p>
-                                </div>
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
+                            <div className="space-y-4 border-b border-slate-100 pb-5">
+                                <SectionHeading
+                                    icon={<FileSpreadsheet className="h-5 w-5" />}
+                                    title="Reports & data exports"
+                                    description="One-click CSV downloads for appointments, financial payments, doctors, and settlement history."
+                                />
 
-                                <div className="flex items-center gap-2">
+                                <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex">
                                     <input
                                         type="date"
                                         value={exportDateRange.startDate}
                                         onChange={(e) => setExportDateRange({ ...exportDateRange, startDate: e.target.value })}
-                                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
+                                        aria-label="Start date"
+                                        className="ui-input min-w-0 sm:w-44"
                                     />
-                                    <span className="text-xs text-slate-400">to</span>
+                                    <span className="text-sm text-slate-500">to</span>
                                     <input
                                         type="date"
                                         value={exportDateRange.endDate}
                                         onChange={(e) => setExportDateRange({ ...exportDateRange, endDate: e.target.value })}
-                                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold"
+                                        aria-label="End date"
+                                        className="ui-input min-w-0 sm:w-44"
                                     />
                                 </div>
                             </div>
 
                             {/* Download Action Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
                                 {[
-                                    { type: "appointments" as const, title: "Appointments Report", desc: "Tokens, patient details, status, fees" },
-                                    { type: "payments" as const, title: "Payments Ledger", desc: "Advances, clinic collections & status" },
-                                    { type: "doctors" as const, title: "Doctor Directory", desc: "Specialties, fees, schedules & status" },
-                                    { type: "settlements" as const, title: "Settlement Payouts", desc: "Payout records, UTRs & 2.36% charges" }
+                                    { type: "appointments" as const, title: "Appointments report", desc: "Tokens, patient details, status, fees" },
+                                    { type: "payments" as const, title: "Payments ledger", desc: "Advances, clinic collections & status" },
+                                    { type: "doctors" as const, title: "Doctor directory", desc: "Specialties, fees, schedules & status" },
+                                    { type: "settlements" as const, title: "Settlement payouts", desc: "Payout records, UTRs & 2.36% charges" }
                                 ].map(rep => (
-                                    <div key={rep.type} className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between hover:border-blue-200 transition-all">
-                                        <div>
-                                            <FileSpreadsheet className="w-5 h-5 text-blue-600 mb-2" />
-                                            <h4 className="text-xs font-black text-slate-900">{rep.title}</h4>
-                                            <p className="text-[11px] text-slate-500 mt-1 leading-snug">{rep.desc}</p>
+                                    <div key={rep.type} className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 transition-colors hover:border-blue-200 sm:p-5">
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                                <FileSpreadsheet className="h-5 w-5" />
+                                            </span>
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-semibold text-slate-900">{rep.title}</h4>
+                                                <p className="mt-0.5 text-sm leading-snug text-slate-500">{rep.desc}</p>
+                                            </div>
                                         </div>
                                         <button
                                             type="button"
                                             disabled={exportingType === rep.type}
                                             onClick={() => handleDownloadReport(rep.type)}
-                                            className="mt-4 w-full py-2 bg-white hover:bg-slate-100 text-slate-800 rounded-xl text-xs font-bold border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-50"
+                                            className="ui-btn-secondary mt-4 w-full"
                                         >
-                                            {exportingType === rep.type ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                                            {exportingType === rep.type ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                                             <span>Export CSV</span>
                                         </button>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </section>
                     )}
 
                     {/* ========================================================================= */}
                     {/* SECTION H: SUPPORT & ACCOUNT MANAGEMENT */}
                     {/* ========================================================================= */}
                     {activeSection === "support" && (
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-xl shadow-blue-900/5 space-y-6">
+                        <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="border-b border-slate-100 pb-5">
-                                <h3 className="text-xl font-black text-slate-900">Support & Account Management</h3>
-                                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                    Raise support tickets, view platform agreement, and manage facility subscription.
-                                </p>
+                                <SectionHeading
+                                    icon={<LifeBuoy className="h-5 w-5" />}
+                                    title="Support & account management"
+                                    description="Raise support tickets, view platform agreement, and manage facility subscription."
+                                />
                             </div>
 
                             {/* Hotline & Contact strip */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-                                        <Mail className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-bold text-blue-600 uppercase">Support Email</div>
-                                        <div className="text-xs font-black text-slate-900">support@pillora.in</div>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                                        <Phone className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-bold text-emerald-600 uppercase">Partner Hotline</div>
-                                        <div className="text-xs font-black text-slate-900">+91 98765 43210</div>
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-4 md:flex-col md:items-start">
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                        <Mail className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <div className="text-xs font-medium text-slate-500">Support email</div>
+                                        <div className="break-all text-sm font-semibold text-slate-900">support@pillora.in</div>
                                     </div>
                                 </div>
 
-                                <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
-                                        <FileText className="w-5 h-5" />
+                                <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-4 md:flex-col md:items-start">
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                                        <Phone className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <div className="text-xs font-medium text-slate-500">Partner hotline</div>
+                                        <div className="text-sm font-semibold text-slate-900">+91 98765 43210</div>
                                     </div>
-                                    <div>
-                                        <div className="text-[10px] font-bold text-indigo-600 uppercase">Hospital Agreement</div>
+                                </div>
+
+                                <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 p-4 md:flex-col md:items-start">
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                                        <FileText className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <div className="text-xs font-medium text-slate-500">Hospital agreement</div>
                                         <button
                                             type="button"
                                             onClick={() => setShowAgreementModal(true)}
-                                            className="text-xs font-black text-indigo-700 hover:underline"
+                                            className="text-left text-sm font-semibold text-indigo-700 hover:underline"
                                         >
                                             View Terms & Privacy
                                         </button>
@@ -1919,16 +1952,16 @@ export default function HospitalSettingsModule({
                             </div>
 
                             {/* Raise Support Ticket Form */}
-                            <form onSubmit={handleCreateTicket} className="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                                <div className="flex items-center gap-2 text-slate-900 font-bold text-xs uppercase">
-                                    <LifeBuoy className="w-4 h-4 text-blue-600" />
-                                    <span>Raise a Support Ticket with Pillora</span>
+                            <form onSubmit={handleCreateTicket} className="space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                                    <LifeBuoy className="h-4 w-4 text-blue-600" />
+                                    <span>Raise a support ticket with Pillora</span>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                     <div className="sm:col-span-2">
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                                            Ticket Subject <span className="text-rose-500">*</span>
+                                        <label className="ui-label">
+                                            Ticket subject <span className="text-rose-500">*</span>
                                         </label>
                                         <input
                                             type="text"
@@ -1936,18 +1969,18 @@ export default function HospitalSettingsModule({
                                             placeholder="e.g. Query regarding settlement UTR reference"
                                             value={ticketForm.subject}
                                             onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                                            className="ui-input"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                                        <label className="ui-label">
                                             Category
                                         </label>
                                         <select
                                             value={ticketForm.category}
                                             onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
-                                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold"
+                                            className="ui-input"
                                         >
                                             <option value="Billing & Settlements">Billing & Settlements</option>
                                             <option value="Appointments & Slots">Appointments & Slots</option>
@@ -1959,8 +1992,8 @@ export default function HospitalSettingsModule({
                                 </div>
 
                                 <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                                        Issue Description <span className="text-rose-500">*</span>
+                                    <label className="ui-label">
+                                        Issue description <span className="text-rose-500">*</span>
                                     </label>
                                     <textarea
                                         rows={3}
@@ -1968,7 +2001,7 @@ export default function HospitalSettingsModule({
                                         placeholder="Please provide details about your issue..."
                                         value={ticketForm.message}
                                         onChange={(e) => setTicketForm({ ...ticketForm, message: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium"
+                                        className="ui-input h-24 resize-none"
                                     />
                                 </div>
 
@@ -1976,10 +2009,10 @@ export default function HospitalSettingsModule({
                                     <button
                                         type="submit"
                                         disabled={submittingTicket}
-                                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-600/20 flex items-center gap-2 transition-all disabled:opacity-50"
+                                        className="ui-btn-primary w-full sm:w-auto"
                                     >
-                                        {submittingTicket ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <LifeBuoy className="w-3.5 h-3.5" />}
-                                        <span>Submit Ticket</span>
+                                        {submittingTicket ? <RefreshCw className="h-4 w-4 animate-spin" /> : <LifeBuoy className="h-4 w-4" />}
+                                        <span>Submit ticket</span>
                                     </button>
                                 </div>
                             </form>
@@ -1987,18 +2020,18 @@ export default function HospitalSettingsModule({
                             {/* Ticket History */}
                             {tickets.length > 0 && (
                                 <div className="space-y-3">
-                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">Your Submitted Tickets</h4>
+                                    <h4 className="text-sm font-semibold text-slate-900">Your submitted tickets</h4>
                                     <div className="space-y-2">
                                         {tickets.map(t => (
-                                            <div key={t._id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-                                                <div>
-                                                    <div className="font-bold text-slate-900">{t.subject}</div>
-                                                    <div className="text-[10px] text-slate-400 mt-0.5">
+                                            <div key={t._id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-medium text-slate-900">{t.subject}</div>
+                                                    <div className="mt-0.5 text-xs text-slate-500">
                                                         Category: {t.category || t.type} • {new Date(t.createdAt).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}
                                                     </div>
                                                 </div>
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
-                                                    t.status === "Resolved" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                                <span className={`ui-badge shrink-0 ${
+                                                    t.status === "Resolved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"
                                                 }`}>
                                                     {t.status}
                                                 </span>
@@ -2009,293 +2042,284 @@ export default function HospitalSettingsModule({
                             )}
 
                             {/* Danger Zone: Account Deactivation */}
-                            <div className="pt-6 border-t border-slate-100">
-                                <div className="p-5 rounded-2xl bg-rose-50/40 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 text-rose-700 font-bold text-xs uppercase mb-1">
-                                            <AlertTriangle className="w-4 h-4" />
-                                            <span>Facility Account Closure & Deactivation</span>
+                            <div className="border-t border-slate-100 pt-6">
+                                <div className="flex flex-col gap-4 rounded-xl border border-rose-200 bg-rose-50/60 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                                    <div className="min-w-0">
+                                        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-rose-700">
+                                            <AlertTriangle className="h-4 w-4 shrink-0" />
+                                            <span>Facility account closure & deactivation</span>
                                         </div>
-                                        <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
+                                        <p className="max-w-xl text-sm leading-relaxed text-slate-600">
                                             Account deactivations are reviewed by Pillora Admin to ensure all past patient consultations and financial settlements are cleared per data retention guidelines.
                                         </p>
                                     </div>
 
                                     {settingsData?.deactivationRequest?.requested ? (
-                                        <span className="px-4 py-2 bg-amber-100 text-amber-800 rounded-xl text-xs font-bold border border-amber-200">
-                                            Request Pending Review
+                                        <span className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-800">
+                                            Request pending review
                                         </span>
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={() => setShowDeactivateModal(true)}
-                                            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shadow-md shadow-rose-600/20 transition-all shrink-0 active:scale-95"
+                                            className="ui-btn-danger w-full shrink-0 sm:w-auto"
                                         >
-                                            Request Deactivation
+                                            Request deactivation
                                         </button>
                                     )}
                                 </div>
                             </div>
-                        </div>
+                        </section>
                     )}
                 </div>
             </div>
 
             {/* Modal: Update Bank Account */}
-            {showBankModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <h3 className="text-lg font-black text-slate-900">Update Settlement Bank Account</h3>
-                            <button onClick={() => setShowBankModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSaveBankDetails} className="space-y-4 text-xs">
+            <AnimatePresence>
+                {showBankModal && (
+                    <SettingsModal
+                        title="Update settlement bank account"
+                        icon={<Landmark className="h-5 w-5" />}
+                        onClose={() => setShowBankModal(false)}
+                    >
+                        <form onSubmit={handleSaveBankDetails} className="space-y-4">
                             <div>
-                                <label className="block font-bold text-slate-700 uppercase mb-1">Account Holder Name *</label>
+                                <label className="ui-label">Account holder name <span className="text-rose-500">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     value={bankForm.accountHolderName}
                                     onChange={(e) => setBankForm({ ...bankForm, accountHolderName: e.target.value })}
-                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                    className="ui-input"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Bank Name *</label>
+                                    <label className="ui-label">Bank name <span className="text-rose-500">*</span></label>
                                     <input
                                         type="text"
                                         required
                                         value={bankForm.bankName}
                                         onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                        className="ui-input"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Branch Name</label>
+                                    <label className="ui-label">Branch name</label>
                                     <input
                                         type="text"
                                         value={bankForm.branchName}
                                         onChange={(e) => setBankForm({ ...bankForm, branchName: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                        className="ui-input"
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-700 uppercase mb-1">Bank Account Number *</label>
+                                <label className="ui-label">Bank account number <span className="text-rose-500">*</span></label>
                                 <input
                                     type="password"
                                     required
                                     value={bankForm.accountNumber}
                                     onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })}
-                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold"
+                                    className="ui-input font-mono"
                                 />
                             </div>
 
                             <div>
-                                <label className="block font-bold text-slate-700 uppercase mb-1">Confirm Account Number *</label>
+                                <label className="ui-label">Confirm account number <span className="text-rose-500">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     value={bankForm.confirmAccountNumber}
                                     onChange={(e) => setBankForm({ ...bankForm, confirmAccountNumber: e.target.value })}
-                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold"
+                                    className="ui-input font-mono"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">IFSC Code *</label>
+                                    <label className="ui-label">IFSC code <span className="text-rose-500">*</span></label>
                                     <input
                                         type="text"
                                         required
                                         value={bankForm.ifscCode}
                                         onChange={(e) => setBankForm({ ...bankForm, ifscCode: e.target.value.toUpperCase() })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold uppercase"
+                                        className="ui-input font-mono uppercase"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">UPI ID (Optional)</label>
+                                    <label className="ui-label">UPI ID (optional)</label>
                                     <input
                                         type="text"
                                         value={bankForm.upiId}
                                         onChange={(e) => setBankForm({ ...bankForm, upiId: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono"
+                                        className="ui-input font-mono"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-3">
+                            <ModalActions>
                                 <button
                                     type="button"
                                     onClick={() => setShowBankModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold"
+                                    className="ui-btn-secondary"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-md flex items-center gap-1.5"
+                                    className="ui-btn-primary"
                                 >
-                                    {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Submit for Verification</span>
+                                    {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
+                                    <span>Submit for verification</span>
                                 </button>
-                            </div>
+                            </ModalActions>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </SettingsModal>
+                )}
+            </AnimatePresence>
 
             {/* Modal: Add Doctor */}
-            {showAddDoctorModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <h3 className="text-lg font-black text-slate-900">Add New Doctor to Facility</h3>
-                            <button onClick={() => setShowAddDoctorModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleAddDoctorSubmit} className="space-y-4 text-xs">
+            <AnimatePresence>
+                {showAddDoctorModal && (
+                    <SettingsModal
+                        title="Add new doctor to facility"
+                        icon={<Stethoscope className="h-5 w-5" />}
+                        onClose={() => setShowAddDoctorModal(false)}
+                    >
+                        <form onSubmit={handleAddDoctorSubmit} className="space-y-4">
                             <div>
-                                <label className="block font-bold text-slate-700 uppercase mb-1">Doctor Name *</label>
+                                <label className="ui-label">Doctor name <span className="text-rose-500">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     placeholder="Dr. Rajesh Patel"
                                     value={newDoctor.name}
                                     onChange={(e) => setNewDoctor({ ...newDoctor, name: e.target.value })}
-                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                    className="ui-input"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Specialty *</label>
+                                    <label className="ui-label">Specialty <span className="text-rose-500">*</span></label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="Cardiology"
                                         value={newDoctor.specialty}
                                         onChange={(e) => setNewDoctor({ ...newDoctor, specialty: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                        className="ui-input"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Consultation Fee (₹) *</label>
+                                    <label className="ui-label">Consultation fee (₹) <span className="text-rose-500">*</span></label>
                                     <input
                                         type="number"
                                         required
                                         min={50}
                                         value={newDoctor.fee}
                                         onChange={(e) => setNewDoctor({ ...newDoctor, fee: Number(e.target.value) })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                        className="ui-input"
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Daily Start Time</label>
+                                    <label className="ui-label">Daily start time</label>
                                     <input
                                         type="time"
                                         value={newDoctor.startTime}
                                         onChange={(e) => setNewDoctor({ ...newDoctor, startTime: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                        className="ui-input"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Daily End Time</label>
+                                    <label className="ui-label">Daily end time</label>
                                     <input
                                         type="time"
                                         value={newDoctor.endTime}
                                         onChange={(e) => setNewDoctor({ ...newDoctor, endTime: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                        className="ui-input"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-3">
+                            <ModalActions>
                                 <button
                                     type="button"
                                     onClick={() => setShowAddDoctorModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold"
+                                    className="ui-btn-secondary"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black shadow-md flex items-center gap-1.5"
+                                    className="ui-btn-primary"
                                 >
-                                    {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Add Doctor Profile</span>
+                                    {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
+                                    <span>Add doctor profile</span>
                                 </button>
-                            </div>
+                            </ModalActions>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </SettingsModal>
+                )}
+            </AnimatePresence>
 
             {/* Modal: Add Staff */}
-            {showAddStaffModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <h3 className="text-lg font-black text-slate-900">Add Staff Account & Set Permissions</h3>
-                            <button onClick={() => setShowAddStaffModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleAddStaffSubmit} className="space-y-4 text-xs">
+            <AnimatePresence>
+                {showAddStaffModal && (
+                    <SettingsModal
+                        title="Add staff account & set permissions"
+                        icon={<Users className="h-5 w-5" />}
+                        onClose={() => setShowAddStaffModal(false)}
+                    >
+                        <form onSubmit={handleAddStaffSubmit} className="space-y-4">
                             <div>
-                                <label className="block font-bold text-slate-700 uppercase mb-1">Employee Full Name *</label>
+                                <label className="ui-label">Employee full name <span className="text-rose-500">*</span></label>
                                 <input
                                     type="text"
                                     required
                                     value={newStaff.name}
                                     onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
-                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                    className="ui-input"
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Email (Login ID) *</label>
+                                    <label className="ui-label">Email (login ID) <span className="text-rose-500">*</span></label>
                                     <input
                                         type="email"
                                         required
                                         value={newStaff.email}
                                         onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                        className="ui-input"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Phone Number</label>
+                                    <label className="ui-label">Phone number</label>
                                     <input
                                         type="text"
                                         value={newStaff.phone}
                                         onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                        className="ui-input"
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Assigned Role *</label>
+                                    <label className="ui-label">Assigned role <span className="text-rose-500">*</span></label>
                                     <select
                                         value={newStaff.role}
                                         onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold"
+                                        className="ui-input"
                                     >
                                         <option value="receptionist">Receptionist (Appointments & Check-in)</option>
                                         <option value="administrator">Administrator (Operations & Staff)</option>
@@ -2305,136 +2329,242 @@ export default function HospitalSettingsModule({
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block font-bold text-slate-700 uppercase mb-1">Login Password *</label>
+                                    <label className="ui-label">Login password <span className="text-rose-500">*</span></label>
                                     <input
                                         type="password"
                                         required
                                         minLength={6}
                                         value={newStaff.password}
                                         onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
-                                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                        className="ui-input"
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-3">
+                            <ModalActions>
                                 <button
                                     type="button"
                                     onClick={() => setShowAddStaffModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold"
+                                    className="ui-btn-secondary"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-black shadow-md flex items-center gap-1.5"
+                                    className="ui-btn-dark"
                                 >
-                                    {saving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Create Staff Account</span>
+                                    {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
+                                    <span>Create staff account</span>
                                 </button>
-                            </div>
+                            </ModalActions>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </SettingsModal>
+                )}
+            </AnimatePresence>
 
             {/* Modal: Deactivate Account */}
-            {showDeactivateModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div className="flex items-center gap-2 text-rose-600">
-                                <AlertTriangle className="w-5 h-5" />
-                                <h3 className="text-lg font-black text-slate-900">Request Account Deactivation</h3>
-                            </div>
-                            <button onClick={() => setShowDeactivateModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleDeactivationRequest} className="space-y-4 text-xs">
-                            <p className="text-slate-600 leading-relaxed">
+            <AnimatePresence>
+                {showDeactivateModal && (
+                    <SettingsModal
+                        title="Request account deactivation"
+                        icon={<AlertTriangle className="h-5 w-5" />}
+                        tone="rose"
+                        onClose={() => setShowDeactivateModal(false)}
+                    >
+                        <form onSubmit={handleDeactivationRequest} className="space-y-4">
+                            <p className="text-sm leading-relaxed text-slate-600">
                                 Submitting this request sends a formal closure notice to Pillora Admin. In accordance with healthcare data retention requirements, past patient records and confirmed financial settlements will be archived safely.
                             </p>
 
                             <div>
-                                <label className="block font-bold text-slate-700 uppercase mb-1">Reason for Deactivation *</label>
+                                <label className="ui-label">Reason for deactivation <span className="text-rose-500">*</span></label>
                                 <textarea
                                     rows={3}
                                     required
                                     placeholder="e.g. Facility restructuring or closure..."
                                     value={deactivateReason}
                                     onChange={(e) => setDeactivateReason(e.target.value)}
-                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                                    className="ui-input h-24 resize-none"
                                 />
                             </div>
 
-                            <label className="flex items-start gap-2 text-[11px] text-slate-600 font-medium cursor-pointer">
+                            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-600">
                                 <input
                                     type="checkbox"
                                     required
                                     checked={deactivateAgreed}
                                     onChange={(e) => setDeactivateAgreed(e.target.checked)}
-                                    className="w-4 h-4 text-rose-600 rounded mt-0.5 shrink-0"
+                                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 accent-rose-600"
                                 />
                                 <span>I understand that this request will be sent to Pillora Admin for review and settlement reconciliation.</span>
                             </label>
 
-                            <div className="flex justify-end gap-2 pt-3">
+                            <ModalActions>
                                 <button
                                     type="button"
                                     onClick={() => setShowDeactivateModal(false)}
-                                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold"
+                                    className="ui-btn-secondary"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submittingDeactivation || !deactivateAgreed}
-                                    className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-black shadow-md flex items-center gap-1.5 disabled:opacity-50"
+                                    className="ui-btn-danger"
                                 >
-                                    {submittingDeactivation && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>Submit Closure Request</span>
+                                    {submittingDeactivation && <RefreshCw className="h-4 w-4 animate-spin" />}
+                                    <span>Submit closure request</span>
                                 </button>
-                            </div>
+                            </ModalActions>
                         </form>
-                    </div>
-                </div>
-            )}
+                    </SettingsModal>
+                )}
+            </AnimatePresence>
 
             {/* Modal: View Agreement */}
-            {showAgreementModal && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <h3 className="text-lg font-black text-slate-900">Pillora Healthcare SaaS Partner Agreement</h3>
-                            <button onClick={() => setShowAgreementModal(false)} className="text-slate-400 hover:text-slate-600">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-                            <h4 className="font-bold text-slate-900">1. Zero Commission Business Model</h4>
-                            <p>Pillora does not take commissions from consultation fees charged by medical practitioners. Online advances belong entirely to the hospital minus 2.36% banking gateway fees.</p>
+            <AnimatePresence>
+                {showAgreementModal && (
+                    <SettingsModal
+                        title="Pillora Healthcare SaaS Partner Agreement"
+                        icon={<FileText className="h-5 w-5" />}
+                        maxWidth="sm:max-w-2xl"
+                        onClose={() => setShowAgreementModal(false)}
+                    >
+                        <div className="space-y-4 text-sm leading-relaxed text-slate-600">
+                            <div>
+                                <h4 className="font-semibold text-slate-900">1. Zero Commission Business Model</h4>
+                                <p className="mt-1">Pillora does not take commissions from consultation fees charged by medical practitioners. Online advances belong entirely to the hospital minus 2.36% banking gateway fees.</p>
+                            </div>
 
-                            <h4 className="font-bold text-slate-900">2. Patient Data & Clinical Privacy</h4>
-                            <p>Hospital staff are bound by HIPAA & Indian Digital Personal Data Protection Act compliance. Patient consultation records must remain strictly confidential.</p>
+                            <div>
+                                <h4 className="font-semibold text-slate-900">2. Patient Data & Clinical Privacy</h4>
+                                <p className="mt-1">Hospital staff are bound by HIPAA & Indian Digital Personal Data Protection Act compliance. Patient consultation records must remain strictly confidential.</p>
+                            </div>
 
-                            <h4 className="font-bold text-slate-900">3. Settlement Protocol</h4>
-                            <p>All online advances transferred via NEFT/IMPS/UPI require mutual receipt verification to ensure complete transparency between Pillora and your facility.</p>
+                            <div>
+                                <h4 className="font-semibold text-slate-900">3. Settlement Protocol</h4>
+                                <p className="mt-1">All online advances transferred via NEFT/IMPS/UPI require mutual receipt verification to ensure complete transparency between Pillora and your facility.</p>
+                            </div>
                         </div>
-                        <div className="flex justify-end pt-4 border-t border-slate-100">
+                        <ModalActions>
                             <button
                                 type="button"
                                 onClick={() => setShowAgreementModal(false)}
-                                className="px-5 py-2 bg-slate-900 text-white rounded-xl font-bold text-xs"
+                                className="ui-btn-dark"
                             >
                                 Close
                             </button>
-                        </div>
+                        </ModalActions>
+                    </SettingsModal>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Presentational helpers (same patterns as the hospital dashboard)            */
+/* -------------------------------------------------------------------------- */
+
+/** Profile fields stay disabled until "Edit profile" is pressed, so keep their values easy to read while disabled. */
+const PROFILE_INPUT = "ui-input disabled:cursor-default disabled:text-slate-700 disabled:opacity-100";
+
+/** Channel names shown under each checkbox on phones (the table header is hidden there). */
+const CHANNEL_LABELS = { email: "Email", sms: "SMS", whatsapp: "WhatsApp", inApp: "In-Dashboard" } as const;
+
+/** Icon chip + title + description used at the top of every settings section. */
+function SectionHeading({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+    return (
+        <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">{icon}</span>
+            <div className="min-w-0">
+                <h3 className="ui-title">{title}</h3>
+                <p className="ui-subtitle">{description}</p>
+            </div>
+        </div>
+    );
+}
+
+/** Track and knob drawn after a `peer sr-only` checkbox (both inside a `relative` wrapper) so it looks like a switch. */
+function SwitchVisual() {
+    return (
+        <>
+            <span
+                aria-hidden="true"
+                className="block h-6 w-11 rounded-full bg-slate-300 transition-colors peer-checked:bg-blue-600 peer-focus-visible:ring-4 peer-focus-visible:ring-blue-500/20"
+            />
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform peer-checked:translate-x-5"
+            />
+        </>
+    );
+}
+
+/** Dialog shell: bottom sheet on phones, centred card on larger screens (same look as the dashboard dialogs). */
+function SettingsModal({
+    title,
+    icon,
+    tone = "blue",
+    maxWidth = "sm:max-w-lg",
+    onClose,
+    children,
+}: {
+    title: string;
+    icon?: React.ReactNode;
+    tone?: "blue" | "rose";
+    maxWidth?: string;
+    onClose: () => void;
+    children: React.ReactNode;
+}) {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            // !mt-0: the module root is `space-y-6`, which would otherwise push this fixed backdrop 24px down.
+            className="ui-overlay !mt-0"
+        >
+            <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 24, scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                role="dialog"
+                aria-modal="true"
+                aria-label={title}
+                className={`ui-dialog ${maxWidth}`}
+            >
+                <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+                    <div className="flex min-w-0 items-center gap-3">
+                        {icon && (
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone === "rose" ? "bg-rose-50 text-rose-600" : "bg-blue-50 text-blue-600"}`}>
+                                {icon}
+                            </span>
+                        )}
+                        <h3 className="text-lg font-semibold leading-tight text-slate-900">{title}</h3>
                     </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="-mr-2 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                        aria-label="Close"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
                 </div>
-            )}
+                <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+            </motion.div>
+        </motion.div>
+    );
+}
+
+/** Keeps a dialog's buttons visible at the bottom while its body scrolls. */
+function ModalActions({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="sticky bottom-0 -mx-5 -mb-5 mt-2 flex flex-col-reverse gap-2 border-t border-slate-100 bg-white/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:flex-row sm:justify-end sm:px-6">
+            {children}
         </div>
     );
 }

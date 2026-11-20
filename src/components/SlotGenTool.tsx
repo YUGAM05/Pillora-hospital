@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import api from "@/lib/api";
-import { XCircle, Calendar, Clock, Activity, ShieldAlert, Phone, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Activity, ShieldAlert, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface SlotGenToolProps {
@@ -57,115 +57,116 @@ export default function SlotGenTool({ doctor, hospitalId, subscriptionStatus, on
     };
 
     return (
-        <form onSubmit={handleSubmit} className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto space-y-6 pb-6 custom-scrollbar pr-2">
+        <form onSubmit={handleSubmit} className="flex flex-col">
+            <div className="space-y-5 pb-5">
 
             {/* Subscription Blocked or Error Banner */}
             {(isSubscriptionBlocked || errorMessage) && (
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold space-y-2">
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-sm space-y-3">
                     <div className="flex items-start gap-2.5">
                         <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
                         <div className="space-y-1">
-                            <p className="font-black text-rose-900">Slot Generation Restricted</p>
-                            <p className="leading-relaxed font-semibold">
+                            <p className="font-semibold text-rose-900">Slot Generation Restricted</p>
+                            <p className="leading-relaxed">
                                 {errorMessage || restrictionMessage}
                             </p>
                         </div>
                     </div>
-                    <div className="pt-2 border-t border-rose-200/60 flex items-center justify-between">
-                        <span className="text-[10px] text-rose-600 font-bold uppercase tracking-wider">
+                    <div className="pt-3 border-t border-rose-200/70 flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-rose-700">
                             Status: {subscriptionStatus || 'Subscription Required'}
                         </span>
                         <a
                             href="tel:+919876543210"
-                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-rose-700 transition-all"
+                            className="ui-btn-danger ui-btn-sm"
                         >
-                            <Phone className="w-3 h-3" /> Contact Admin
+                            <Phone className="w-3.5 h-3.5" /> Contact Admin
                         </a>
                     </div>
                 </div>
             )}
 
-            <div className="bg-blue-50/50 p-4 rounded-2xl flex items-center gap-4 mb-2">
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-200">
-                    <Activity className="w-6 h-6" />
+            <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/70 p-3.5">
+                <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0">
+                    <Activity className="w-5 h-5" />
                 </div>
-                <div>
-                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none mb-1">Generating for</p>
-                    <p className="font-bold text-slate-900 leading-tight">{doctor.isSpecialtyGroup ? "" : "Dr. "}{doctor.name}</p>
+                <div className="min-w-0">
+                    <p className="text-xs font-medium text-blue-700">Generating for</p>
+                    <p className="font-semibold text-slate-900 leading-tight truncate">{doctor.isSpecialtyGroup ? "" : "Dr. "}{doctor.name}</p>
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Calendar className="w-3 h-3" /> Select Date
-                </label>
-                <input 
-                    required 
-                    type="date" 
-                    value={formData.date} 
+            <label className="block">
+                <span className="ui-label flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" /> Select date
+                </span>
+                <input
+                    required
+                    type="date"
+                    value={formData.date}
                     min={new Date().toISOString().split('T')[0]}
-                    onChange={e => setFormData({...formData, date: e.target.value})} 
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none transition-all" 
+                    onChange={e => setFormData({...formData, date: e.target.value})}
+                    className="ui-input"
                 />
+            </label>
+
+            <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                    <span className="ui-label flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" /> Start
+                    </span>
+                    <input
+                        required
+                        type="time"
+                        value={formData.startTime}
+                        onChange={e => setFormData({...formData, startTime: e.target.value})}
+                        className="ui-input"
+                    />
+                </label>
+                <label className="block">
+                    <span className="ui-label flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" /> End
+                    </span>
+                    <input
+                        required
+                        type="time"
+                        value={formData.endTime}
+                        onChange={e => setFormData({...formData, endTime: e.target.value})}
+                        className="ui-input"
+                    />
+                </label>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <Clock className="w-3 h-3" /> Start
-                    </label>
-                    <input 
-                        required 
-                        type="time" 
-                        value={formData.startTime} 
-                        onChange={e => setFormData({...formData, startTime: e.target.value})} 
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none transition-all" 
-                    />
-                </div>
-                <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <Clock className="w-3 h-3" /> End
-                    </label>
-                    <input 
-                        required 
-                        type="time" 
-                        value={formData.endTime} 
-                        onChange={e => setFormData({...formData, endTime: e.target.value})} 
-                        className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold focus:bg-white focus:border-blue-200 focus:ring-4 focus:ring-blue-50 outline-none transition-all" 
-                    />
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Consultation Duration</label>
-                <div className="grid grid-cols-3 gap-2">
+            <div>
+                <span className="ui-label">Consultation duration</span>
+                <div className="grid grid-cols-4 gap-2" role="group" aria-label="Consultation duration">
                     {[5, 10, 15, 20, 30, 45, 60].map((mins) => (
                         <button
                             key={mins}
                             type="button"
                             onClick={() => setFormData({...formData, duration: mins.toString()})}
-                            className={`py-3.5 sm:py-3 rounded-xl text-xs font-black transition-all border min-h-[44px] flex items-center justify-center ${
+                            aria-pressed={formData.duration === mins.toString()}
+                            className={`min-h-[44px] rounded-xl border text-sm font-semibold transition-colors flex items-center justify-center ${
                                 formData.duration === mins.toString()
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200'
-                                : 'bg-white text-slate-400 border-slate-100 hover:border-blue-200 hover:text-blue-600'
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-700'
                             }`}
                         >
-                            {mins} Min
+                            {mins} min
                         </button>
                     ))}
                 </div>
             </div>
             </div>
 
-            <div className="pt-4 mt-auto border-t border-slate-100 sticky bottom-0 bg-white z-10 shrink-0">
-                <button 
+            <div className="sticky bottom-0 z-10 bg-white pt-4 pb-5 border-t border-slate-100">
+                <button
                     type="submit"
-                    disabled={loading || isSubscriptionBlocked} 
-                    className={`w-full py-5 font-black rounded-[2rem] shadow-2xl transition-all flex items-center justify-center gap-3 ${
-                        isSubscriptionBlocked 
-                            ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
-                            : 'bg-slate-900 text-white shadow-slate-200 hover:-translate-y-1 active:scale-95 disabled:opacity-50'
+                    disabled={loading || isSubscriptionBlocked}
+                    className={`w-full min-h-[48px] ${
+                        isSubscriptionBlocked
+                            ? 'ui-btn bg-slate-200 text-slate-500 whitespace-normal'
+                            : 'ui-btn-dark'
                     }`}
                 >
                     {loading ? (

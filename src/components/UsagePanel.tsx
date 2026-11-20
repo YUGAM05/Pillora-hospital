@@ -68,7 +68,7 @@ function Meter({ used, total, warn }: { used: number; total: number; warn?: bool
     const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : used > 0 ? 100 : 0;
     const color = pct >= 100 ? "bg-red-500" : warn || pct >= 80 ? "bg-amber-500" : "bg-blue-600";
     return (
-        <div className="h-2.5 w-full rounded-full bg-gray-100 overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
             <div className={`h-full rounded-full ${color} transition-all`} style={{ width: `${pct}%` }} />
         </div>
     );
@@ -85,11 +85,16 @@ export function UsageWarningBanner({ onOpen }: { onOpen: () => void }) {
         aiOut ? "AI call minutes are used up; calls go unanswered by the AI" : usage.ai.lowWarning ? `Only ${fmt(usage.ai.availableMinutes)} AI call minutes left` : "",
     ].filter(Boolean);
     if (!items.length) return null;
+    const out = waOut || aiOut;
     return (
-        <div className={`mb-4 flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border p-4 ${waOut || aiOut ? "border-red-200 bg-red-50 text-red-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
-            <AlertTriangle className="w-5 h-5 shrink-0" />
-            <p className="text-sm font-semibold flex-1">{items.join(" · ")}</p>
-            <button onClick={onOpen} className="shrink-0 rounded-xl bg-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-gray-50">
+        <div className={`flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border p-4 ${out ? "border-red-200 bg-red-50 text-red-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+            <div className="flex flex-1 items-start sm:items-center gap-3 min-w-0">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${out ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-600"}`}>
+                    <AlertTriangle className="w-[18px] h-[18px]" />
+                </span>
+                <p className="text-sm font-medium leading-relaxed">{items.join(" · ")}</p>
+            </div>
+            <button onClick={onOpen} className="ui-btn-secondary w-full sm:w-auto shrink-0">
                 Buy more
             </button>
         </div>
@@ -141,8 +146,8 @@ export default function UsagePanel() {
         }
     };
 
-    if (error) return <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">{error}</div>;
-    if (!usage) return <div className="flex items-center gap-2 p-6 text-gray-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading usage…</div>;
+    if (error) return <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>;
+    if (!usage) return <div className="ui-card flex items-center gap-2 p-6 text-sm text-slate-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading usage…</div>;
 
     const wa = usage.whatsapp;
     const ai = usage.ai;
@@ -152,22 +157,25 @@ export default function UsagePanel() {
     const pendingPacks = usage.packs.filter((p) => p.status === "pending");
 
     return (
-        <section className="space-y-5" aria-labelledby="usage-heading">
+        <section className="space-y-4" aria-labelledby="usage-heading">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1">
-                <h2 id="usage-heading" className="text-xl font-black text-gray-900">Usage & add-ons</h2>
-                <p className="text-sm text-gray-500">{monthName(usage.month)} · resets on the 1st</p>
+                <h2 id="usage-heading" className="ui-title">Usage & add-ons</h2>
+                <p className="text-sm text-slate-500">{monthName(usage.month)} · resets on the 1st</p>
             </div>
 
-            {notice && <div className="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm font-semibold text-blue-800">{notice}</div>}
+            {notice && <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-medium text-blue-800" role="status">{notice}</div>}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
                 {/* Plan */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 text-sm font-bold text-gray-500"><Stethoscope className="w-4 h-4" /> Your plan</div>
-                    <p className="mt-2 text-2xl font-black text-gray-900">{usage.plan.label}</p>
-                    <p className="text-sm text-gray-500">₹{fmt(usage.plan.priceMonthly)} / month + GST</p>
+                <div className="ui-card p-5">
+                    <div className="flex items-center gap-2.5 text-[13px] font-medium text-slate-500">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600"><Stethoscope className="w-4 h-4" /></span>
+                        Your plan
+                    </div>
+                    <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">{usage.plan.label}</p>
+                    <p className="text-sm text-slate-500">₹{fmt(usage.plan.priceMonthly)} / month + GST</p>
                     <div className="mt-4">
-                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <div className="flex justify-between text-sm font-medium text-slate-700">
                             <span>Doctors</span>
                             <span>{usage.plan.doctorsUsed} / {usage.plan.maxDoctors ?? "unlimited"}</span>
                         </div>
@@ -176,40 +184,46 @@ export default function UsagePanel() {
                 </div>
 
                 {/* WhatsApp */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 text-sm font-bold text-gray-500"><MessageCircle className="w-4 h-4 text-green-600" /> WhatsApp messages</div>
-                    <p className="mt-2 text-2xl font-black text-gray-900">
-                        {fmt(wa.planUsed)} <span className="text-base font-bold text-gray-400">/ {fmt(wa.planLimit)}</span>
+                <div className="ui-card p-5">
+                    <div className="flex items-center gap-2.5 text-[13px] font-medium text-slate-500">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"><MessageCircle className="w-4 h-4" /></span>
+                        WhatsApp messages
+                    </div>
+                    <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
+                        {fmt(wa.planUsed)} <span className="text-base font-medium text-slate-400">/ {fmt(wa.planLimit)}</span>
                     </p>
                     <div className="mt-2"><Meter used={wa.planUsed} total={wa.planLimit} warn={wa.lowWarning} /></div>
-                    <ul className="mt-3 space-y-1 text-xs text-gray-600">
+                    <ul className="mt-3 space-y-1 text-xs leading-relaxed text-slate-600">
                         <li>Confirmations {fmt(wa.byKind.confirmation)} · Reminders {fmt(wa.byKind.reminder)} · Follow-ups {fmt(wa.byKind.followup)}</li>
-                        {wa.packRemaining > 0 && <li className="font-semibold text-gray-800">+ {fmt(wa.packRemaining)} from add-on packs</li>}
+                        {wa.packRemaining > 0 && <li className="font-semibold text-slate-800">+ {fmt(wa.packRemaining)} from add-on packs</li>}
                         {wa.graceUsed > 0 && <li className="text-amber-700">{fmt(wa.graceUsed)} confirmations sent beyond the plan (grace)</li>}
                         {wa.skipped > 0 && <li className="text-red-700">{fmt(wa.skipped)} reminders not sent (messages used up)</li>}
                         {delivered + failed > 0 && (
-                            <li>Last 30 days: <span className="text-green-700 font-semibold">{fmt(delivered)} delivered</span>{failed > 0 && <>, <span className="text-red-700 font-semibold">{fmt(failed)} failed</span></>}</li>
+                            <li>Last 30 days: <span className="text-emerald-700 font-semibold">{fmt(delivered)} delivered</span>{failed > 0 && <>, <span className="text-red-700 font-semibold">{fmt(failed)} failed</span></>}</li>
                         )}
                     </ul>
                 </div>
 
                 {/* AI minutes */}
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 text-sm font-bold text-gray-500"><PhoneCall className="w-4 h-4 text-violet-600" /> AI call minutes</div>
+                <div className="ui-card p-5">
+                    <div className="flex items-center gap-2.5 text-[13px] font-medium text-slate-500">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600"><PhoneCall className="w-4 h-4" /></span>
+                        AI call minutes
+                    </div>
                     {ai.planMinutes === 0 && ai.packRemainingMinutes === 0 ? (
                         <>
-                            <p className="mt-2 text-base font-bold text-gray-900">Not included in the {usage.plan.label} plan</p>
-                            <p className="mt-1 text-sm text-gray-500">Add the AI phone receptionist with a minutes pack below, or upgrade to the Hospital plan (500 min/month included).</p>
+                            <p className="mt-3 text-base font-semibold text-slate-900">Not included in the {usage.plan.label} plan</p>
+                            <p className="mt-1 text-sm leading-relaxed text-slate-500">Add the AI phone receptionist with a minutes pack below, or upgrade to the Hospital plan (500 min/month included).</p>
                         </>
                     ) : (
                         <>
-                            <p className="mt-2 text-2xl font-black text-gray-900">
-                                {fmt(ai.planUsedMinutes)} <span className="text-base font-bold text-gray-400">/ {fmt(ai.planMinutes)} min</span>
+                            <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900">
+                                {fmt(ai.planUsedMinutes)} <span className="text-base font-medium text-slate-400">/ {fmt(ai.planMinutes)} min</span>
                             </p>
                             {ai.planMinutes > 0 && <div className="mt-2"><Meter used={ai.planUsedMinutes} total={ai.planMinutes} warn={ai.lowWarning} /></div>}
-                            <ul className="mt-3 space-y-1 text-xs text-gray-600">
+                            <ul className="mt-3 space-y-1 text-xs leading-relaxed text-slate-600">
                                 <li>{fmt(ai.calls)} AI calls this month</li>
-                                {ai.packRemainingMinutes > 0 && <li className="font-semibold text-gray-800">+ {fmt(ai.packRemainingMinutes)} min from add-on packs</li>}
+                                {ai.packRemainingMinutes > 0 && <li className="font-semibold text-slate-800">+ {fmt(ai.packRemainingMinutes)} min from add-on packs</li>}
                                 {ai.overageMinutes > 0 && <li className="text-amber-700">{fmt(ai.overageMinutes)} min over the allowance</li>}
                             </ul>
                         </>
@@ -219,50 +233,52 @@ export default function UsagePanel() {
 
             {/* Packs owned */}
             {(activePacks.length > 0 || pendingPacks.length > 0) && (
-                <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                    <div className="flex items-center gap-2 text-sm font-bold text-gray-500"><Package className="w-4 h-4" /> Your add-on packs</div>
-                    <ul className="mt-3 divide-y divide-gray-50">
+                <div className="ui-card p-5">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-900"><Package className="w-4 h-4 text-slate-400" /> Your add-on packs</div>
+                    <ul className="mt-3 divide-y divide-slate-100">
                         {activePacks.map((p) => (
-                            <li key={p.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-2 text-sm">
-                                <span className="font-semibold text-gray-800">{p.label}</span>
-                                <span className="text-gray-600">
+                            <li key={p.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-2.5 text-sm">
+                                <span className="font-medium text-slate-800">{p.label}</span>
+                                <span className="text-slate-500">
                                     {fmt(p.remaining)} {p.kind === "whatsapp" ? "messages" : "min"} left · valid until {dateIN(p.expiresAt)}
                                 </span>
                             </li>
                         ))}
                         {pendingPacks.map((p) => (
-                            <li key={p.id} className="py-2 text-sm text-amber-700">{p.label}: payment being confirmed…</li>
+                            <li key={p.id} className="py-2.5 text-sm text-amber-700">{p.label}: payment being confirmed…</li>
                         ))}
                     </ul>
-                    <p className="mt-2 text-xs text-gray-500">Packs are used after your monthly plan allowance, oldest first, and carry over for 6 months.</p>
+                    <p className="mt-2 text-xs text-slate-500">Packs are used after your monthly plan allowance, oldest first, and carry over for 6 months.</p>
                 </div>
             )}
 
             {/* Buy more */}
-            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                <h3 className="text-base font-black text-gray-900">Buy more</h3>
-                <p className="text-sm text-gray-500">Prices include 18% GST. Added instantly after payment.</p>
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="ui-card p-5 sm:p-6">
+                <h3 className="ui-title">Buy more</h3>
+                <p className="ui-subtitle">Prices include 18% GST. Added instantly after payment.</p>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {usage.catalog.map((p) => (
-                        <div key={p.code} className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 p-3">
-                            <div className="min-w-0">
-                                <p className="flex items-center gap-1.5 text-sm font-bold text-gray-900">
-                                    {p.kind === "whatsapp" ? <MessageCircle className="w-4 h-4 text-green-600 shrink-0" /> : <PhoneCall className="w-4 h-4 text-violet-600 shrink-0" />}
-                                    {p.label}
-                                </p>
-                                <p className="text-xs text-gray-500">₹{fmt(p.price)} + GST = ₹{fmt(p.total)}</p>
+                        <div key={p.code} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5 transition-colors hover:border-blue-200">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${p.kind === "whatsapp" ? "bg-emerald-50 text-emerald-600" : "bg-violet-50 text-violet-600"}`}>
+                                    {p.kind === "whatsapp" ? <MessageCircle className="w-4 h-4" /> : <PhoneCall className="w-4 h-4" />}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-slate-900">{p.label}</p>
+                                    <p className="text-xs text-slate-500">₹{fmt(p.price)} + GST = ₹{fmt(p.total)}</p>
+                                </div>
                             </div>
                             <button
                                 onClick={() => buy(p.code)}
                                 disabled={!!buying}
-                                className="shrink-0 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 min-h-[40px]"
+                                className="ui-btn-primary ui-btn-sm min-h-[40px] min-w-[64px] shrink-0"
                             >
                                 {buying === p.code ? <Loader2 className="w-4 h-4 animate-spin" /> : "Buy"}
                             </button>
                         </div>
                     ))}
                 </div>
-                <p className="mt-3 flex items-center gap-1.5 text-xs text-gray-500"><CheckCircle2 className="w-3.5 h-3.5" /> Paying offline (UPI / bank)? Contact Pillora and we&apos;ll add the pack for you.</p>
+                <p className="mt-4 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500"><CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" /> Paying offline (UPI / bank)? Contact Pillora and we&apos;ll add the pack for you.</p>
             </div>
         </section>
     );
