@@ -57,6 +57,8 @@ export default function VoiceDemoWidget() {
     const [lines, setLines] = useState<Line[]>([]);
     const [booking, setBooking] = useState<Booking | null>(null);
     const [error, setError] = useState("");
+    // Polite messages from the server (line busy, demo limit, time over, taking a break).
+    const [notice, setNotice] = useState("");
     const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
     // Audio plumbing lives in refs: it must not trigger re-renders.
@@ -143,6 +145,7 @@ export default function VoiceDemoWidget() {
     const startCall = async () => {
         if (!VOICE_URL) return;
         setError("");
+        setNotice("");
         setLines([]);
         setBooking(null);
         setStatus("");
@@ -178,7 +181,7 @@ export default function VoiceDemoWidget() {
         worklet.port.onmessage = (e) => socket.readyState === WebSocket.OPEN && socket.send(e.data);
 
         socket.onopen = () => socket.send(JSON.stringify({ type: "start", lang }));
-        socket.onerror = () => setError("Couldn't reach the demo line. Please try again in a moment.");
+        socket.onerror = () => setNotice("Couldn't reach the demo line. Please try again in a moment.");
         socket.onclose = () => endCall();
         socket.onmessage = (e) => {
             if (typeof e.data !== "string") return playPcm(e.data);
@@ -221,7 +224,7 @@ export default function VoiceDemoWidget() {
                     trackEvent("voice_demo_booked", { language: lang });
                     break;
                 case "refused":
-                    setError(m.message);
+                    setNotice(m.message);
                     break;
                 case "error":
                     setLines((l) => [...l, { who: "note", text: "Something went wrong on the line. You can end the call and try again." }]);
@@ -238,7 +241,7 @@ export default function VoiceDemoWidget() {
     const mmss = secondsLeft == null ? "" : `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
 
     return (
-        <div className="fixed bottom-4 right-4 z-[9998] flex flex-col items-end gap-3 print:hidden">
+        <div className="fixed bottom-3 right-3 sm:bottom-4 sm:right-4 z-[9998] flex flex-col items-end gap-3 print:hidden">
             {open && (
                 <div
                     role="dialog"
@@ -351,7 +354,12 @@ export default function VoiceDemoWidget() {
                     {/* After the call */}
                     {phase === "ended" && (
                         <div className="space-y-3 p-4 text-center">
-                            {booking ? <BookingCard b={booking} /> : <p className="text-sm text-gray-600 dark:text-gray-400">Call ended.</p>}
+                            {booking && <BookingCard b={booking} />}
+                            {notice ? (
+                                <p className="rounded-xl bg-gray-100 p-3 text-sm text-gray-700 dark:bg-gray-900 dark:text-gray-300">{notice}</p>
+                            ) : (
+                                !booking && <p className="text-sm text-gray-600 dark:text-gray-400">Call ended.</p>
+                            )}
                             {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
                             <p className="text-sm font-medium">Want this answering your hospital&apos;s phone?</p>
                             <Link
@@ -373,14 +381,15 @@ export default function VoiceDemoWidget() {
             {!open && (
                 <button
                     onClick={() => setOpen(true)}
-                    className="group flex items-center gap-2 rounded-full bg-blue-600 py-2 pl-2 pr-4 text-white shadow-xl transition hover:bg-blue-700"
+                    className="group flex items-center gap-2 rounded-full bg-blue-600 p-1.5 sm:py-2 sm:pl-2 sm:pr-4 text-white shadow-xl transition hover:bg-blue-700"
                     aria-label="Try the Pillora AI receptionist demo"
                 >
-                    <span className="relative grid h-10 w-10 place-items-center rounded-full bg-white/20">
+                    {/* Phones: round icon only, so it doesn't cover page text. */}
+                    <span className="relative grid h-11 w-11 sm:h-10 sm:w-10 place-items-center rounded-full bg-white/20">
                         <Headphones className="h-5 w-5" />
                         <span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-blue-600 bg-green-400" />
                     </span>
-                    <span className="text-left leading-tight">
+                    <span className="hidden text-left leading-tight sm:block">
                         <span className="block text-sm font-semibold">Talk to our AI</span>
                         <span className="block text-[11px] text-blue-100">Live call demo</span>
                     </span>
