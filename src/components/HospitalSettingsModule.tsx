@@ -13,6 +13,7 @@ import {
 import api from "@/lib/api";
 import { planLabel } from "@/lib/plans";
 import { SUPPORT_PHONE } from "@/content/marketing";
+import EditDoctorModal from "@/components/EditDoctorModal";
 
 type SettingsSection = 
     | "profile" 
@@ -82,6 +83,8 @@ export default function HospitalSettingsModule({
     const [staffSubTab, setStaffSubTab] = useState<"doctors" | "staff" | "rbac">("doctors");
     const [showAddStaffModal, setShowAddStaffModal] = useState<boolean>(false);
     const [showAddDoctorModal, setShowAddDoctorModal] = useState<boolean>(false);
+    const [editDoctor, setEditDoctor] = useState<any>(null);
+    const [editStaff, setEditStaff] = useState<{ _id: string; name: string; email: string; phone: string; role: string; newPassword: string } | null>(null);
     const [newStaff, setNewStaff] = useState({ name: "", email: "", phone: "", role: "receptionist", password: "" });
     const [newDoctor, setNewDoctor] = useState({
         name: "",
@@ -463,6 +466,29 @@ export default function HospitalSettingsModule({
             }
         } catch (err: any) {
             showToastMsg(err.response?.data?.message || "Failed to change role", "error");
+        }
+    };
+
+    // Handle Staff Edit (name, login email, phone, role, optional new password)
+    const handleEditStaffSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editStaff) return;
+        try {
+            setSaving(true);
+            const body: any = { name: editStaff.name, email: editStaff.email, phone: editStaff.phone, role: editStaff.role };
+            if (editStaff.newPassword.trim()) body.newPassword = editStaff.newPassword;
+            const previousEmail = String(staffList.find((x: any) => x._id === editStaff._id)?.email || "").toLowerCase();
+            const res = await api.put(`/hospital/settings/staff/${editStaff._id}`, body);
+            if (res.data?.success) {
+                const signedOut = Boolean(body.newPassword) || editStaff.email.trim().toLowerCase() !== previousEmail;
+                showToastMsg(signedOut ? "Staff details saved. They have been signed out and must log in again." : "Staff details saved");
+                setEditStaff(null);
+                fetchStaffAndDoctors();
+            }
+        } catch (err: any) {
+            showToastMsg(err.response?.data?.message || "Failed to save staff details", "error");
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -1160,7 +1186,15 @@ export default function HospitalSettingsModule({
                                                         </span>
                                                     </td>
                                                     <td className="ui-td text-center">
-                                                        {can("doctorsSlots") && <button
+                                                        {can("doctorsSlots") && <div className="flex items-center justify-center gap-1.5">
+                                                        <button
+                                                            onClick={() => setEditDoctor(doc)}
+                                                            className="ui-btn-soft ui-btn-sm min-h-[36px]"
+                                                            aria-label={`Edit ${doc.name}`}
+                                                        >
+                                                            <Edit2 className="h-3.5 w-3.5" /> Edit
+                                                        </button>
+                                                        <button
                                                             onClick={async () => {
                                                                 await api.put(`/hospital/dashboard/doctors/${doc._id}`, { is_active: !doc.is_active });
                                                                 fetchStaffAndDoctors();
@@ -1172,7 +1206,8 @@ export default function HospitalSettingsModule({
                                                             }`}
                                                         >
                                                             {doc.is_active ? "Deactivate" : "Activate"}
-                                                        </button>}
+                                                        </button>
+                                                        </div>}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1236,6 +1271,13 @@ export default function HospitalSettingsModule({
                                                     <td className="ui-td text-right">
                                                         {!st.isOwner && (
                                                             <div className="flex items-center justify-end gap-1.5">
+                                                                <button
+                                                                    onClick={() => setEditStaff({ _id: st._id, name: st.name || "", email: st.email || "", phone: st.phone || "", role: st.role, newPassword: "" })}
+                                                                    className="ui-btn-soft ui-btn-sm min-h-[36px]"
+                                                                    aria-label={`Edit ${st.name}`}
+                                                                >
+                                                                    <Edit2 className="h-3.5 w-3.5" /> Edit
+                                                                </button>
                                                                 <button
                                                                     onClick={() => handleToggleStaffStatus(st._id, st.isActive)}
                                                                     className="ui-btn-soft ui-btn-sm min-h-[36px]"
@@ -2438,6 +2480,121 @@ export default function HospitalSettingsModule({
                                 >
                                     {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
                                     <span>Create staff account</span>
+                                </button>
+                            </ModalActions>
+                        </form>
+                    </SettingsModal>
+                )}
+            </AnimatePresence>
+
+            {/* Modal: Edit Doctor / Specialty Group */}
+            <AnimatePresence>
+                {editDoctor && (
+                    <EditDoctorModal
+                        doctor={editDoctor}
+                        onClose={() => setEditDoctor(null)}
+                        onSaved={(message) => {
+                            setEditDoctor(null);
+                            showToastMsg(message);
+                            fetchStaffAndDoctors();
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Modal: Edit Staff */}
+            <AnimatePresence>
+                {editStaff && (
+                    <SettingsModal
+                        title="Edit staff account"
+                        icon={<Edit2 className="h-5 w-5" />}
+                        onClose={() => setEditStaff(null)}
+                    >
+                        <form onSubmit={handleEditStaffSubmit} className="space-y-4">
+                            <div>
+                                <label className="ui-label">Employee full name <span className="text-rose-500">*</span></label>
+                                <input
+                                    type="text"
+                                    required
+                                    maxLength={120}
+                                    value={editStaff.name}
+                                    onChange={(e) => setEditStaff({ ...editStaff, name: e.target.value })}
+                                    className="ui-input"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="ui-label">Email (login ID) <span className="text-rose-500">*</span></label>
+                                    <input
+                                        type="email"
+                                        required
+                                        maxLength={160}
+                                        value={editStaff.email}
+                                        onChange={(e) => setEditStaff({ ...editStaff, email: e.target.value })}
+                                        className="ui-input"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="ui-label">Phone number</label>
+                                    <input
+                                        type="text"
+                                        maxLength={30}
+                                        value={editStaff.phone}
+                                        onChange={(e) => setEditStaff({ ...editStaff, phone: e.target.value })}
+                                        className="ui-input"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="ui-label">Assigned role</label>
+                                    <select
+                                        value={editStaff.role}
+                                        onChange={(e) => setEditStaff({ ...editStaff, role: e.target.value })}
+                                        className="ui-input"
+                                    >
+                                        {STAFF_ROLE_OPTIONS.map((r) => (
+                                            <option key={r.value} value={r.value}>{r.label}</option>
+                                        ))}
+                                    </select>
+                                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                                        {STAFF_ROLE_OPTIONS.find((r) => r.value === editStaff.role)?.desc}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="ui-label">New password</label>
+                                    <input
+                                        type="password"
+                                        minLength={6}
+                                        autoComplete="new-password"
+                                        placeholder="Leave blank to keep"
+                                        value={editStaff.newPassword}
+                                        onChange={(e) => setEditStaff({ ...editStaff, newPassword: e.target.value })}
+                                        className="ui-input"
+                                    />
+                                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                                        At least 6 characters. Changing the password or email signs them out.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <ModalActions>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditStaff(null)}
+                                    className="ui-btn-secondary"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={saving}
+                                    className="ui-btn-dark"
+                                >
+                                    {saving && <RefreshCw className="h-4 w-4 animate-spin" />}
+                                    <span>Save changes</span>
                                 </button>
                             </ModalActions>
                         </form>

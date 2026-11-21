@@ -10,7 +10,7 @@ import {
     User, UserPlus, Stethoscope, CheckCircle2, Check, ChevronDown,
     XCircle, X, AlertCircle, Info, RefreshCcw, LayoutDashboard,
     Download, CreditCard, IndianRupee, Bell, BellRing, ShieldAlert,
-    Landmark, SlidersHorizontal, FileText, Trash2, PhoneCall
+    Landmark, SlidersHorizontal, FileText, Trash2, PhoneCall, Pencil
 } from "lucide-react";
 import SlotGenTool from "@/components/SlotGenTool";
 
@@ -22,6 +22,7 @@ import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
 import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
 import UsagePanel, { UsageWarningBanner } from "@/components/UsagePanel";
 import HospitalSettingsModule from "@/components/HospitalSettingsModule";
+import EditDoctorModal from "@/components/EditDoctorModal";
 import { initWebPush } from "@/lib/webPush";
 import { doctorLabel, doctorShortLabel } from "@/lib/doctorName";
 import { planLabel } from "@/lib/plans";
@@ -95,6 +96,7 @@ export default function HospitalDashboard() {
 
     // Recruit Doctor States
     const [showAddDoctor, setShowAddDoctor] = useState(false);
+    const [editDoctor, setEditDoctor] = useState<any>(null);
     const [showSlotGen, setShowSlotGen] = useState<any>(null);
     const [newDoctor, setNewDoctor] = useState({ name: "", email: "", phone: "", specialty: "", fee: 200 });
 
@@ -1837,6 +1839,13 @@ export default function HospitalDashboard() {
                                                         >
                                                             {doc.is_active ? 'Deactivate' : 'Activate'}
                                                         </button>
+                                                        <button
+                                                            onClick={() => setEditDoctor(doc)}
+                                                            className="ui-btn ui-btn-sm min-h-[36px] bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                                            aria-label={`Edit ${doc.name}`}
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" /> Edit
+                                                        </button>
                                                         {doc.is_active && (
                                                             <button onClick={() => setShowSlotGen(doc)} className="ui-btn ui-btn-sm min-h-[36px] bg-blue-50 text-blue-700 hover:bg-blue-100">
                                                                 Slots
@@ -2176,6 +2185,18 @@ export default function HospitalDashboard() {
                         />
                     </div>
                 </Modal>
+            )}
+
+            {editDoctor && (
+                <EditDoctorModal
+                    doctor={editDoctor}
+                    onClose={() => setEditDoctor(null)}
+                    onSaved={(message) => {
+                        setEditDoctor(null);
+                        alert(message);
+                        fetchData();
+                    }}
+                />
             )}
 
             {showAddDoctor && (
