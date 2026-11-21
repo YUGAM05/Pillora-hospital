@@ -637,7 +637,7 @@ export default function HospitalSettingsModule({
     const sectionsNav = [
         { id: "profile" as SettingsSection, label: "Hospital profile", icon: Building2, desc: "Name, branding, location, hours & identity" },
         { id: "staff" as SettingsSection, label: "Doctors & staff", icon: Users, desc: "Doctor roster, employee accounts & RBAC roles" },
-        { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Durations, buffer times, booking rules & holidays" },
+        { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Slot capacity, booking window, cancellation & holidays" },
         { id: "payments" as SettingsSection, label: "Payment & bank", icon: Landmark, desc: "Masked bank account, payout ledger & 2.36% charges" },
         { id: "notifications" as SettingsSection, label: "Notifications", icon: BellRing, desc: "Channels & preference toggles for all 8 events" },
         { id: "security" as SettingsSection, label: "Security & login", icon: ShieldCheck, desc: "Password change, sessions, 2FA & login logs" },
@@ -1367,7 +1367,7 @@ export default function HospitalSettingsModule({
                                 <SectionHeading
                                     icon={<CalendarClock className="h-5 w-5" />}
                                     title="Appointment & slot preferences"
-                                    description="Configure appointment durations, buffer times, advance booking windows, and cancellation rules."
+                                    description="Configure online and walk-in booking, patients per slot, the advance booking window, cancellation rules and closed days."
                                 />
                                 <button
                                     type="button"
@@ -1381,7 +1381,7 @@ export default function HospitalSettingsModule({
                             </div>
 
                             {/* Booking Channels */}
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-slate-300">
                                     <span className="min-w-0">
                                         <span className="block text-sm font-semibold text-slate-900">Online booking via Pillora</span>
@@ -1413,73 +1413,10 @@ export default function HospitalSettingsModule({
                                         <SwitchVisual />
                                     </span>
                                 </label>
-
-                                <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-slate-300">
-                                    <span className="min-w-0">
-                                        <span className="block text-sm font-semibold text-slate-900">Same-day appointments</span>
-                                        <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">Allow patients to book on current date</span>
-                                    </span>
-                                    <span className="relative inline-flex shrink-0">
-                                        <input
-                                            type="checkbox"
-                                            checked={Boolean(apptForm.allowSameDayBooking)}
-                                            onChange={(e) => setApptForm({ ...apptForm, allowSameDayBooking: e.target.checked })}
-                                            className="peer sr-only"
-                                        />
-                                        <SwitchVisual />
-                                    </span>
-                                </label>
                             </div>
 
-                            {/* Durations & Buffer Times */}
-                            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                <div>
-                                    <label className="ui-label">
-                                        Default appointment duration (minutes)
-                                    </label>
-                                    <div className="ui-segmented grid w-full grid-cols-4 gap-1">
-                                        {[10, 15, 20, 30].map(dur => (
-                                            <button
-                                                key={dur}
-                                                type="button"
-                                                onClick={() => setApptForm({ ...apptForm, defaultSlotDuration: dur })}
-                                                className={`ui-segment min-h-[40px] px-2 ${
-                                                    apptForm.defaultSlotDuration === dur
-                                                        ? "ui-segment-active"
-                                                        : ""
-                                                }`}
-                                            >
-                                                {dur} mins
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="ui-label">
-                                        Buffer time between appointments
-                                    </label>
-                                    <div className="ui-segmented grid w-full grid-cols-4 gap-1">
-                                        {[0, 5, 10, 15].map(buf => (
-                                            <button
-                                                key={buf}
-                                                type="button"
-                                                onClick={() => setApptForm({ ...apptForm, bufferTimeBetweenSlots: buf })}
-                                                className={`ui-segment min-h-[40px] px-2 ${
-                                                    apptForm.bufferTimeBetweenSlots === buf
-                                                        ? "ui-segment-active"
-                                                        : ""
-                                                }`}
-                                            >
-                                                {buf === 0 ? "None" : `${buf} mins`}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Booking Notice & Windows (the window select gets extra room for its long option text) */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.25fr)_minmax(0,1fr)]">
+                            {/* Slot capacity & booking window */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
                                     <label className="ui-label">
                                         Max patients per slot
@@ -1512,25 +1449,9 @@ export default function HospitalSettingsModule({
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label className="ui-label">
-                                        Minimum notice required
-                                    </label>
-                                    <select
-                                        value={apptForm.minBookingNoticeHours ?? 1}
-                                        onChange={(e) => setApptForm({ ...apptForm, minBookingNoticeHours: Number(e.target.value) })}
-                                        className="ui-input"
-                                    >
-                                        <option value={0}>Immediate (0 Hours)</option>
-                                        <option value={1}>At least 1 Hour prior</option>
-                                        <option value={2}>At least 2 Hours prior</option>
-                                        <option value={4}>At least 4 Hours prior</option>
-                                        <option value={24}>At least 24 Hours prior</option>
-                                    </select>
-                                </div>
                             </div>
 
-                            {/* Policies: Cancellation & Rescheduling */}
+                            {/* Policy: Cancellation */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                                     <label className="block text-sm font-semibold text-slate-900">
@@ -1540,24 +1461,6 @@ export default function HospitalSettingsModule({
                                     <select
                                         value={apptForm.cancellationPolicyHours ?? 2}
                                         onChange={(e) => setApptForm({ ...apptForm, cancellationPolicyHours: Number(e.target.value) })}
-                                        className="ui-input"
-                                    >
-                                        <option value={1}>Up to 1 hour before</option>
-                                        <option value={2}>Up to 2 hours before</option>
-                                        <option value={4}>Up to 4 hours before</option>
-                                        <option value={12}>Up to 12 hours before</option>
-                                        <option value={24}>Up to 24 hours before</option>
-                                    </select>
-                                </div>
-
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                                    <label className="block text-sm font-semibold text-slate-900">
-                                        Patient rescheduling window
-                                    </label>
-                                    <p className="mb-3 mt-0.5 text-xs leading-relaxed text-slate-500">How many hours before appointment can patient reschedule?</p>
-                                    <select
-                                        value={apptForm.reschedulePolicyHours ?? 2}
-                                        onChange={(e) => setApptForm({ ...apptForm, reschedulePolicyHours: Number(e.target.value) })}
                                         className="ui-input"
                                     >
                                         <option value={1}>Up to 1 hour before</option>
