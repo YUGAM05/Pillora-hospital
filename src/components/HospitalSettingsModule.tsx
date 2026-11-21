@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, Users, CalendarClock, Landmark, CreditCard,
-    BellRing, ShieldCheck, FileSpreadsheet, Download, HelpCircle,
+    ShieldCheck, FileSpreadsheet, Download, HelpCircle,
     LifeBuoy, AlertTriangle, CheckCircle2, Lock, Key, LogOut,
     RefreshCw, Plus, Edit2, Trash2, Eye, EyeOff, Save, X,
     Phone, Mail, Globe, MapPin, Clock, Calendar, Check,
@@ -20,7 +20,6 @@ type SettingsSection =
     | "staff" 
     | "appointments" 
     | "payments" 
-    | "notifications" 
     | "security" 
     | "reports" 
     | "support";
@@ -41,7 +40,6 @@ const SECTION_PERMISSIONS: Record<SettingsSection, string[]> = {
     staff: ["staffManage", "doctorsSlots"],
     appointments: ["hospitalSettings"],
     payments: ["bankDetails"],
-    notifications: ["hospitalSettings"],
     security: ["self"],
     reports: ["settlements"],
     support: ["self"],
@@ -111,8 +109,6 @@ export default function HospitalSettingsModule({
         upiId: ""
     });
 
-    // Section E: Notification Preferences
-    const [notifForm, setNotifForm] = useState<any>({});
 
     // Section F: Security State
     const [securityData, setSecurityData] = useState<any>(null);
@@ -195,9 +191,6 @@ export default function HospitalSettingsModule({
 
                 // Populate Appointment Settings
                 setApptForm(data.appointmentSettings || {});
-
-                // Populate Notifications
-                setNotifForm(data.notificationPreferences || {});
             }
         } catch (err: any) {
             console.error("[FetchSettingsError]", err);
@@ -326,22 +319,6 @@ export default function HospitalSettingsModule({
             }
         } catch (err: any) {
             showToastMsg(err.response?.data?.message || "Failed to save appointment settings", "error");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    // Handle Notification Preferences Save
-    const handleSaveNotificationPreferences = async () => {
-        try {
-            setSaving(true);
-            const res = await api.put("/hospital/settings/notifications", { preferences: notifForm });
-            if (res.data?.success) {
-                showToastMsg("Notification preferences saved successfully!");
-                setNotifForm(res.data.notificationPreferences);
-            }
-        } catch (err: any) {
-            showToastMsg(err.response?.data?.message || "Failed to save notification preferences", "error");
         } finally {
             setSaving(false);
         }
@@ -639,7 +616,6 @@ export default function HospitalSettingsModule({
         { id: "staff" as SettingsSection, label: "Doctors & staff", icon: Users, desc: "Doctor roster, employee accounts & RBAC roles" },
         { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Slot capacity, booking window & holidays" },
         { id: "payments" as SettingsSection, label: "Payment & bank", icon: Landmark, desc: "Masked bank account, payout ledger & 2.36% charges" },
-        { id: "notifications" as SettingsSection, label: "Notifications", icon: BellRing, desc: "Channels & preference toggles for all 8 events" },
         { id: "security" as SettingsSection, label: "Security & login", icon: ShieldCheck, desc: "Password change, sessions, 2FA & login logs" },
         { id: "reports" as SettingsSection, label: "Reports & data", icon: FileSpreadsheet, desc: "One-click CSV/Excel downloads & export audit" },
         { id: "support" as SettingsSection, label: "Support & account", icon: LifeBuoy, desc: "Help tickets, subscription tier & account status" }
@@ -693,7 +669,7 @@ export default function HospitalSettingsModule({
                                 Facility settings & configuration
                             </h2>
                             <p className="ui-subtitle">
-                                Configure your hospital profile, doctors, appointment availability, notifications, security, and financial accounts.
+                                Configure your hospital profile, doctors, appointment availability, security, and financial accounts.
                             </p>
                         </div>
                     </div>
@@ -1596,100 +1572,6 @@ export default function HospitalSettingsModule({
                                         Online advance payments incur <strong className="font-semibold text-slate-800">2.00% Razorpay processing fee + 18% GST (2.36% total)</strong>. This is deducted directly by the banking switch before payout.
                                     </p>
                                 </div>
-                            </div>
-                        </section>
-                    )}
-
-                    {/* ========================================================================= */}
-                    {/* SECTION E: NOTIFICATION SETTINGS */}
-                    {/* ========================================================================= */}
-                    {activeSection === "notifications" && sectionAllowed("notifications") && (
-                        <section className="ui-card space-y-6 p-5 sm:p-6">
-                            <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
-                                <SectionHeading
-                                    icon={<BellRing className="h-5 w-5" />}
-                                    title="Notification channel preferences"
-                                    description="Configure individual delivery channels (Email, SMS, WhatsApp, and In-Dashboard) for every operational event."
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleSaveNotificationPreferences}
-                                    disabled={saving}
-                                    className="ui-btn-primary w-full sm:w-auto sm:shrink-0"
-                                >
-                                    {saving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                    <span>Save notification rules</span>
-                                </button>
-                            </div>
-
-                            {/* Phones: one card per event with the four channels in a row. md and up: a regular table. */}
-                            <div className="overflow-hidden rounded-xl border border-slate-200">
-                                <table className="block w-full text-left md:table">
-                                    <thead className="hidden md:table-header-group">
-                                        <tr className="border-b border-slate-100 bg-slate-50/80">
-                                            <th className="ui-th">Notification event</th>
-                                            <th className="ui-th text-center">Email</th>
-                                            <th className="ui-th text-center">SMS</th>
-                                            <th className="ui-th text-center">WhatsApp</th>
-                                            <th className="ui-th text-center">In-Dashboard</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="block divide-y divide-slate-100 md:table-row-group">
-                                        {[
-                                            { key: "newAppointment", label: "New Appointment Booked", desc: "Instant alert when patient reserves a slot" },
-                                            { key: "appointmentCancellation", label: "Appointment Cancellation", desc: "When a patient or doctor cancels" },
-                                            { key: "appointmentRescheduled", label: "Appointment Rescheduled", desc: "Slot time or doctor changes" },
-                                            { key: "paymentReceived", label: "Patient Payment Received", desc: "Advance or clinic collection confirmations" },
-                                            { key: "patientArrival", label: "Patient Arrival at Clinic", desc: "Check-in at reception counter" },
-                                            { key: "doctorAvailability", label: "Doctor Availability Changes", desc: "Schedule or emergency leaves" },
-                                            { key: "dailySummary", label: "Daily Operations Summary", desc: "Morning summary of scheduled appointments" },
-                                            { key: "settlementUpdates", label: "Settlement & Payout Payouts", desc: "Mandatory compliance notices", mandatory: true }
-                                        ].map(item => {
-                                            const channels = notifForm[item.key] || { email: true, sms: true, whatsapp: true, inApp: true };
-                                            return (
-                                                <tr key={item.key} className="grid grid-cols-4 gap-x-1.5 gap-y-3 p-4 transition-colors hover:bg-slate-50/60 md:table-row md:p-0">
-                                                    <td className="col-span-4 md:table-cell md:px-4 md:py-3.5 md:align-middle">
-                                                        <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-900">
-                                                            <span>{item.label}</span>
-                                                            {item.mandatory && (
-                                                                <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
-                                                                    Required
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="mt-0.5 text-xs text-slate-500">{item.desc}</div>
-                                                    </td>
-                                                    {(["email", "sms", "whatsapp", "inApp"] as const).map(ch => (
-                                                        <td key={ch} className="md:table-cell md:px-4 md:py-3.5 md:text-center md:align-middle">
-                                                            <label className="flex h-full min-h-[52px] cursor-pointer flex-col items-center justify-start gap-1 rounded-lg border border-slate-200 bg-white px-0.5 pb-1.5 pt-2.5 has-[:disabled]:cursor-not-allowed md:inline-flex md:h-10 md:min-h-0 md:w-10 md:justify-center md:border-0 md:bg-transparent md:p-0">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    disabled={item.mandatory}
-                                                                    checked={Boolean(channels[ch])}
-                                                                    onChange={(e) => {
-                                                                        const updated = {
-                                                                            ...notifForm,
-                                                                            [item.key]: {
-                                                                                ...channels,
-                                                                                [ch]: e.target.checked
-                                                                            }
-                                                                        };
-                                                                        setNotifForm(updated);
-                                                                    }}
-                                                                    aria-label={`${item.label}: ${CHANNEL_LABELS[ch]}`}
-                                                                    className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                                                />
-                                                                <span aria-hidden="true" className="text-center text-[11px] font-medium leading-tight text-slate-500 md:hidden">
-                                                                    {CHANNEL_LABELS[ch]}
-                                                                </span>
-                                                            </label>
-                                                        </td>
-                                                    ))}
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
                             </div>
                         </section>
                     )}
