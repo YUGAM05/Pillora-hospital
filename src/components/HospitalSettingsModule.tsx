@@ -637,7 +637,7 @@ export default function HospitalSettingsModule({
     const sectionsNav = [
         { id: "profile" as SettingsSection, label: "Hospital profile", icon: Building2, desc: "Name, branding, location, hours & identity" },
         { id: "staff" as SettingsSection, label: "Doctors & staff", icon: Users, desc: "Doctor roster, employee accounts & RBAC roles" },
-        { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Slot capacity, booking window, cancellation & holidays" },
+        { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Slot capacity, booking window & holidays" },
         { id: "payments" as SettingsSection, label: "Payment & bank", icon: Landmark, desc: "Masked bank account, payout ledger & 2.36% charges" },
         { id: "notifications" as SettingsSection, label: "Notifications", icon: BellRing, desc: "Channels & preference toggles for all 8 events" },
         { id: "security" as SettingsSection, label: "Security & login", icon: ShieldCheck, desc: "Password change, sessions, 2FA & login logs" },
@@ -1367,7 +1367,7 @@ export default function HospitalSettingsModule({
                                 <SectionHeading
                                     icon={<CalendarClock className="h-5 w-5" />}
                                     title="Appointment & slot preferences"
-                                    description="Configure online and walk-in booking, patients per slot, the advance booking window, cancellation rules and closed days."
+                                    description="Configure online and walk-in booking, patients per slot, the advance booking window and closed days."
                                 />
                                 <button
                                     type="button"
@@ -1446,28 +1446,6 @@ export default function HospitalSettingsModule({
                                         <option value={30}>Up to 30 Days Ahead (Default)</option>
                                         <option value={60}>Up to 60 Days Ahead</option>
                                         <option value={90}>Up to 90 Days Ahead</option>
-                                    </select>
-                                </div>
-
-                            </div>
-
-                            {/* Policy: Cancellation */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                                    <label className="block text-sm font-semibold text-slate-900">
-                                        Patient cancellation window
-                                    </label>
-                                    <p className="mb-3 mt-0.5 text-xs leading-relaxed text-slate-500">How many hours before appointment can patient cancel?</p>
-                                    <select
-                                        value={apptForm.cancellationPolicyHours ?? 2}
-                                        onChange={(e) => setApptForm({ ...apptForm, cancellationPolicyHours: Number(e.target.value) })}
-                                        className="ui-input"
-                                    >
-                                        <option value={1}>Up to 1 hour before</option>
-                                        <option value={2}>Up to 2 hours before</option>
-                                        <option value={4}>Up to 4 hours before</option>
-                                        <option value={12}>Up to 12 hours before</option>
-                                        <option value={24}>Up to 24 hours before</option>
                                     </select>
                                 </div>
                             </div>
