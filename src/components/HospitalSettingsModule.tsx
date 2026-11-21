@@ -313,7 +313,12 @@ export default function HospitalSettingsModule({
             setSaving(true);
             const res = await api.put("/hospital/settings/appointments", apptForm);
             if (res.data?.success) {
-                showToastMsg("Appointment settings saved successfully!");
+                const updated = Number(res.data.slotsUpdated);
+                showToastMsg(
+                    Number.isFinite(updated)
+                        ? `Appointment settings saved. Updated ${updated} upcoming ${updated === 1 ? "slot" : "slots"}.`
+                        : "Appointment settings saved successfully!"
+                );
                 setApptForm(res.data.appointmentSettings);
             }
         } catch (err: any) {
@@ -1440,12 +1445,12 @@ export default function HospitalSettingsModule({
                                     <input
                                         type="number"
                                         min={1}
-                                        max={10}
+                                        max={100}
                                         value={apptForm.maxAppointmentsPerSlot || 1}
                                         onChange={(e) => setApptForm({ ...apptForm, maxAppointmentsPerSlot: Number(e.target.value) })}
                                         className="ui-input"
                                     />
-                                    <span className="ui-hint block">Usually 1 to avoid overlapping</span>
+                                    <span className="ui-hint block">How many patients can book the same time slot. Applies to all doctors unless a doctor has its own limit.</span>
                                 </div>
 
                                 <div>

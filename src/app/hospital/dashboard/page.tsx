@@ -881,9 +881,7 @@ export default function HospitalDashboard() {
         const slotDate = istDateKey(s.startTime);
         const matchDate = slotDate === manualBookingDate;
         const isAvailable = s.status === "available";
-        const maxAppts = s.max_appointments || 1;
-        const bookingCount = s.bookingCount || 0;
-        const hasCapacity = bookingCount < maxAppts;
+        const hasCapacity = slotFill(s).left > 0;
         return matchDoc && matchDate && isAvailable && hasCapacity;
     });
 
@@ -2010,9 +2008,7 @@ export default function HospitalDashboard() {
                                                         <td className="ui-td whitespace-nowrap">{slotDateStr}</td>
                                                         <td className="ui-td whitespace-nowrap">{timeRangeStr}</td>
                                                         <td className="ui-td">
-                                                            <span className={`ui-badge ${slot.bookingCount > 0 ? 'border-indigo-100 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                                                                {slot.bookingCount || 0} booked
-                                                            </span>
+                                                            <SlotFill slot={slot} />
                                                         </td>
                                                         <td className="ui-td">
                                                             {slot.status === 'cancelled' ? (
@@ -2117,9 +2113,7 @@ export default function HospitalDashboard() {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-start justify-between gap-3">
-                                                    <span className={`ui-badge ${slot.bookingCount > 0 ? 'border-indigo-100 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-                                                        {slot.bookingCount || 0} booked
-                                                    </span>
+                                                    <SlotFill slot={slot} />
                                                     {activeSlotSubTab === 'cancelled' && slot.cancellationReason && (
                                                         <p className="text-xs text-slate-500 italic text-right" title={`Reason: ${slot.cancellationReason}`}>
                                                             Reason: {slot.cancellationReason}
@@ -2227,12 +2221,15 @@ export default function HospitalDashboard() {
                                 <input required type="number" value={groupFee} onChange={e => setGroupFee(Number(e.target.value))} className="ui-input" />
                             </Field>
                             <Field label="Max per slot">
-                                <input required type="number" value={groupMaxSlots} onChange={e => setGroupMaxSlots(Number(e.target.value))} className="ui-input" />
+                                <input required type="number" min={1} max={100} value={groupMaxSlots} onChange={e => setGroupMaxSlots(Number(e.target.value))} className="ui-input" />
                             </Field>
                             <Field label="Doctors count">
                                 <input required type="number" value={groupDocsCount} onChange={e => setGroupDocsCount(Number(e.target.value))} className="ui-input" />
                             </Field>
                         </div>
+                        <p className="-mt-1 text-xs text-slate-500">
+                            Max per slot: how many patients can book the same time slot for this group. Leave it at 1 to use the hospital setting (Settings → Appointment settings → Max patients per slot).
+                        </p>
 
                         <fieldset>
                             <legend className="ui-label">Availability schedule</legend>
@@ -2405,10 +2402,10 @@ export default function HospitalDashboard() {
                                     <select required value={manualSlotId} onChange={e => setManualSlotId(e.target.value)} className="ui-input">
                                         <option value="">-- Select Slot Time --</option>
                                         {manualSlotOptions.map((s: any) => {
-                                            const remaining = (s.max_appointments || 1) - (s.bookingCount || 0);
+                                            const { left } = slotFill(s);
                                             return (
                                                 <option key={s._id} value={s._id}>
-                                                    {timeRange(s.startTime, s.endTime)} ({remaining} remaining spots)
+                                                    {timeRange(s.startTime, s.endTime)} ({left} {left === 1 ? "place" : "places"} left)
                                                 </option>
                                             );
                                         })}
@@ -2670,6 +2667,31 @@ function ModalActions({ children }: { children: React.ReactNode }) {
         <div className="sticky -bottom-5 -mx-5 sm:-mx-6 -mb-5 mt-2 px-5 sm:px-6 py-4 bg-white/95 backdrop-blur border-t border-slate-100">
             {children}
         </div>
+    );
+}
+
+/** Seats taken / capacity of a slot. booked_count is the seat counter kept by the booking code; holds are patients in checkout. */
+function slotFill(slot: any) {
+    const cap = Math.max(1, Number(slot?.max_appointments) || 1);
+    const booked = Math.max(0, Number(slot?.booked_count ?? slot?.bookingCount) || 0);
+    const holds = Math.max(0, Number(slot?.hold_count) || 0);
+    return { cap, booked, holds, full: booked >= cap, left: Math.max(0, cap - booked - holds) };
+}
+
+function SlotFill({ slot }: { slot: any }) {
+    const { cap, booked, holds, full } = slotFill(slot);
+    return (
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span className={`ui-badge ${booked > 0 ? 'border-indigo-100 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                {booked} / {cap} booked
+            </span>
+            {full && slot?.status !== 'cancelled' && (
+                <span className="ui-badge border-amber-200 bg-amber-50 text-amber-700">Full</span>
+            )}
+            {!full && holds > 0 && (
+                <span className="ui-badge border-slate-200 bg-slate-50 text-slate-500" title="Patients currently in checkout">{holds} in checkout</span>
+            )}
+        </span>
     );
 }
 
