@@ -110,7 +110,6 @@ export default function OrderSuccessPage() {
                             </div>
                             <p className="text-gray-500 text-sm">Shri Mahavir Jain Vidhvalay, Paldi Cross Road</p>
                             <p className="text-gray-500 text-sm">Paldi, Ahmedabad, Gujarat, India</p>
-                            <p className="text-gray-500 text-sm">GSTIN: 27AABCU9603R1ZN</p>
                         </div>
                         <div className="text-right">
                             <h2 className="text-4xl font-extrabold text-blue-600/10 mb-2">INVOICE</h2>
@@ -176,11 +175,7 @@ export default function OrderSuccessPage() {
                         <div className="w-64 space-y-2">
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Subtotal</span>
-                                <span>₹{(order.totalAmount * 0.95).toFixed(2)}</span>
-                            </div>
-                            <div className="flex justify-between text-sm text-gray-600">
-                                <span>Tax (5%)</span>
-                                <span>₹{(order.totalAmount * 0.05).toFixed(2)}</span>
+                                <span>₹{order.totalAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Shipping</span>
