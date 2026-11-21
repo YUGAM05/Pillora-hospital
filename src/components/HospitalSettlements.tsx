@@ -220,8 +220,12 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                                 <td style="text-align: right;">${formatCurrency(s.grossCollection)}</td>
                                 <td style="text-align: right;">${formatCurrency(s.razorpayCharges)}</td>
                                 <td style="text-align: right;">${formatCurrency(s.gstCharges)}</td>
-                                <td style="text-align: right;">${formatCurrency(s.netAmount)}</td>
+                                <td style="text-align: right;">${formatCurrency(Number(s.netAmount) + (Number(s.deductionAmount) || 0))}</td>
                             </tr>
+                            ${Number(s.deductionAmount) > 0 ? `<tr>
+                                <td colspan="4">Less: deductions for bookings cancelled by the hospital (refunded to patients)</td>
+                                <td style="text-align: right; color: #e11d48;">- ${formatCurrency(s.deductionAmount)}</td>
+                            </tr>` : ''}
                             <tr class="total-row">
                                 <td colspan="4">Net Transferred Amount</td>
                                 <td style="text-align: right; color: #2563eb;">${formatCurrency(s.netAmount)}</td>
@@ -372,6 +376,9 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                         {formatCurrency(dashboardMetrics?.pendingSettlementAmount)}
                     </h3>
                     <p className="text-xs text-indigo-600 mt-1">Next Expected Cycle: {dashboardMetrics?.nextExpectedSettlementDate}</p>
+                    {Number(dashboardMetrics?.cancellationDeductions) > 0 && (
+                        <p className="text-xs text-rose-600 mt-1">After {formatCurrency(dashboardMetrics?.cancellationDeductions)} cancellation deductions</p>
+                    )}
                 </div>
 
                 <div className="ui-card p-5">
@@ -402,6 +409,12 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                             <p className="text-lg font-semibold text-indigo-600 mt-0.5">{formatCurrency(expectedPayout?.expectedSettlementAmount)}</p>
                         </div>
                     </div>
+                    {Number(expectedPayout?.cancellationDeductions) > 0 && (
+                        <div>
+                            <p className="text-xs font-medium text-slate-500">Cancellation deductions</p>
+                            <p className="text-sm font-semibold text-rose-600 mt-0.5">- {formatCurrency(expectedPayout?.cancellationDeductions)}</p>
+                        </div>
+                    )}
                     <div>
                         <p className="text-xs font-medium text-slate-500">Eligible Payout Date</p>
                         <p className="text-sm font-semibold text-slate-800 mt-0.5">{expectedPayout?.estimatedSettlementDate}</p>
@@ -427,6 +440,51 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                     </p>
                 </div>
             </div>
+
+            {/* CANCELLATION DEDUCTIONS WAITING FOR THE NEXT PAYOUT */}
+            {(dashboardMetrics?.pendingDeductions || []).length > 0 && (
+                <div className="ui-card">
+                    <div className="p-5 sm:p-6 border-b border-slate-100">
+                        <h3 className="ui-title">Cancellation deductions</h3>
+                        <p className="ui-subtitle">
+                            When you cancel a booking that was paid online, Pillora refunds the patient in full. Razorpay keeps its 2.36% charge on the refunded
+                            payment, so that charge comes off your next payout. If the advance had already been paid out to you, the full advance is taken back.
+                        </p>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[560px] text-left">
+                            <thead>
+                                <tr className="border-b border-slate-100 bg-slate-50/80">
+                                    <th className="ui-th pl-6">Booking</th>
+                                    <th className="ui-th">Patient</th>
+                                    <th className="ui-th">Cancelled on</th>
+                                    <th className="ui-th text-right">Refunded to patient</th>
+                                    <th className="ui-th pr-6 text-right">Deducted from you</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {(dashboardMetrics?.pendingDeductions || []).map((d: any) => (
+                                    <tr key={d._id}>
+                                        <td className="ui-td pl-6 font-mono text-xs text-slate-600">#{d.bookingRef || '—'}</td>
+                                        <td className="ui-td">{d.patientName}</td>
+                                        <td className="ui-td whitespace-nowrap text-slate-500">{new Date(d.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}</td>
+                                        <td className="ui-td text-right whitespace-nowrap">{formatCurrency(d.refundAmount)}</td>
+                                        <td className="ui-td pr-6 text-right whitespace-nowrap font-semibold text-rose-600">
+                                            - {formatCurrency(d.amount)}
+                                            <div className="text-[11px] font-normal text-slate-500">{d.type === 'settled_refund' ? 'Already paid out to you' : 'Razorpay charge (2.36%)'}</div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {Number(dashboardMetrics?.pendingDeductionsTotal) > Number(dashboardMetrics?.cancellationDeductions) && (
+                        <p className="px-5 sm:px-6 py-3 border-t border-slate-100 text-xs text-slate-500">
+                            Deductions larger than the next payout wait for a later payout.
+                        </p>
+                    )}
+                </div>
+            )}
 
             {/* PERMANENT LEDGER / HISTORY */}
             <div className="ui-card">
@@ -470,7 +528,12 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                                     </td>
                                     <td className="ui-td text-right font-medium text-slate-800 whitespace-nowrap">{formatCurrency(s.grossCollection)}</td>
                                     <td className="ui-td text-right text-rose-500 font-medium whitespace-nowrap">- {formatCurrency(s.razorpayCharges + s.gstCharges)}</td>
-                                    <td className="ui-td text-right font-semibold text-indigo-600 whitespace-nowrap">{formatCurrency(s.netAmount)}</td>
+                                    <td className="ui-td text-right font-semibold text-indigo-600 whitespace-nowrap">
+                                        {formatCurrency(s.netAmount)}
+                                        {Number(s.deductionAmount) > 0 && (
+                                            <div className="text-[11px] font-normal text-rose-600">after - {formatCurrency(s.deductionAmount)} cancellations</div>
+                                        )}
+                                    </td>
                                     <td className="ui-td text-center text-slate-600">{s.transferMethod}</td>
                                     <td className="ui-td font-mono text-xs text-slate-500 select-all">{s.utrNumber || '—'}</td>
                                     <td className="ui-td text-center">

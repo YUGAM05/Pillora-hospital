@@ -97,6 +97,12 @@ export default function HospitalDashboard() {
     // Recruit Doctor States
     const [showAddDoctor, setShowAddDoctor] = useState(false);
     const [editDoctor, setEditDoctor] = useState<any>(null);
+    // Cancel-appointment dialog: shows the refund and the charge before cancelling
+    const [cancelAppt, setCancelAppt] = useState<any>(null);
+    const [cancelPreview, setCancelPreview] = useState<any>(null);
+    const [cancelReason, setCancelReason] = useState("");
+    const [cancelBusy, setCancelBusy] = useState(false);
+    const [slotCancelPreview, setSlotCancelPreview] = useState<any>(null);
     const [showSlotGen, setShowSlotGen] = useState<any>(null);
     const [newDoctor, setNewDoctor] = useState({ name: "", email: "", phone: "", specialty: "", fee: 200 });
 
@@ -258,14 +264,24 @@ export default function HospitalDashboard() {
         }
     };
 
+    useEffect(() => {
+        setSlotCancelPreview(null);
+        if (!showCancelSlotModal?._id) return;
+        let alive = true;
+        api.get(`/hospital/dashboard/slots/${showCancelSlotModal._id}/cancel-preview`)
+            .then((res) => { if (alive) setSlotCancelPreview(res.data); })
+            .catch(() => { if (alive) setSlotCancelPreview({ error: true }); });
+        return () => { alive = false; };
+    }, [showCancelSlotModal?._id]);
+
     const handleCancelSlotSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!showCancelSlotModal) return;
         try {
-            await api.post(`/hospital/dashboard/slots/${showCancelSlotModal._id}/cancel`, {
+            const res = await api.post(`/hospital/dashboard/slots/${showCancelSlotModal._id}/cancel`, {
                 reason: cancellationReason
             });
-            alert("Slot and all associated bookings cancelled successfully!");
+            alert(res.data?.message || "Slot and all associated bookings cancelled successfully!");
             setShowCancelSlotModal(null);
             setCancellationReason("");
             fetchData();
@@ -637,11 +653,46 @@ export default function HospitalDashboard() {
     };
 
     const handleStatusUpdate = async (id: string, status: string) => {
+        if (status === 'cancelled') {
+            openCancelDialog(appointments.find((a: any) => a._id === id) || { _id: id });
+            return;
+        }
         try {
             await api.put(`/hospital/dashboard/appointments/${id}/status`, { status });
             fetchData();
-        } catch (err) {
-            alert("Failed to update status");
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to update status");
+        }
+    };
+
+    const openCancelDialog = async (app: any) => {
+        setCancelAppt(app);
+        setCancelPreview(null);
+        setCancelReason("");
+        try {
+            const res = await api.get(`/hospital/dashboard/appointments/${app._id}/cancel-preview`);
+            setCancelPreview(res.data);
+        } catch {
+            setCancelPreview({ error: true });
+        }
+    };
+
+    const handleConfirmCancel = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!cancelAppt) return;
+        setCancelBusy(true);
+        try {
+            const res = await api.put(`/hospital/dashboard/appointments/${cancelAppt._id}/status`, {
+                status: 'cancelled',
+                reason: cancelReason.trim() || undefined
+            });
+            setCancelAppt(null);
+            alert(res.data?.cancellation?.message || "Appointment cancelled.");
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.message || "Failed to cancel the appointment");
+        } finally {
+            setCancelBusy(false);
         }
     };
 
@@ -1435,6 +1486,11 @@ export default function HospitalDashboard() {
                                                                         <button title="Check-in" aria-label="Check in" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"><User className="w-4 h-4" /></button>
                                                                         <button title="No-Show / Cancel" aria-label="No-show or cancel" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"><XCircle className="w-4 h-4" /></button>
                                                                     </div>
+                                                                ) : app.status === 'confirmed' ? (
+                                                                    <div className="flex gap-1">
+                                                                        <button title="Check-in" aria-label="Check in" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"><User className="w-4 h-4" /></button>
+                                                                        <button title="Cancel appointment" aria-label="Cancel appointment" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors"><XCircle className="w-4 h-4" /></button>
+                                                                    </div>
                                                                 ) : app.status === 'checked-in' ? (
                                                                     <button onClick={() => handleStatusUpdate(app._id, 'in-consultation')} className="ui-btn ui-btn-sm bg-amber-50 text-amber-700 hover:bg-amber-100">
                                                                         <RefreshCcw className="w-3.5 h-3.5" /> Start consultation
@@ -1618,6 +1674,11 @@ export default function HospitalDashboard() {
                                                 {app.status === 'pending' ? (
                                                     <div className="grid grid-cols-3 gap-2">
                                                         <button type="button" onClick={() => handleStatusUpdate(app._id, 'confirmed')} className="ui-btn min-h-[44px] px-2 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100"><CheckCircle2 className="w-4 h-4" /> Confirm</button>
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="ui-btn min-h-[44px] px-2 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"><User className="w-4 h-4" /> Check-in</button>
+                                                        <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="ui-btn min-h-[44px] px-2 bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100"><XCircle className="w-4 h-4" /> Cancel</button>
+                                                    </div>
+                                                ) : app.status === 'confirmed' ? (
+                                                    <div className="grid grid-cols-2 gap-2">
                                                         <button type="button" onClick={() => handleStatusUpdate(app._id, 'checked-in')} className="ui-btn min-h-[44px] px-2 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"><User className="w-4 h-4" /> Check-in</button>
                                                         <button type="button" onClick={() => handleStatusUpdate(app._id, 'cancelled')} className="ui-btn min-h-[44px] px-2 bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100"><XCircle className="w-4 h-4" /> Cancel</button>
                                                     </div>
@@ -2350,14 +2411,31 @@ export default function HospitalDashboard() {
                 </Modal>
             )}
 
+            {cancelAppt && (
+                <Modal title="Cancel appointment" description={cancelAppt.patientName || cancelAppt.patient?.name} icon={<XCircle className="w-5 h-5" />} iconTone="rose" onClose={() => setCancelAppt(null)}>
+                    <form onSubmit={handleConfirmCancel} className="space-y-4">
+                        <RefundSummary preview={cancelPreview} single />
+                        <Field label="Reason (optional, saved on the booking)">
+                            <textarea placeholder="Doctor unavailable, patient did not come..." value={cancelReason} onChange={e => setCancelReason(e.target.value)} maxLength={500} className="ui-input h-24 resize-none" />
+                        </Field>
+                        <ModalActions>
+                            <button disabled={cancelBusy || !cancelPreview} className="ui-btn-danger w-full min-h-[48px]">
+                                {cancelBusy ? "Cancelling..." : "Cancel appointment"}
+                            </button>
+                        </ModalActions>
+                    </form>
+                </Modal>
+            )}
+
             {showCancelSlotModal && (
                 <Modal title="Cancel slot" icon={<ShieldAlert className="w-5 h-5" />} iconTone="rose" onClose={() => setShowCancelSlotModal(null)}>
                     <form onSubmit={handleCancelSlotSubmit} className="space-y-4">
                         <div className="bg-rose-50 border border-rose-200 p-4 rounded-xl">
                             <p className="text-sm leading-relaxed text-rose-700">
-                                Warning: Cancelling this slot will automatically cancel all associated appointments for this doctor/specialty group on this date, and the patients will be automatically notified of the emergency cancellation.
+                                Cancelling this slot cancels every booking in it. Each patient is told by WhatsApp, email and an app notice.
                             </p>
                         </div>
+                        <RefundSummary preview={slotCancelPreview} />
                         <Field label="Cancellation reason">
                             <textarea required placeholder="Emergency meeting, doctor unavailable..." value={cancellationReason} onChange={e => setCancellationReason(e.target.value)} className="ui-input h-28 resize-none" />
                         </Field>
@@ -2713,6 +2791,39 @@ function SlotFill({ slot }: { slot: any }) {
                 <span className="ui-badge border-slate-200 bg-slate-50 text-slate-500" title="Patients currently in checkout">{holds} in checkout</span>
             )}
         </span>
+    );
+}
+
+/** What a hospital cancellation refunds to patients and what comes off the hospital's next settlement. */
+function RefundSummary({ preview, single = false }: { preview: any; single?: boolean }) {
+    if (!preview) {
+        return <p className="text-sm text-slate-500">Checking payments...</p>;
+    }
+    if (preview.error) {
+        return <p className="text-sm text-amber-700">Could not check the online payment. Any online advance will still be refunded automatically.</p>;
+    }
+    const inr = (n: number) => `₹${(Number(n) || 0).toFixed(2)}`;
+    if (!(preview.refundAmount > 0)) {
+        return (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                {single ? "No online advance was paid for this booking, so there is nothing to refund and no charge." : "No online advances were paid in this slot, so there is nothing to refund and no charge."}
+            </div>
+        );
+    }
+    return (
+        <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <p>
+                <strong>{inr(preview.refundAmount)}</strong> will be refunded to {single ? "the patient" : `${preview.refundCount} patient${preview.refundCount === 1 ? "" : "s"}`} automatically (5–7 working days).
+            </p>
+            <p>
+                <strong>{inr(preview.hospitalCharge)}</strong> will be deducted from your next settlement.{" "}
+                {preview.paidOutCount > 0
+                    ? (single
+                        ? "This advance was already paid out to you, so the full amount is taken back."
+                        : `${preview.paidOutCount} of these advances were already paid out to you, so those are taken back in full; the rest cost the 2.36% Razorpay charge.`)
+                    : "Razorpay keeps its 2.36% charge on refunded payments, and the hospital covers it when it cancels."}
+            </p>
+        </div>
     );
 }
 
