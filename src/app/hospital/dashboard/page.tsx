@@ -25,6 +25,24 @@ import HospitalSettingsModule from "@/components/HospitalSettingsModule";
 import { initWebPush } from "@/lib/webPush";
 import { doctorLabel, doctorShortLabel } from "@/lib/doctorName";
 import { planLabel } from "@/lib/plans";
+import { subscriptionFlags } from "@/lib/subscription";
+
+// YYYY-MM-DD in India time ('' for missing/invalid dates). toISOString() is UTC, which puts
+// bookings between 00:00 and 05:30 IST on the previous day and throws on an invalid date.
+const istDateKey = (value?: string | number | Date | null): string => {
+    if (value === undefined || value === null || value === "") return "";
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+};
+const todayIST = () => istDateKey(new Date());
+
+// Quote a CSV cell, escape embedded quotes and neutralise spreadsheet formulas (=, +, -, @).
+const csvCell = (value: unknown): string => {
+    let text = String(value ?? "");
+    if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+    return `"${text.replace(/"/g, '""')}"`;
+};
 
 export default function HospitalDashboard() {
     const router = useRouter();
@@ -155,7 +173,7 @@ export default function HospitalDashboard() {
 
     // Add Slot Form States
     const [addSlotDoctorId, setAddSlotDoctorId] = useState("");
-    const [addSlotDate, setAddSlotDate] = useState(new Date().toISOString().split("T")[0]);
+    const [addSlotDate, setAddSlotDate] = useState(todayIST());
     const [addSlotStartTime, setAddSlotStartTime] = useState("09:00");
     const [addSlotEndTime, setAddSlotEndTime] = useState("09:30");
     const [addSlotRecurrenceType, setAddSlotRecurrenceType] = useState<"none" | "daily" | "weekly">("none");
@@ -168,7 +186,7 @@ export default function HospitalDashboard() {
     const [manualPatientEmail, setManualPatientEmail] = useState("");
     const [manualPatientPhone, setManualPatientPhone] = useState("");
     const [manualDoctorId, setManualDoctorId] = useState("");
-    const [manualBookingDate, setManualBookingDate] = useState(new Date().toISOString().split("T")[0]);
+    const [manualBookingDate, setManualBookingDate] = useState(todayIST());
     const [manualSlotId, setManualSlotId] = useState("");
     const [manualPaymentStatus, setManualPaymentStatus] = useState("pending");
     const [manualPaymentMethod, setManualPaymentMethod] = useState("cash");
@@ -198,7 +216,7 @@ export default function HospitalDashboard() {
             alert("Slot(s) added successfully!");
             setShowAddSlot(false);
             setAddSlotDoctorId("");
-            setAddSlotDate(new Date().toISOString().split("T")[0]);
+            setAddSlotDate(todayIST());
             setAddSlotStartTime("09:00");
             setAddSlotEndTime("09:30");
             setAddSlotRecurrenceType("none");
@@ -496,7 +514,7 @@ export default function HospitalDashboard() {
     }, [stats, checkPushPermission]);
 
     const filteredAppointments = appointments.filter((app: any) => {
-        const appDateStr = app.slotTime ? new Date(app.slotTime).toISOString().split('T')[0] : "";
+        const appDateStr = istDateKey(app.slotTime);
         
         if (filterDate && appDateStr !== filterDate) return false;
         
@@ -530,23 +548,23 @@ export default function HospitalDashboard() {
         const headers = ["Token No.", "Patient Name", "Contact Number", "Specialty", "Appointment Date", "Time Slot", "Booking Date", "Status", "Hospital Name"];
         
         // CSV Rows
-        const rows = filteredAppointments.map((app, index) => {
-            const tokenNo = app.tokenNo || `T-${index + 1001}`;
+        const rows = filteredAppointments.map((app) => {
+            const tokenNo = app.tokenNumber != null ? `#${app.tokenNumber}` : '—';
             const timeSlot = app.slot 
                 ? `${new Date(app.slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(app.slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}` 
                 : new Date(app.slotTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
             
             return [
-                `"${tokenNo}"`,
-                `"${app.patient?.name || 'N/A'}"`,
-                `"${app.patient?.phone || 'N/A'}"`,
-                `"${app.doctor?.specialty || 'N/A'}"`,
-                `"${new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
-                `"${timeSlot}"`,
-                `"${new Date(app.bookingDate || app.createdAt || Date.now()).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}"`,
-                `"${app.status || 'N/A'}"`,
-                `"${stats?.hospital?.name || stats?.name || user?.hospitalName || 'Pillora Hospital'}"`
-            ];
+                tokenNo,
+                app.patient?.name || 'N/A',
+                app.patient?.phone || 'N/A',
+                app.doctor?.specialty || 'N/A',
+                new Date(app.slotTime).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                timeSlot,
+                new Date(app.bookingDate || app.createdAt || Date.now()).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                app.status || 'N/A',
+                stats?.stats?.hospital?.name || stats?.hospital?.name || user?.hospitalName || 'Pillora Hospital',
+            ].map(csvCell);
         });
 
         const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
@@ -619,7 +637,7 @@ export default function HospitalDashboard() {
                 if (!confirm("This booking is already marked as paid. Do you want to update the payment?")) return;
             }
             setSelectedAppointmentId(appointmentId);
-            setPaymentAmount(app?.paymentDetails?.amount || app?.doctor?.fee || 500);
+            setPaymentAmount(app?.paymentDetails?.amount || app?.consultationFee || app?.doctor?.fee || 500);
             setPaymentMode(app?.paymentDetails?.mode || "offline");
             setPaymentModalOpen(true);
             return;
@@ -632,7 +650,7 @@ export default function HospitalDashboard() {
         setPaymentUpdatingId(appointmentId);
         try {
             await api.patch(`/hospital/dashboard/appointments/${appointmentId}/payment-status`, { status });
-            showToast(`Payment marked as ${status === 'waived' ? 'revoked' : status}`, 'success');
+            showToast(`Payment marked as ${status === 'waived' ? 'fee waived' : status}`, 'success');
         } catch (error: any) {
             // Rollback
             setAppointments((cur: any[]) =>
@@ -776,7 +794,11 @@ export default function HospitalDashboard() {
     const doctorData = getDoctorBreakdown();
     const maxCount = Math.max(...doctorData.map(d => d.count), 1);
 
-    const hospitalName: string = stats?.hospital?.name || stats?.stats?.hospital?.name || "";
+    // GET /hospital/dashboard/stats returns the hospital document under stats.stats.hospital
+    // (plan, is_featured, ...); stats.hospital is kept as a fallback for older responses.
+    const hospitalDoc: any = stats?.stats?.hospital || stats?.hospital || null;
+    const hospitalName: string = hospitalDoc?.name || "";
+    const subFlags = subscriptionFlags(subscriptionData?.hospital);
     const timeRange = (start?: string, end?: string) =>
         start && end
             ? `${new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })} - ${new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}`
@@ -791,7 +813,7 @@ export default function HospitalDashboard() {
         if (activeSlotSubTab === 'upcoming' && !slotDateFilter && new Date(slot.endTime || slot.startTime).getTime() < Date.now()) return false;
         // Date filter: compare slot's local date (YYYY-MM-DD) against the filter
         if (slotDateFilter) {
-            const slotLocalDate = new Date(slot.startTime).toLocaleDateString('en-CA'); // YYYY-MM-DD
+            const slotLocalDate = istDateKey(slot.startTime); // YYYY-MM-DD (IST)
             if (slotLocalDate !== slotDateFilter) return false;
         }
         return true;
@@ -800,7 +822,7 @@ export default function HospitalDashboard() {
     // Free slots offered in the walk-in booking form
     const manualSlotOptions = slots.filter((s: any) => {
         const matchDoc = s.doctor?._id === manualDoctorId;
-        const slotDate = new Date(s.startTime).toISOString().split("T")[0];
+        const slotDate = istDateKey(s.startTime);
         const matchDate = slotDate === manualBookingDate;
         const isAvailable = s.status === "available";
         const maxAppts = s.max_appointments || 1;
@@ -834,33 +856,33 @@ export default function HospitalDashboard() {
         { id: "followups", label: "Follow-up reminders", short: "Follow-ups", icon: <BellRing className="w-[18px] h-[18px]" /> },
         {
             id: "subscription", label: "Plan & usage", short: "Plan & usage", icon: <CreditCard className="w-[18px] h-[18px]" />,
-            badge: subscriptionData?.hospital?.isExpired ? dot("bg-rose-500 ring-4 ring-rose-500/20", "Subscription expired")
-                : subscriptionData?.hospital?.subscriptionStatus === 'Pending Payment' ? dot("bg-amber-500", "Payment pending")
-                : subscriptionData?.hospital?.isExpiringSoon ? dot("bg-orange-500", "Expiring soon")
+            badge: subFlags.isExpired ? dot("bg-rose-500 ring-4 ring-rose-500/20", "Subscription expired")
+                : subFlags.isPending ? dot("bg-amber-500", "Payment pending")
+                : subFlags.isExpiringSoon ? dot("bg-orange-500", "Expiring soon")
                 : null,
         },
         { id: "settings", label: "Settings", short: "Settings", icon: <Settings className="w-[18px] h-[18px]" /> },
     ];
 
-    const hasPlanBenefits = stats?.is_featured || stats?.has_custom_page || stats?.has_govt_schemes || stats?.is_spotlight || stats?.priority_support;
+    const hasPlanBenefits = hospitalDoc?.is_featured || hospitalDoc?.has_custom_page || hospitalDoc?.has_govt_schemes || hospitalDoc?.is_spotlight || hospitalDoc?.priority_support;
     const planBenefits = (
         <div className="ui-card p-4">
             <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-medium text-slate-500">Plan benefits</p>
                 <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">Active</span>
             </div>
-            <p className="mt-1 text-sm font-semibold text-slate-900">{planLabel(stats?.plan)} plan</p>
+            <p className="mt-1 text-sm font-semibold text-slate-900">{planLabel(hospitalDoc?.plan)} plan</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
-                {stats?.is_featured && (
+                {hospitalDoc?.is_featured && (
                     <span className="ui-badge border-indigo-100 bg-indigo-50 text-indigo-700">Top of search</span>
                 )}
-                {stats?.has_govt_schemes && (
+                {hospitalDoc?.has_govt_schemes && (
                     <span className="ui-badge border-emerald-100 bg-emerald-50 text-emerald-700">Govt schemes</span>
                 )}
-                {stats?.is_spotlight && (
+                {hospitalDoc?.is_spotlight && (
                     <span className="ui-badge border-amber-100 bg-amber-50 text-amber-700">Spotlight</span>
                 )}
-                {stats?.priority_support && (
+                {hospitalDoc?.priority_support && (
                     <span className="ui-badge border-rose-100 bg-rose-50 text-rose-700">Priority support</span>
                 )}
                 {!hasPlanBenefits && (
@@ -987,7 +1009,7 @@ export default function HospitalDashboard() {
                             </h1>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                                 <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
-                                    {planLabel(stats?.plan)} plan
+                                    {planLabel(hospitalDoc?.plan)} plan
                                 </span>
                                 <span className="ui-badge border-emerald-200 bg-emerald-50 text-emerald-700">
                                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> System online
@@ -1283,9 +1305,9 @@ export default function HospitalDashboard() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {filteredAppointments.map((app: any, idx: number) => (
+                                            {filteredAppointments.map((app: any) => (
                                                 <tr key={app._id} className="hover:bg-slate-50/60 transition-colors">
-                                                    <td className="ui-td pl-6 font-semibold text-slate-900 whitespace-nowrap">{app.tokenNo || `T-${idx + 1001}`}</td>
+                                                    <td className="ui-td pl-6 font-semibold text-slate-900 whitespace-nowrap">{app.tokenNumber != null ? `#${app.tokenNumber}` : '—'}</td>
                                                     <td className="ui-td min-w-[200px]">
                                                         <div className="font-medium text-slate-900">
                                                             {app.patientName || app.patient?.name || 'N/A'}
@@ -1361,7 +1383,7 @@ export default function HospitalDashboard() {
                                                                             <FileText className="w-3.5 h-3.5" /> View invoice
                                                                         </a>
                                                                     ) : (
-                                                                        <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="ui-btn-dark ui-btn-sm">
+                                                                        <button onClick={() => handleGenerateInvoice(app._id, app.consultationFee || app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="ui-btn-dark ui-btn-sm">
                                                                             <FileText className="w-3.5 h-3.5" /> {generatingInvoiceId === app._id ? 'Generating…' : 'Generate invoice'}
                                                                         </button>
                                                                     )
@@ -1409,7 +1431,7 @@ export default function HospitalDashboard() {
                                                                             : app.paymentStatus === 'partial'
                                                                             ? `Advance: ₹${app.advancePaid || ''} • Due: ₹${app.balanceDue !== undefined ? app.balanceDue : ''}`
                                                                             : app.paymentStatus === 'waived'
-                                                                            ? 'Revoked'
+                                                                            ? 'Fee waived'
                                                                             : 'Unpaid'}
                                                                         <ChevronDown className="w-3 h-3 opacity-60" />
                                                                     </button>
@@ -1442,7 +1464,7 @@ export default function HospitalDashboard() {
                                                                                         s === 'paid' ? 'text-emerald-700' : s === 'waived' ? 'text-slate-600' : 'text-rose-600'
                                                                                     } ${app.paymentStatus === s ? 'bg-slate-50' : ''}`}
                                                                                 >
-                                                                                    {s === 'paid' ? 'Paid' : s === 'waived' ? 'Revoke' : 'Unpaid'}
+                                                                                    {s === 'paid' ? 'Paid' : s === 'waived' ? 'Waive fee' : 'Unpaid'}
                                                                                     {app.paymentStatus === s && <Check className="w-3.5 h-3.5" />}
                                                                                 </button>
                                                                             ))}
@@ -1465,13 +1487,13 @@ export default function HospitalDashboard() {
 
                                 {/* Mobile Card List View */}
                                 <div className="md:hidden divide-y divide-slate-100">
-                                    {filteredAppointments.map((app: any, idx: number) => (
+                                    {filteredAppointments.map((app: any) => (
                                         <div key={app._id} className="p-4 space-y-3">
                                             <div className="flex justify-between items-start gap-3">
                                                 <div className="min-w-0">
                                                     <div className="flex flex-wrap items-center gap-1.5">
                                                         <span className="px-2 py-0.5 bg-slate-900 text-white font-mono text-[11px] rounded-md font-semibold">
-                                                            {app.tokenNo || `T-${idx + 1001}`}
+                                                            {app.tokenNumber != null ? `#${app.tokenNumber}` : '—'}
                                                         </span>
                                                         {app.bookingSource === 'ai_call' && <AiCallBadge />}
                                                     </div>
@@ -1547,7 +1569,7 @@ export default function HospitalDashboard() {
                                                             <FileText className="w-4 h-4" /> View invoice
                                                         </a>
                                                     ) : (
-                                                        <button onClick={() => handleGenerateInvoice(app._id, app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="ui-btn-dark w-full min-h-[44px]">
+                                                        <button onClick={() => handleGenerateInvoice(app._id, app.consultationFee || app.doctor?.fee || 500)} disabled={generatingInvoiceId === app._id} className="ui-btn-dark w-full min-h-[44px]">
                                                             <FileText className="w-4 h-4" /> {generatingInvoiceId === app._id ? 'Generating...' : 'Generate invoice'}
                                                         </button>
                                                     )
@@ -1575,7 +1597,7 @@ export default function HospitalDashboard() {
                                                         >
                                                             <option value="unpaid">Unpaid</option>
                                                             <option value="paid">Paid</option>
-                                                            <option value="waived">Revoke</option>
+                                                            <option value="waived">Waive fee</option>
                                                         </select>
                                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 opacity-60" />
                                                     </div>
@@ -1710,7 +1732,7 @@ export default function HospitalDashboard() {
                                         <div key={doc._id} className={`rounded-xl border p-4 transition-colors ${doc.is_active ? 'border-slate-200 bg-white hover:border-blue-200' : 'border-dashed border-rose-200 bg-rose-50/40'}`}>
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center font-semibold text-blue-600 shrink-0">
-                                                    {doc.name.charAt(0)}
+                                                    {(doc.name || '?').charAt(0)}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="font-semibold text-slate-900 truncate">{doc.name}</p>
@@ -2198,7 +2220,7 @@ export default function HospitalDashboard() {
                             </select>
                         </Field>
                         <Field label="Date">
-                            <input required type="date" min={new Date().toISOString().split("T")[0]} value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} className="ui-input" />
+                            <input required type="date" min={todayIST()} value={addSlotDate} onChange={e => setAddSlotDate(e.target.value)} className="ui-input" />
                         </Field>
                         <div className="grid grid-cols-2 gap-3">
                             <Field label="Start time">
@@ -2290,7 +2312,7 @@ export default function HospitalDashboard() {
                         </Field>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="Appointment date">
-                                <input required type="date" min={new Date().toISOString().split("T")[0]} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="ui-input" />
+                                <input required type="date" min={todayIST()} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="ui-input" />
                             </Field>
                             <Field label="Clinic payment status">
                                 <select value={manualPaymentStatus} onChange={e => setManualPaymentStatus(e.target.value)} className="ui-input">

@@ -250,7 +250,8 @@ export default function AboutVideoPlayer({
                         onEnded={() => setIsPlaying(false)}
                         poster={poster}
                         playsInline
-                        preload="metadata"
+                        /* ~32 MB file: fetch nothing until the visitor presses play (LC-9) */
+                        preload="none"
                     >
                         {cdnSrc && <source src={cdnSrc} type="video/mp4" />}
                         <source src={src} type="video/mp4" />

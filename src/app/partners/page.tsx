@@ -56,8 +56,21 @@ export default function PartnersPage() {
 
         try {
             const formData = new FormData(e.currentTarget);
-            const data: any = Object.fromEntries(formData.entries());
-            data.type = 'hospital';
+            const field = (name: string) => String(formData.get(name) ?? '').trim();
+            // Fields match the backend PartnerRequest model (area, address and designation are required;
+            // the free-text description is stored as `message`).
+            const data = {
+                type: 'hospital',
+                organizationName: field('organizationName'),
+                city: field('city'),
+                area: field('area'),
+                address: field('address'),
+                contactPersonName: field('contactPersonName'),
+                designation: field('designation'),
+                phoneNumber: field('phoneNumber'),
+                email: field('email'),
+                message: field('description'),
+            };
 
             const response = await api.post('/partners/submit', data);
             if (response.data.success) {
@@ -67,6 +80,8 @@ export default function PartnersPage() {
                     setShowForm(false);
                     setFormSubmitted(false);
                 }, 5000);
+            } else {
+                setError(response.data?.message || "Failed to submit. Please try again.");
             }
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to submit. Please try again.");
@@ -335,8 +350,20 @@ export default function PartnersPage() {
                                                 <input required name="city" type="text" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:bg-white transition-all font-medium" placeholder="e.g. Ahmedabad" />
                                             </div>
                                             <div className="space-y-2">
+                                                <label htmlFor="partner-area" className="text-xs font-black text-slate-500 uppercase tracking-widest block">Area / Locality</label>
+                                                <input required id="partner-area" name="area" type="text" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:bg-white transition-all font-medium" placeholder="e.g. Navrangpura" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label htmlFor="partner-address" className="text-xs font-black text-slate-500 uppercase tracking-widest block">Full Address</label>
+                                                <input required id="partner-address" name="address" type="text" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:bg-white transition-all font-medium" placeholder="Building, street, landmark" />
+                                            </div>
+                                            <div className="space-y-2">
                                                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">Contact Name</label>
                                                 <input required name="contactPersonName" type="text" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:bg-white transition-all font-medium" placeholder="Your name" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label htmlFor="partner-designation" className="text-xs font-black text-slate-500 uppercase tracking-widest block">Designation</label>
+                                                <input required id="partner-designation" name="designation" type="text" className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:bg-white transition-all font-medium" placeholder="e.g. Administrator, Owner" />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-xs font-black text-slate-500 uppercase tracking-widest block">Phone Number</label>

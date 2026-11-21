@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import api from "@/lib/api";
+import { subscriptionFlags } from "@/lib/subscription";
 import { SUPPORT_PHONE } from "@/content/marketing";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -39,12 +40,12 @@ interface IHospitalSubData {
         joiningDate?: string;
         subscriptionDurationDays: number;
         paymentStatus: 'Pending' | 'Paid';
-        subscriptionStatus: 'Active' | 'Pending Payment' | 'Expiring Soon' | 'Expired';
+        subscriptionStatus: 'Active' | 'Pending' | 'Pending Payment' | 'Expiring Soon' | 'Expired';
         subscriptionStartDate?: string;
         subscriptionExpiryDate?: string;
         daysRemaining: number;
-        isExpired: boolean;
-        isExpiringSoon: boolean;
+        isExpired?: boolean;
+        isExpiringSoon?: boolean;
         lastPaymentDate?: string;
         nextPaymentDueDate?: string;
         lastPaymentAmount?: number;
@@ -130,7 +131,7 @@ export default function HospitalSubscriptionDashboard() {
     }
 
     const { hospital, payments } = subData;
-    const status = hospital.subscriptionStatus;
+    const { status, isPending, isExpired, isExpiringSoon } = subscriptionFlags(hospital);
     const canGenerate = status === 'Active' || status === 'Expiring Soon';
 
     const metric = (label: string, value: React.ReactNode, sub: React.ReactNode, valueClass = "text-slate-900") => (
@@ -144,7 +145,7 @@ export default function HospitalSubscriptionDashboard() {
     return (
         <div className="space-y-6">
             {/* Top Alert Banners */}
-            {hospital.isExpired && (
+            {isExpired && (
                 <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -170,7 +171,7 @@ export default function HospitalSubscriptionDashboard() {
                 </motion.div>
             )}
 
-            {!hospital.isExpired && status === 'Pending Payment' && (
+            {!isExpired && isPending && (
                 <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -196,7 +197,7 @@ export default function HospitalSubscriptionDashboard() {
                 </motion.div>
             )}
 
-            {hospital.isExpiringSoon && !hospital.isExpired && (
+            {isExpiringSoon && !isExpired && (
                 <motion.div
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -248,7 +249,7 @@ export default function HospitalSubscriptionDashboard() {
                                     <CalendarX className="w-3.5 h-3.5" /> Expired
                                 </span>
                             )}
-                            {status === 'Pending Payment' && (
+                            {isPending && (
                                 <span className="ui-badge border-slate-200 bg-slate-100 text-slate-700">
                                     <Clock className="w-3.5 h-3.5" /> Pending Payment
                                 </span>
@@ -271,12 +272,12 @@ export default function HospitalSubscriptionDashboard() {
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
                     {metric(
                         "Days remaining",
-                        status === 'Pending Payment' ? '—' : `${hospital.daysRemaining} Days`,
-                        status === 'Active' ? 'In current billing cycle' : status === 'Pending Payment' ? 'Awaiting payment' : 'Cycle ended',
+                        isPending ? '—' : `${hospital.daysRemaining} Days`,
+                        status === 'Active' || status === 'Expiring Soon' ? 'In current billing cycle' : isPending ? 'Awaiting payment' : 'Cycle ended',
                         hospital.daysRemaining > 5 ? 'text-emerald-600 text-xl' : hospital.daysRemaining > 0 ? 'text-amber-600 text-xl' : 'text-rose-600 text-xl'
                     )}
                     {metric("Start date", formatDate(hospital.subscriptionStartDate), "Cycle start date")}
-                    {metric("Expiry date", formatDate(hospital.subscriptionExpiryDate), "Cycle conclusion", hospital.isExpired ? 'text-rose-600' : 'text-slate-900')}
+                    {metric("Expiry date", formatDate(hospital.subscriptionExpiryDate), "Cycle conclusion", isExpired ? 'text-rose-600' : 'text-slate-900')}
                     {metric(
                         "Last payment",
                         formatDate(hospital.lastPaymentDate),

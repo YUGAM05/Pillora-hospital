@@ -156,11 +156,13 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
 
         const dateStr = new Date(s.transferDate || s.createdAt).toLocaleDateString('en-IN');
         const confirmDateStr = s.confirmationDate ? new Date(s.confirmationDate).toLocaleDateString('en-IN') : 'Pending';
+        // Escape values before writing them into the receipt window's HTML.
+        const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[c]);
 
         const html = `
             <html>
                 <head>
-                    <title>Settlement Receipt - ${s.settlementId}</title>
+                    <title>Settlement Receipt - ${esc(s.settlementId)}</title>
                     <style>
                         body { font-family: system-ui, sans-serif; color: #1e293b; padding: 40px; }
                         .header { display: flex; justify-between; border-b: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
@@ -181,7 +183,7 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                     <div class="header">
                         <div>
                             <div class="title">PILLORA HEALTHCARE</div>
-                            <div class="id">Settlement Receipt: ${s.settlementId}</div>
+                            <div class="id">Settlement Receipt: ${esc(s.settlementId)}</div>
                         </div>
                         <div style="text-align: right;">
                             <div style="font-size: 14px; font-weight: bold;">Settlement Cutoff</div>
@@ -191,13 +193,13 @@ export default function HospitalSettlements({ hospitalId, trialEndDate }: Hospit
                     <div class="grid">
                         <div>
                             <div class="label">TRANSFERRED TO</div>
-                            <div class="value">Hospital ID: ${s.hospitalId}</div>
-                            <div class="value">Transfer Method: ${s.transferMethod}</div>
-                            <div class="value">UTR Number: ${s.utrNumber || 'N/A'}</div>
+                            <div class="value">Hospital ID: ${esc(s.hospitalId)}</div>
+                            <div class="value">Transfer Method: ${esc(s.transferMethod)}</div>
+                            <div class="value">UTR Number: ${esc(s.utrNumber || 'N/A')}</div>
                         </div>
                         <div>
                             <div class="label">PAYOUT METRICS</div>
-                            <div class="value">Status: ${s.status}</div>
+                            <div class="value">Status: ${esc(s.status)}</div>
                             <div class="value">Transfer Date: ${dateStr}</div>
                             <div class="value">Confirmation Date: ${confirmDateStr}</div>
                         </div>

@@ -181,6 +181,8 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
         if (filterSettlementStatus !== "all") params.append("settlementStatus", filterSettlementStatus);
 
         if (isExport) {
+            // Backend (financialController) reads `exportFormat`; `export` kept for older builds.
+            params.append("exportFormat", "csv");
             params.append("export", "csv");
         } else {
             params.append("page", page.toString());
@@ -263,6 +265,9 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
             const res = await api.get(`/hospital/dashboard/financial/appointments?${query}`, {
                 responseType: "blob"
             });
+            if (res.data?.type && String(res.data.type).includes("json")) {
+                throw new Error("Server returned JSON instead of CSV");
+            }
             const blob = new Blob([res.data], { type: "text/csv;charset=utf-8;" });
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
@@ -318,11 +323,11 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 fetchOverview();
                 fetchRecords();
             } else {
-                showToast(res.data?.message || "Failed to record collection", "error");
+                showToast(res.data?.message || res.data?.error || "Failed to record collection", "error");
             }
         } catch (err: any) {
             console.error("Balance collection error:", err);
-            showToast(err.response?.data?.message || "Error submitting balance collection", "error");
+            showToast(err.response?.data?.message || err.response?.data?.error || "Error submitting balance collection", "error");
         } finally {
             setBalanceSubmitting(false);
         }
@@ -478,7 +483,7 @@ export default function PaymentAnalytics({ doctors = [] }: { doctors?: any[] }) 
                 fetchOverview();
                 fetchRecords();
             } else {
-                showToast(res.data?.message || "Failed to update payment record", "error");
+                showToast(res.data?.message || res.data?.error || "Failed to update payment record", "error");
             }
         } catch (err: any) {
             console.error("[EditPaymentError]", err);

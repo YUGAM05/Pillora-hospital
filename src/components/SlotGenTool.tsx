@@ -3,6 +3,7 @@
 import { useState } from "react";
 import api from "@/lib/api";
 import { SUPPORT_PHONE } from "@/content/marketing";
+import { normalizeSubscriptionStatus } from "@/lib/subscription";
 import { Calendar, Clock, Activity, ShieldAlert, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -23,7 +24,8 @@ export default function SlotGenTool({ doctor, hospitalId, subscriptionStatus, on
         duration: "15"
     });
 
-    const isSubscriptionBlocked = subscriptionStatus === 'Pending Payment' || subscriptionStatus === 'Expired';
+    const normalizedStatus = normalizeSubscriptionStatus(subscriptionStatus);
+    const isSubscriptionBlocked = normalizedStatus === 'Pending' || normalizedStatus === 'Expired';
     const restrictionMessage = "Your Pillora subscription has expired or your payment is pending. Please contact the Pillora Admin to renew your subscription before generating new appointment slots.";
 
     const handleSubmit = async (e: React.FormEvent) => {

@@ -197,7 +197,7 @@ export default function PatientSearchAdmin() {
         setError("");
         setResults([]);
         try {
-            const queryParam = searchType === "bookingId" ? `bookingId=${query}` : `name=${query}`;
+            const queryParam = searchType === "bookingId" ? `bookingId=${encodeURIComponent(query)}` : `name=${encodeURIComponent(query)}`;
             const res = await api.get(`/hospital/dashboard/patients/search?${queryParam}`);
             setResults(res.data);
         } catch (err: any) {
@@ -256,7 +256,7 @@ export default function PatientSearchAdmin() {
             setPaymentModalOpen(false);
 
             // refresh search results
-            const queryParam = searchType === "bookingId" ? `bookingId=${searchQuery}` : `name=${searchQuery}`;
+            const queryParam = searchType === "bookingId" ? `bookingId=${encodeURIComponent(searchQuery)}` : `name=${encodeURIComponent(searchQuery)}`;
             const res = await api.get(`/hospital/dashboard/patients/search?${queryParam}`);
             setResults(res.data);
         } catch (err: any) {
@@ -469,7 +469,7 @@ export default function PatientSearchAdmin() {
                                 <div className="rounded-xl bg-slate-50 p-3.5 sm:p-4">
                                     <p className="text-xs font-medium text-slate-500">Total visits</p>
                                     <p className="mt-1 flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900">
-                                        <Activity className="h-4 w-4 shrink-0 text-emerald-500" /> {result.patientInfo.totalVisits}
+                                        <Activity className="h-4 w-4 shrink-0 text-emerald-500" /> {result.patientInfo.totalVisits || result.bookings?.length || 0}
                                     </p>
                                 </div>
                                 <div className="order-last col-span-2 rounded-xl bg-slate-50 p-3.5 sm:order-none sm:col-span-1 sm:p-4">

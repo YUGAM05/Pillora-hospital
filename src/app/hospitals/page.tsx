@@ -166,13 +166,7 @@ export default function HospitalsPage() {
     const fetchHospitals = async () => {
         try {
             const res = await api.get('/hospitals');
-            if (res.data.length === 0) {
-                await api.post('/hospitals/seed');
-                const r2 = await api.get('/hospitals');
-                setHospitals(r2.data);
-            } else {
-                setHospitals(res.data);
-            }
+            setHospitals(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error('Failed to fetch hospitals', err);
         } finally {
