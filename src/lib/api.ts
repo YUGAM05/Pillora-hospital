@@ -40,6 +40,10 @@ api.interceptors.response.use(
                     return new Promise(() => {});
                 }
             }
+            // A staff role without access to this area: let the page show a friendly notice
+            if (error.response?.status === 403 && error.response?.data?.code === 'ROLE_FORBIDDEN') {
+                window.dispatchEvent(new CustomEvent('pillora:forbidden', { detail: error.response.data.message }));
+            }
             if (error.response?.status === 403 && error.response?.data?.code === 'PASSWORD_RESET_REQUIRED') {
                 if (!window.location.pathname.startsWith('/auth/change-password')) {
                     isRedirecting = true;

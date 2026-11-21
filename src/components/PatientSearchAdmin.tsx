@@ -47,7 +47,8 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function PatientSearchAdmin() {
+/** canPay / canFollowUp: hide actions the staff role can't use (the server enforces them too). */
+export default function PatientSearchAdmin({ canPay = true, canFollowUp = true }: { canPay?: boolean; canFollowUp?: boolean } = {}) {
     const [searchType, setSearchType] = useState<"bookingId" | "name">("bookingId");
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(false);
@@ -530,27 +531,27 @@ export default function PatientSearchAdmin() {
                                                 </td>
                                                 <td className="ui-td pr-6">
                                                     <div className="flex items-center justify-end gap-1.5">
-                                                        <button
+                                                        {canFollowUp && <button
                                                             onClick={() => setFollowUpBooking({ ...booking, patientInfo: result.patientInfo })}
                                                             className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100"
                                                             title="Schedule Follow-Up Reminder"
                                                         >
                                                             <Bell className="h-4 w-4" />
-                                                        </button>
-                                                        <button
+                                                        </button>}
+                                                        {canPay && <button
                                                             onClick={() => handleGenerateInvoice(booking._id)}
                                                             className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 transition-colors hover:bg-emerald-100"
                                                             title="Generate Invoice"
                                                         >
                                                             <FileText className="h-4 w-4" />
-                                                        </button>
-                                                        <button
+                                                        </button>}
+                                                        {canPay && <button
                                                             onClick={() => handleOpenPaymentModal(booking._id)}
                                                             className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600 transition-colors hover:bg-amber-100"
                                                             title="Record Payment"
                                                         >
                                                             <IndianRupee className="h-4 w-4" />
-                                                        </button>
+                                                        </button>}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -589,24 +590,24 @@ export default function PatientSearchAdmin() {
                                             </div>
                                         </div>
                                         <div className="flex w-full flex-col gap-2">
-                                            <button
+                                            {canFollowUp && <button
                                                 onClick={() => setFollowUpBooking({ ...booking, patientInfo: result.patientInfo })}
                                                 className="ui-btn min-h-[44px] w-full border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
                                             >
                                                 <Bell className="h-4 w-4" /> Schedule follow-up
-                                            </button>
-                                            <button
+                                            </button>}
+                                            {canPay && <button
                                                 onClick={() => handleGenerateInvoice(booking._id)}
                                                 className="ui-btn min-h-[44px] w-full border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                                             >
                                                 <FileText className="h-4 w-4" /> Generate invoice
-                                            </button>
-                                            <button
+                                            </button>}
+                                            {canPay && <button
                                                 onClick={() => handleOpenPaymentModal(booking._id)}
                                                 className="ui-btn min-h-[44px] w-full border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
                                             >
                                                 <IndianRupee className="h-4 w-4" /> Record payment
-                                            </button>
+                                            </button>}
                                         </div>
                                     </div>
                                 ))}

@@ -44,6 +44,25 @@ const csvCell = (value: unknown): string => {
     return `"${text.replace(/"/g, '""')}"`;
 };
 
+// Hospital staff accounts: which permission each dashboard tab needs (enforced on the server too).
+type MainTab = "appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription" | "settings";
+const TAB_PERMISSION: Record<MainTab, string> = {
+    appointments: "appointments",
+    slots: "doctorsSlots",
+    patients: "patients",
+    payments: "payments",
+    settlements: "settlements",
+    followups: "followups",
+    subscription: "planView",
+    settings: "self",
+};
+const TAB_ORDER = Object.keys(TAB_PERMISSION) as MainTab[];
+const ROLE_LABELS: Record<string, string> = {
+    owner: "Owner", administrator: "Administrator", receptionist: "Receptionist", doctor: "Doctor", accounts: "Accounts",
+};
+const tabAllowed = (tab: MainTab, perms: string[] | null) => !perms || perms.includes(TAB_PERMISSION[tab]);
+const firstAllowedTab = (perms: string[] | null): MainTab => TAB_ORDER.find((t) => tabAllowed(t, perms)) || "settings";
+
 export default function HospitalDashboard() {
     const router = useRouter();
     const [stats, setStats] = useState<any>(null);
@@ -52,6 +71,15 @@ export default function HospitalDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [user, setUser] = useState<any>(null);
+
+    // Staff role and permissions from /stats. null = not known (full access), so the
+    // owner sees exactly what they saw before staff accounts existed.
+    const [staffRole, setStaffRole] = useState<string>("owner");
+    const [permissions, setPermissions] = useState<string[] | null>(null);
+    const permsRef = useRef<string[] | null>(null);
+    const firstTabChosen = useRef(false);
+    const can = (perm: string) => !permissions || permissions.includes(perm);
+    const lacks = (perm: string) => !!permsRef.current && !permsRef.current.includes(perm);
     
     // Analytics States
     const [cancellationRate, setCancellationRate] = useState<any>(null);
@@ -83,7 +111,7 @@ export default function HospitalDashboard() {
     const [groupDays, setGroupDays] = useState<string[]>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
 
     // Slot Management States
-    const [activeMainTab, setActiveMainTab] = useState<"appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription" | "settings">("appointments");
+    const [activeMainTab, setActiveMainTab] = useState<MainTab>("appointments");
     const [pendingSettlements, setPendingSettlements] = useState<any[]>([]);
     const [subscriptionData, setSubscriptionData] = useState<any>(null);
     const [followUpPrefillData, setFollowUpPrefillData] = useState<any>(null);
@@ -396,16 +424,33 @@ export default function HospitalDashboard() {
                 return;
             }
 
+            // A staff role without a section gets 403 for it: show that section as empty
+            const unless403 = (req: Promise<any>, fallback: any) =>
+                req.catch((err) => {
+                    if (err?.response?.status === 403) return { data: fallback };
+                    throw err;
+                });
+
             const [statsRes, doctorsRes, appointmentsRes, slotsRes, subRes] = await Promise.all([
                 api.get("/hospital/dashboard/stats"),
                 api.get("/hospital/dashboard/doctors"),
-                api.get("/hospital/dashboard/appointments"),
+                lacks("appointments") ? Promise.resolve({ data: [] }) : unless403(api.get("/hospital/dashboard/appointments"), []),
                 api.get("/hospital/dashboard/slots"),
-                api.get("/hospital/dashboard/subscription").catch(err => {
-                    console.error("Failed to load subscription in dashboard", err);
+                lacks("planView") ? Promise.resolve({ data: null }) : api.get("/hospital/dashboard/subscription").catch(err => {
+                    if (err?.response?.status !== 403) console.error("Failed to load subscription in dashboard", err);
                     return { data: null };
                 })
             ]);
+
+            const perms: string[] | null = Array.isArray(statsRes.data?.permissions) ? statsRes.data.permissions : null;
+            permsRef.current = perms;
+            setPermissions(perms);
+            setStaffRole(statsRes.data?.staffRole || "owner");
+            // First visit: open a tab this role can use (doctors -> Appointments, accounts -> Payments)
+            if (!firstTabChosen.current) {
+                firstTabChosen.current = true;
+                setActiveMainTab((cur) => (tabAllowed(cur, perms) ? cur : firstAllowedTab(perms)));
+            }
 
             setStats(statsRes.data);
             setDoctors(doctorsRes.data);
@@ -416,7 +461,7 @@ export default function HospitalDashboard() {
             }
 
             // Fetch pending settlements for instant notification banner and badge
-            api.get("/settlements/hospital/history").then((res) => {
+            if (!lacks("settlements")) api.get("/settlements/hospital/history").then((res) => {
                 if (res.data?.success) {
                     const pending = (res.data.settlements || []).filter((s: any) => s.status === 'Awaiting Hospital Confirmation');
                     setPendingSettlements(pending);
@@ -429,7 +474,7 @@ export default function HospitalDashboard() {
                 return;
             }
             if (err.response?.status === 403) {
-                setError("Access Denied. Hospital account required.");
+                setError(err.response?.data?.message || "Access Denied. Hospital account required.");
             } else {
                 setError("Failed to load dashboard data.");
             }
@@ -443,7 +488,7 @@ export default function HospitalDashboard() {
     // socket updates don't work on the serverless backend, so poll instead.
     const refreshAppointments = useCallback(async () => {
         if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-        if (!getToken()) return;
+        if (!getToken() || lacks("appointments")) return;
         try {
             const [appointmentsRes, slotsRes] = await Promise.all([
                 api.get("/hospital/dashboard/appointments"),
@@ -469,7 +514,7 @@ export default function HospitalDashboard() {
     const fetchAnalytics = useCallback(async () => {
         try {
             const token = getToken();
-            if (!token) return;
+            if (!token || lacks("appointments")) return;
             const rateRes = await api.get("/hospital/dashboard/analytics/cancellation-rate");
             setCancellationRate(rateRes.data);
         } catch (err) {
@@ -491,8 +536,8 @@ export default function HospitalDashboard() {
                 setActiveMainTab(tab as any);
             }
         }
-        fetchData();
-        fetchAnalytics();
+        // Analytics after the first load, once the role's permissions are known
+        fetchData().then(() => fetchAnalytics());
 
         const interval = setInterval(() => {
             fetchAnalytics();
@@ -500,6 +545,17 @@ export default function HospitalDashboard() {
 
         return () => clearInterval(interval);
     }, [fetchData, fetchAnalytics, router]);
+
+    // Friendly notice when the server refuses an action for this staff role
+    useEffect(() => {
+        const onForbidden = (e: Event) => {
+            const msg = (e as CustomEvent).detail;
+            setToast({ message: typeof msg === "string" && msg ? msg : "Your role does not have access to this.", type: "error" });
+            setTimeout(() => setToast(null), 3500);
+        };
+        window.addEventListener("pillora:forbidden", onForbidden);
+        return () => window.removeEventListener("pillora:forbidden", onForbidden);
+    }, []);
 
     useEffect(() => {
         if (stats?.stats?.hospital?._id) {
@@ -837,7 +893,7 @@ export default function HospitalDashboard() {
         <span className={`h-2 w-2 shrink-0 rounded-full ${cls}`} role="img" aria-label={label} />
     );
 
-    const navItems: { id: typeof activeMainTab; label: string; short: string; icon: React.ReactNode; badge?: React.ReactNode }[] = [
+    const allNavItems: { id: MainTab; label: string; short: string; icon: React.ReactNode; badge?: React.ReactNode }[] = [
         { id: "appointments", label: "Appointments", short: "Appointments", icon: <LayoutDashboard className="w-[18px] h-[18px]" /> },
         {
             id: "slots", label: "Slot management", short: "Slots", icon: <CalendarClock className="w-[18px] h-[18px]" />,
@@ -863,6 +919,9 @@ export default function HospitalDashboard() {
         },
         { id: "settings", label: "Settings", short: "Settings", icon: <Settings className="w-[18px] h-[18px]" /> },
     ];
+    const navItems = allNavItems.filter((item) => can(TAB_PERMISSION[item.id]));
+    // Never render a section the role can't open (e.g. a ?tab= link or an in-page shortcut)
+    const showTab = (tab: MainTab) => activeMainTab === tab && can(TAB_PERMISSION[tab]);
 
     const hasPlanBenefits = hospitalDoc?.is_featured || hospitalDoc?.has_custom_page || hospitalDoc?.has_govt_schemes || hospitalDoc?.is_spotlight || hospitalDoc?.priority_support;
     const planBenefits = (
@@ -894,7 +953,7 @@ export default function HospitalDashboard() {
         </div>
     );
 
-    const quickSlotCard = isSelfManaged ? (
+    const quickSlotCard = isSelfManaged && can("doctorsSlots") ? (
         <section className="ui-card p-5 sm:p-6" aria-labelledby="quick-slot-heading">
             <div className="flex items-start gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -1008,6 +1067,11 @@ export default function HospitalDashboard() {
                                 {hospitalName || "Hospital Command Center"}
                             </h1>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
+                                {staffRole !== "owner" && (
+                                    <span className="ui-badge border-slate-300 bg-white text-slate-700" title="Your staff role at this hospital">
+                                        <User className="h-3 w-3" /> {ROLE_LABELS[staffRole] || staffRole}
+                                    </span>
+                                )}
                                 <span className="ui-badge border-blue-200 bg-blue-50 text-blue-700">
                                     {planLabel(hospitalDoc?.plan)} plan
                                 </span>
@@ -1032,7 +1096,7 @@ export default function HospitalDashboard() {
                                 </button>
                             </div>
                         </div>
-                        {isSelfManaged && (
+                        {isSelfManaged && can("appointments") && (
                             <button
                                 onClick={() => setShowManualBooking(true)}
                                 className="ui-btn-success w-full sm:w-auto shrink-0 min-h-[44px]"
@@ -1082,7 +1146,7 @@ export default function HospitalDashboard() {
                     )}
 
                     {/* Action Required Banner for Pending Settlement Payouts */}
-                    {pendingSettlements.length > 0 && activeMainTab !== "settlements" && (
+                    {pendingSettlements.length > 0 && activeMainTab !== "settlements" && can("settlements") && (
                         <motion.div
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -1114,24 +1178,24 @@ export default function HospitalDashboard() {
                     )}
 
                     {/* Low WhatsApp messages / AI minutes warning (hidden when there's enough left) */}
-                    {activeMainTab !== "subscription" && <UsageWarningBanner onOpen={() => setActiveMainTab("subscription")} />}
+                    {activeMainTab !== "subscription" && can("planView") && <UsageWarningBanner onOpen={() => setActiveMainTab("subscription")} canBuy={can("planPurchase")} />}
 
-                    {activeMainTab === "patients" && (
-                        <PatientSearchAdmin />
+                    {showTab("patients") && (
+                        <PatientSearchAdmin canPay={can("payments")} canFollowUp={can("followups")} />
                     )}
 
-                    {activeMainTab === "payments" && (
+                    {showTab("payments") && (
                         <PaymentAnalytics doctors={doctors} />
                     )}
 
-                    {activeMainTab === "settlements" && (
+                    {showTab("settlements") && (
                         <HospitalSettlements
                             hospitalId={stats?.stats?.hospital?._id || stats?.hospital?._id}
                             trialEndDate={stats?.stats?.hospital?.trialEndDate || stats?.hospital?.trialEndDate}
                         />
                     )}
 
-                    {activeMainTab === "followups" && (
+                    {showTab("followups") && (
                         <FollowUpRemindersAdmin
                             doctors={doctors}
                             prefillData={followUpPrefillData}
@@ -1139,28 +1203,30 @@ export default function HospitalDashboard() {
                         />
                     )}
 
-                    {activeMainTab === "subscription" && (
+                    {showTab("subscription") && (
                         <div className="space-y-6">
                             <div className="lg:hidden">{planBenefits}</div>
-                            <UsagePanel />
+                            <UsagePanel canBuy={can("planPurchase")} />
                             <HospitalSubscriptionDashboard />
                         </div>
                     )}
 
-                    {activeMainTab === "settings" && (
+                    {showTab("settings") && (
                         <HospitalSettingsModule
                             hospital={stats?.hospital || stats?.stats?.hospital}
                             user={user}
+                            permissions={permissions}
+                            staffRole={staffRole}
                             onProfileUpdated={fetchData}
                             onNavigateTab={(tab: string) => {
-                                if (["appointments", "slots", "patients", "payments", "settlements", "followups", "subscription", "settings"].includes(tab)) {
-                                    setActiveMainTab(tab as any);
+                                if (TAB_ORDER.includes(tab as MainTab) && can(TAB_PERMISSION[tab as MainTab])) {
+                                    setActiveMainTab(tab as MainTab);
                                 }
                             }}
                         />
                     )}
 
-                    {activeMainTab === "appointments" && (
+                    {showTab("appointments") && (
                         <>
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
@@ -1326,7 +1392,7 @@ export default function HospitalDashboard() {
                                                                 {app.patientEmail || app.patient?.email}
                                                             </div>
                                                         )}
-                                                        {app.patient?._id && (
+                                                        {app.patient?._id && can("patients") && (
                                                             <button
                                                                 onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
                                                                 className="mt-1 text-xs font-semibold text-blue-600 hover:underline"
@@ -1377,7 +1443,7 @@ export default function HospitalDashboard() {
                                                                     <button onClick={() => handleStatusUpdate(app._id, 'completed')} className="ui-btn-success ui-btn-sm">
                                                                         <CheckCircle2 className="w-3.5 h-3.5" /> Complete
                                                                     </button>
-                                                                ) : app.status === 'completed' && (
+                                                                ) : app.status === 'completed' && can("payments") && (
                                                                     app.invoiceUrl ? (
                                                                         <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="ui-btn ui-btn-sm border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
                                                                             <FileText className="w-3.5 h-3.5" /> View invoice
@@ -1392,17 +1458,17 @@ export default function HospitalDashboard() {
 
                                                             <div className="flex flex-wrap items-center justify-end gap-1.5">
                                                                 {/* Schedule Follow-Up Reminder */}
-                                                                <button
+                                                                {can("followups") && <button
                                                                     type="button"
                                                                     onClick={() => handleScheduleFollowUpFromAppointment(app)}
                                                                     title="Schedule Patient Follow-Up Reminder"
                                                                     className="ui-btn ui-btn-sm border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
                                                                 >
                                                                     <Bell className="w-3.5 h-3.5" /> Follow-up
-                                                                </button>
+                                                                </button>}
 
-                                                                {/* Payment status badge — available for ALL statuses, labeled as manual */}
-                                                                <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
+                                                                {/* Payment status badge — available for ALL statuses, labeled as manual (payments roles only) */}
+                                                                {can("payments") && <div className={`relative payment-dropdown-wrapper ${openPaymentDropdown === app._id ? 'z-50' : 'z-0'}`}>
                                                                     <button
                                                                         onClick={(e) => {
                                                                             if (openPaymentDropdown === app._id) {
@@ -1470,7 +1536,7 @@ export default function HospitalDashboard() {
                                                                             ))}
                                                                         </div>
                                                                     )}
-                                                                </div>
+                                                                </div>}
                                                             </div>
                                                         </div>
                                                     </td>
@@ -1509,7 +1575,7 @@ export default function HospitalDashboard() {
                                                     {(app.patientEmail || app.patient?.email) && (
                                                         <p className="text-xs text-slate-400 mt-0.5 break-all">{app.patientEmail || app.patient?.email}</p>
                                                     )}
-                                                    {app.patient?._id && (
+                                                    {app.patient?._id && can("patients") && (
                                                         <button
                                                             onClick={() => handleViewRecords(app.patient._id, app.patient.name || app.patientName)}
                                                             className="mt-1 text-xs font-semibold text-blue-600 hover:underline min-h-[32px]"
@@ -1563,7 +1629,7 @@ export default function HospitalDashboard() {
                                                     <button type="button" onClick={() => handleStatusUpdate(app._id, 'completed')} className="ui-btn-success w-full min-h-[44px]">
                                                         <CheckCircle2 className="w-4 h-4" /> Complete consultation
                                                     </button>
-                                                ) : app.status === 'completed' && (
+                                                ) : app.status === 'completed' && can("payments") && (
                                                     app.invoiceUrl ? (
                                                         <a href={app.invoiceUrl} target="_blank" rel="noreferrer" className="ui-btn w-full min-h-[44px] bg-emerald-50 text-emerald-700 border border-emerald-100">
                                                             <FileText className="w-4 h-4" /> View invoice
@@ -1577,16 +1643,16 @@ export default function HospitalDashboard() {
 
                                                 <div className="grid grid-cols-2 gap-2">
                                                     {/* Schedule Follow-Up Reminder — Mobile */}
-                                                    <button
+                                                    {can("followups") && <button
                                                         type="button"
                                                         onClick={() => handleScheduleFollowUpFromAppointment(app)}
                                                         className="ui-btn min-h-[44px] px-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
                                                     >
                                                         <Bell className="w-4 h-4" /> Follow-up
-                                                    </button>
+                                                    </button>}
 
-                                                    {/* Payment status — ALL statuses */}
-                                                    <div className="relative">
+                                                    {/* Payment status — ALL statuses (payments roles only) */}
+                                                    {can("payments") && <div className="relative">
                                                         <select
                                                             value={app.paymentStatus || 'unpaid'}
                                                             disabled={paymentUpdatingId === app._id}
@@ -1600,7 +1666,7 @@ export default function HospitalDashboard() {
                                                             <option value="waived">Waive fee</option>
                                                         </select>
                                                         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none w-4 h-4 opacity-60" />
-                                                    </div>
+                                                    </div>}
                                                 </div>
                                             </div>
                                         </div>
@@ -1715,7 +1781,7 @@ export default function HospitalDashboard() {
                                                 Specialty groups
                                             </button>
                                         </div>
-                                        {isSelfManaged && (
+                                        {isSelfManaged && can("doctorsSlots") && (
                                             <button
                                                 onClick={() => doctorTab === "individual" ? setShowAddDoctor(true) : setShowAddSpecialtyGroup(true)}
                                                 className="ui-btn-primary"
@@ -1761,7 +1827,7 @@ export default function HospitalDashboard() {
 
                                             <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                                                 <span className="text-sm font-semibold text-emerald-600">₹{doc.fee} / visit</span>
-                                                {isSelfManaged && (
+                                                {isSelfManaged && can("doctorsSlots") && (
                                                     <div className="flex items-center gap-1.5">
                                                         <button
                                                             onClick={() => toggleDoctorStatus(doc)}
@@ -1799,7 +1865,7 @@ export default function HospitalDashboard() {
                         </>
                     )}
 
-                    {activeMainTab === "slots" && (
+                    {showTab("slots") && (
                         /* SLOT MANAGEMENT SECTION */
                         <>
                             {/* Subscription restriction warning banner */}
@@ -2314,15 +2380,15 @@ export default function HospitalDashboard() {
                             <Field label="Appointment date">
                                 <input required type="date" min={todayIST()} value={manualBookingDate} onChange={e => { setManualBookingDate(e.target.value); setManualSlotId(""); }} className="ui-input" />
                             </Field>
-                            <Field label="Clinic payment status">
+                            {can("payments") && <Field label="Clinic payment status">
                                 <select value={manualPaymentStatus} onChange={e => setManualPaymentStatus(e.target.value)} className="ui-input">
                                     <option value="pending">Pending Payment</option>
                                     <option value="paid">Paid (Collected at Hospital)</option>
                                 </select>
-                            </Field>
+                            </Field>}
                         </div>
 
-                        {manualPaymentStatus === "paid" && (
+                        {manualPaymentStatus === "paid" && can("payments") && (
                             <Field label="Payment method">
                                 <select value={manualPaymentMethod} onChange={e => setManualPaymentMethod(e.target.value)} className="ui-input">
                                     <option value="cash">Cash Collection</option>

@@ -27,16 +27,43 @@ type SettingsSection =
 interface HospitalSettingsModuleProps {
     hospital?: any;
     user?: any;
+    /** Staff permissions from /hospital/dashboard/stats; null/undefined = full access (owner). */
+    permissions?: string[] | null;
+    staffRole?: string;
     onProfileUpdated?: () => void;
     onNavigateTab?: (tab: string) => void;
 }
 
+// Which permission each settings section needs (the server enforces the same rules).
+const SECTION_PERMISSIONS: Record<SettingsSection, string[]> = {
+    profile: ["hospitalSettings"],
+    staff: ["staffManage", "doctorsSlots"],
+    appointments: ["hospitalSettings"],
+    payments: ["bankDetails"],
+    notifications: ["hospitalSettings"],
+    security: ["self"],
+    reports: ["settlements"],
+    support: ["self"],
+};
+
+// Staff roles the owner can give (the owner is always the hospital's own login).
+const STAFF_ROLE_OPTIONS = [
+    { value: "administrator", label: "Administrator", desc: "Everything except bank details, buying packs and staff accounts" },
+    { value: "receptionist", label: "Receptionist", desc: "Appointments, walk-ins, patient records and follow-ups" },
+    { value: "doctor", label: "Doctor", desc: "Appointments and patient records" },
+    { value: "accounts", label: "Accounts", desc: "Payments, invoices, settlements and reports" },
+];
+
 export default function HospitalSettingsModule({
     hospital: initialHospital,
     user,
+    permissions,
+    staffRole,
     onProfileUpdated,
     onNavigateTab
 }: HospitalSettingsModuleProps) {
+    const can = (perm: string) => !permissions || permissions.includes(perm);
+    const sectionAllowed = (sec: SettingsSection) => SECTION_PERMISSIONS[sec].some(can);
     const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
     const [loading, setLoading] = useState<boolean>(true);
     const [saving, setSaving] = useState<boolean>(false);
@@ -118,6 +145,19 @@ export default function HospitalSettingsModule({
         setToast({ message, type });
         setTimeout(() => setToast(null), 4000);
     };
+
+    // Open on a section this staff role can use (owners keep "Hospital profile")
+    const permissionsKey = permissions ? permissions.join(",") : "all";
+    useEffect(() => {
+        const allowed = (sec: SettingsSection) =>
+            !permissions || SECTION_PERMISSIONS[sec].some((p) => permissions.includes(p));
+        if (!allowed(activeSection)) {
+            const first = (Object.keys(SECTION_PERMISSIONS) as SettingsSection[]).find(allowed);
+            if (first) setActiveSection(first);
+        }
+        if (permissions && !permissions.includes("staffManage") && staffSubTab !== "doctors") setStaffSubTab("doctors");
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [permissionsKey]);
 
     // 1. Fetch All Settings Data from Backend
     const fetchSettings = useCallback(async () => {
@@ -400,11 +440,24 @@ export default function HospitalSettingsModule({
         try {
             const res = await api.put(`/hospital/settings/staff/${staffId}`, { isActive: !currentStatus });
             if (res.data?.success) {
-                showToastMsg(`Staff account ${!currentStatus ? 'activated' : 'deactivated'}`);
+                showToastMsg(!currentStatus ? "Staff account activated" : "Staff account deactivated. They have been signed out.");
                 fetchStaffAndDoctors();
             }
         } catch (err: any) {
             showToastMsg(err.response?.data?.message || "Failed to update staff status", "error");
+        }
+    };
+
+    // Handle Staff Role Change (owner row cannot be changed; the server refuses it too)
+    const handleChangeStaffRole = async (staffId: string, role: string) => {
+        try {
+            const res = await api.put(`/hospital/settings/staff/${staffId}`, { role });
+            if (res.data?.success) {
+                showToastMsg(`Role changed to ${STAFF_ROLE_OPTIONS.find((r) => r.value === role)?.label || role}`);
+                fetchStaffAndDoctors();
+            }
+        } catch (err: any) {
+            showToastMsg(err.response?.data?.message || "Failed to change role", "error");
         }
     };
 
@@ -559,7 +612,7 @@ export default function HospitalSettingsModule({
         { id: "security" as SettingsSection, label: "Security & login", icon: ShieldCheck, desc: "Password change, sessions, 2FA & login logs" },
         { id: "reports" as SettingsSection, label: "Reports & data", icon: FileSpreadsheet, desc: "One-click CSV/Excel downloads & export audit" },
         { id: "support" as SettingsSection, label: "Support & account", icon: LifeBuoy, desc: "Help tickets, subscription tier & account status" }
-    ];
+    ].filter((sec) => sectionAllowed(sec.id));
 
     if (loading) {
         return (
@@ -673,7 +726,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION A: HOSPITAL PROFILE */}
                     {/* ========================================================================= */}
-                    {activeSection === "profile" && (
+                    {activeSection === "profile" && sectionAllowed("profile") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
                                 <SectionHeading
@@ -995,7 +1048,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION B: DOCTORS & STAFF MANAGEMENT */}
                     {/* ========================================================================= */}
-                    {activeSection === "staff" && (
+                    {activeSection === "staff" && sectionAllowed("staff") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
                                 <SectionHeading
@@ -1004,7 +1057,7 @@ export default function HospitalSettingsModule({
                                     description="Manage medical staff, receptionist accounts, and role-based permissions."
                                 />
                                 <div className="flex items-center gap-2 empty:hidden sm:shrink-0">
-                                    {staffSubTab === "doctors" && (
+                                    {staffSubTab === "doctors" && can("doctorsSlots") && (
                                         <button
                                             type="button"
                                             onClick={() => setShowAddDoctorModal(true)}
@@ -1014,7 +1067,7 @@ export default function HospitalSettingsModule({
                                             <span>Add doctor</span>
                                         </button>
                                     )}
-                                    {staffSubTab === "staff" && (
+                                    {staffSubTab === "staff" && can("staffManage") && (
                                         <button
                                             type="button"
                                             onClick={() => setShowAddStaffModal(true)}
@@ -1038,6 +1091,7 @@ export default function HospitalSettingsModule({
                                     >
                                         Doctors directory ({doctorList.length})
                                     </button>
+                                    {can("staffManage") && (
                                     <button
                                         onClick={() => setStaffSubTab("staff")}
                                         className={`ui-segment whitespace-nowrap ${
@@ -1046,6 +1100,7 @@ export default function HospitalSettingsModule({
                                     >
                                         Staff accounts ({staffList.length})
                                     </button>
+                                    )}
                                     <button
                                         onClick={() => setStaffSubTab("rbac")}
                                         className={`ui-segment whitespace-nowrap ${
@@ -1100,7 +1155,7 @@ export default function HospitalSettingsModule({
                                                         </span>
                                                     </td>
                                                     <td className="ui-td text-center">
-                                                        <button
+                                                        {can("doctorsSlots") && <button
                                                             onClick={async () => {
                                                                 await api.put(`/hospital/dashboard/doctors/${doc._id}`, { is_active: !doc.is_active });
                                                                 fetchStaffAndDoctors();
@@ -1112,7 +1167,7 @@ export default function HospitalSettingsModule({
                                                             }`}
                                                         >
                                                             {doc.is_active ? "Deactivate" : "Activate"}
-                                                        </button>
+                                                        </button>}
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1122,7 +1177,7 @@ export default function HospitalSettingsModule({
                             )}
 
                             {/* 2. Staff Accounts Table */}
-                            {staffSubTab === "staff" && (
+                            {staffSubTab === "staff" && can("staffManage") && (
                                 <div className="overflow-x-auto rounded-xl border border-slate-200">
                                     <table className="w-full min-w-[600px] text-left">
                                         <thead>
@@ -1148,9 +1203,23 @@ export default function HospitalSettingsModule({
                                                         <div className="mt-0.5 text-xs text-slate-500">{st.phone || "No phone"}</div>
                                                     </td>
                                                     <td className="ui-td">
-                                                        <span className="ui-badge border-slate-200 bg-slate-50 capitalize text-slate-700">
-                                                            {st.role}
-                                                        </span>
+                                                        {st.isOwner ? (
+                                                            <span className="ui-badge border-slate-200 bg-slate-50 capitalize text-slate-700">
+                                                                Owner (full access)
+                                                            </span>
+                                                        ) : (
+                                                            <select
+                                                                value={st.role}
+                                                                onChange={(e) => handleChangeStaffRole(st._id, e.target.value)}
+                                                                aria-label={`Role for ${st.name}`}
+                                                                title={STAFF_ROLE_OPTIONS.find((r) => r.value === st.role)?.desc}
+                                                                className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm font-medium text-slate-700 outline-none hover:border-slate-300 focus:border-blue-500"
+                                                            >
+                                                                {STAFF_ROLE_OPTIONS.map((r) => (
+                                                                    <option key={r.value} value={r.value}>{r.label}</option>
+                                                                ))}
+                                                            </select>
+                                                        )}
                                                     </td>
                                                     <td className="ui-td text-center">
                                                         <span className={`ui-badge ${
@@ -1166,7 +1235,7 @@ export default function HospitalSettingsModule({
                                                                     onClick={() => handleToggleStaffStatus(st._id, st.isActive)}
                                                                     className="ui-btn-soft ui-btn-sm min-h-[36px]"
                                                                 >
-                                                                    {st.isActive ? "Disable" : "Enable"}
+                                                                    {st.isActive ? "Deactivate" : "Activate"}
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleDeleteStaff(st._id, st.name)}
@@ -1206,14 +1275,18 @@ export default function HospitalSettingsModule({
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
                                                 {[
-                                                    { area: "Full Facility Settings & Bank Details", roles: [true, false, false, false, false] },
-                                                    { area: "Doctor & Staff Account Management", roles: [true, true, false, false, false] },
-                                                    { area: "Slot Generation & Availability Rules", roles: [true, true, false, true, false] },
-                                                    { area: "Appointments & Walk-in Check-in", roles: [true, true, true, false, false] },
-                                                    { area: "Patient Clinical Notes & Prescriptions", roles: [true, true, false, true, false] },
-                                                    { area: "Cash / Online Balance Collection at Clinic", roles: [true, true, true, false, true] },
-                                                    { area: "Financial Reports & Settlement Approval", roles: [true, true, false, false, true] },
-                                                    { area: "Support Tickets & Closure Requests", roles: [true, true, false, false, false] }
+                                                    { area: "Appointments, walk-ins & check-in", roles: [true, true, true, true, false] },
+                                                    { area: "Patient records & notes", roles: [true, true, true, true, false] },
+                                                    { area: "Follow-up reminders", roles: [true, true, true, false, false] },
+                                                    { area: "Doctors & slot management", roles: [true, true, false, false, false] },
+                                                    { area: "Payments, invoices & collections", roles: [true, true, false, false, true] },
+                                                    { area: "Settlements & financial reports", roles: [true, true, false, false, true] },
+                                                    { area: "Plan & usage (view)", roles: [true, true, false, false, false] },
+                                                    { area: "Hospital profile, booking & notification settings", roles: [true, true, false, false, false] },
+                                                    { area: "Buy add-on packs", roles: [true, false, false, false, false] },
+                                                    { area: "Bank details", roles: [true, false, false, false, false] },
+                                                    { area: "Staff accounts", roles: [true, false, false, false, false] },
+                                                    { area: "Own password, support tickets", roles: [true, true, true, true, true] }
                                                 ].map((row, i) => (
                                                     <tr key={i} className="transition-colors hover:bg-slate-50/60">
                                                         <td className="ui-td align-middle font-medium text-slate-900">{row.area}</td>
@@ -1241,7 +1314,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION C: APPOINTMENT SETTINGS */}
                     {/* ========================================================================= */}
-                    {activeSection === "appointments" && (
+                    {activeSection === "appointments" && sectionAllowed("appointments") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
                                 <SectionHeading
@@ -1485,7 +1558,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION D: PAYMENT & BANK SETTINGS */}
                     {/* ========================================================================= */}
-                    {activeSection === "payments" && (
+                    {activeSection === "payments" && sectionAllowed("payments") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
                                 <SectionHeading
@@ -1602,7 +1675,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION E: NOTIFICATION SETTINGS */}
                     {/* ========================================================================= */}
-                    {activeSection === "notifications" && (
+                    {activeSection === "notifications" && sectionAllowed("notifications") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
                                 <SectionHeading
@@ -1696,7 +1769,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION F: SECURITY & LOGIN SETTINGS */}
                     {/* ========================================================================= */}
-                    {activeSection === "security" && (
+                    {activeSection === "security" && sectionAllowed("security") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="border-b border-slate-100 pb-5">
                                 <SectionHeading
@@ -1786,7 +1859,7 @@ export default function HospitalSettingsModule({
 
                                 {/* 2FA & Active Sessions */}
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
+                                    {can("hospitalSettings") && <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
                                         <div className="min-w-0">
                                             <h4 className="text-sm font-semibold text-slate-900">Two-factor authentication (2FA)</h4>
                                             <p className="mt-0.5 text-xs leading-relaxed text-slate-500">Require additional security code upon login</p>
@@ -1802,7 +1875,7 @@ export default function HospitalSettingsModule({
                                         >
                                             {securityData?.twoFactorAuthEnabled ? "Enabled" : "Disabled"}
                                         </button>
-                                    </div>
+                                    </div>}
 
                                     <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 sm:p-5">
                                         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -1839,7 +1912,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION G: REPORTS & DATA MANAGEMENT */}
                     {/* ========================================================================= */}
-                    {activeSection === "reports" && (
+                    {activeSection === "reports" && sectionAllowed("reports") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="space-y-4 border-b border-slate-100 pb-5">
                                 <SectionHeading
@@ -1903,7 +1976,7 @@ export default function HospitalSettingsModule({
                     {/* ========================================================================= */}
                     {/* SECTION H: SUPPORT & ACCOUNT MANAGEMENT */}
                     {/* ========================================================================= */}
-                    {activeSection === "support" && (
+                    {activeSection === "support" && sectionAllowed("support") && (
                         <section className="ui-card space-y-6 p-5 sm:p-6">
                             <div className="border-b border-slate-100 pb-5">
                                 <SectionHeading
@@ -2059,7 +2132,7 @@ export default function HospitalSettingsModule({
                                         <span className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-800">
                                             Request pending review
                                         </span>
-                                    ) : (
+                                    ) : can("staffManage") ? (
                                         <button
                                             type="button"
                                             onClick={() => setShowDeactivateModal(true)}
@@ -2067,6 +2140,8 @@ export default function HospitalSettingsModule({
                                         >
                                             Request deactivation
                                         </button>
+                                    ) : (
+                                        <span className="text-sm text-slate-500">Only the hospital owner can request this.</span>
                                     )}
                                 </div>
                             </div>
@@ -2322,12 +2397,13 @@ export default function HospitalSettingsModule({
                                         onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
                                         className="ui-input"
                                     >
-                                        <option value="receptionist">Receptionist (Appointments & Check-in)</option>
-                                        <option value="administrator">Administrator (Operations & Staff)</option>
-                                        <option value="doctor">Doctor (Patient Care & Notes)</option>
-                                        <option value="accounts">Accounts Staff (Billing & Reports)</option>
-                                        <option value="owner">Hospital Owner (Full Access)</option>
+                                        {STAFF_ROLE_OPTIONS.map((r) => (
+                                            <option key={r.value} value={r.value}>{r.label}</option>
+                                        ))}
                                     </select>
+                                    <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
+                                        {STAFF_ROLE_OPTIONS.find((r) => r.value === newStaff.role)?.desc}
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="ui-label">Login password <span className="text-rose-500">*</span></label>

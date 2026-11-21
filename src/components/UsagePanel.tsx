@@ -75,7 +75,7 @@ function Meter({ used, total, warn }: { used: number; total: number; warn?: bool
 }
 
 /** Small banner shown on every tab when messages or AI minutes are running low. */
-export function UsageWarningBanner({ onOpen }: { onOpen: () => void }) {
+export function UsageWarningBanner({ onOpen, canBuy = true }: { onOpen: () => void; canBuy?: boolean }) {
     const { usage } = useUsage();
     if (!usage) return null;
     const waOut = usage.whatsapp.available === 0;
@@ -95,13 +95,14 @@ export function UsageWarningBanner({ onOpen }: { onOpen: () => void }) {
                 <p className="text-sm font-medium leading-relaxed">{items.join(" · ")}</p>
             </div>
             <button onClick={onOpen} className="ui-btn-secondary w-full sm:w-auto shrink-0">
-                Buy more
+                {canBuy ? "Buy more" : "View usage"}
             </button>
         </div>
     );
 }
 
-export default function UsagePanel() {
+/** canBuy: only the hospital owner can buy add-on packs (server enforces planPurchase too). */
+export default function UsagePanel({ canBuy = true }: { canBuy?: boolean } = {}) {
     const { usage, error, reload } = useUsage();
     const [buying, setBuying] = useState<string | null>(null);
     const [notice, setNotice] = useState("");
@@ -252,7 +253,8 @@ export default function UsagePanel() {
                 </div>
             )}
 
-            {/* Buy more */}
+            {/* Buy more (owner only) */}
+            {canBuy ? (
             <div className="ui-card p-5 sm:p-6">
                 <h3 className="ui-title">Buy more</h3>
                 <p className="ui-subtitle">Prices include 18% GST. Added instantly after payment.</p>
@@ -280,6 +282,9 @@ export default function UsagePanel() {
                 </div>
                 <p className="mt-4 flex items-start gap-1.5 text-xs leading-relaxed text-slate-500"><CheckCircle2 className="w-3.5 h-3.5 mt-0.5 shrink-0" /> Paying offline (UPI / bank)? Contact Pillora and we&apos;ll add the pack for you.</p>
             </div>
+            ) : (
+                <p className="ui-card p-4 text-sm text-slate-500">Only the hospital owner can buy add-on packs.</p>
+            )}
         </section>
     );
 }
