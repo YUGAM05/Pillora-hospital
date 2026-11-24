@@ -8,16 +8,18 @@ import {
     LifeBuoy, AlertTriangle, CheckCircle2, Lock, Key, LogOut,
     RefreshCw, Plus, Edit2, Trash2, Eye, EyeOff, Save, X,
     Phone, Mail, Globe, MapPin, Clock, Calendar, Check,
-    ShieldAlert, FileText, ArrowRight, Upload, Stethoscope, ChevronRight
+    ShieldAlert, FileText, ArrowRight, Upload, Stethoscope, ChevronRight, PhoneCall
 } from "lucide-react";
 import api from "@/lib/api";
 import { planLabel } from "@/lib/plans";
 import { SUPPORT_PHONE } from "@/content/marketing";
 import EditDoctorModal from "@/components/EditDoctorModal";
+import AiReceptionistSettings from "@/components/AiReceptionistSettings";
 
-type SettingsSection = 
-    | "profile" 
-    | "staff" 
+type SettingsSection =
+    | "profile"
+    | "ai"
+    | "staff"
     | "appointments" 
     | "payments" 
     | "security" 
@@ -37,6 +39,7 @@ interface HospitalSettingsModuleProps {
 // Which permission each settings section needs (the server enforces the same rules).
 const SECTION_PERMISSIONS: Record<SettingsSection, string[]> = {
     profile: ["hospitalSettings"],
+    ai: ["hospitalSettings"],
     staff: ["staffManage", "doctorsSlots"],
     appointments: ["hospitalSettings"],
     payments: ["bankDetails"],
@@ -613,6 +616,7 @@ export default function HospitalSettingsModule({
 
     const sectionsNav = [
         { id: "profile" as SettingsSection, label: "Hospital profile", icon: Building2, desc: "Name, branding, location, hours & identity" },
+        { id: "ai" as SettingsSection, label: "AI receptionist", icon: PhoneCall, desc: "Greeting, language & information for your AI phone line" },
         { id: "staff" as SettingsSection, label: "Doctors & staff", icon: Users, desc: "Doctor roster, employee accounts & RBAC roles" },
         { id: "appointments" as SettingsSection, label: "Appointment settings", icon: CalendarClock, desc: "Slot capacity, booking window & holidays" },
         { id: "payments" as SettingsSection, label: "Payment & bank", icon: Landmark, desc: "Masked bank account, payout ledger & 2.36% charges" },
@@ -1051,6 +1055,9 @@ export default function HospitalSettingsModule({
                             </form>
                         </section>
                     )}
+
+                    {/* AI RECEPTIONIST: greeting name, language and information for the AI phone line */}
+                    {activeSection === "ai" && sectionAllowed("ai") && <AiReceptionistSettings />}
 
                     {/* ========================================================================= */}
                     {/* SECTION B: DOCTORS & STAFF MANAGEMENT */}

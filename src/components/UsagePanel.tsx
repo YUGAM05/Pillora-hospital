@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
+import { formatAiNumber } from "@/lib/aiNumber";
 import { MessageCircle, PhoneCall, Package, CheckCircle2, AlertTriangle, Loader2, Stethoscope } from "lucide-react";
 
 type Usage = {
@@ -23,6 +24,8 @@ type Usage = {
     };
     packs: { id: string; kind: "whatsapp" | "ai_minutes"; label: string; quantity: number; remaining: number; status: string; source: string; expiresAt?: string }[];
     catalog: { code: string; kind: "whatsapp" | "ai_minutes"; quantity: number; price: number; gst: number; total: number; label: string }[];
+    /** The hospital's AI receptionist phone number(s), linked by Pillora. */
+    voiceNumbers?: { number: string; enabled: boolean }[];
 };
 
 const fmt = (n: number) => n.toLocaleString("en-IN");
@@ -228,6 +231,19 @@ export default function UsagePanel({ canBuy = true }: { canBuy?: boolean } = {})
                                 {ai.overageMinutes > 0 && <li className="text-amber-700">{fmt(ai.overageMinutes)} min over the allowance</li>}
                             </ul>
                         </>
+                    )}
+                    {(usage.voiceNumbers?.length ?? 0) > 0 && (
+                        <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-600">
+                            {usage.voiceNumbers!.map((n) => (
+                                <li key={n.number} className="flex flex-wrap items-center gap-1.5">
+                                    AI number
+                                    <a href={`tel:+${n.number}`} className="font-semibold tabular-nums text-slate-900 hover:text-blue-700">{formatAiNumber(n.number)}</a>
+                                    {n.enabled
+                                        ? <span className="ui-badge border-emerald-200 bg-emerald-50 text-emerald-700">On</span>
+                                        : <span className="ui-badge border-amber-200 bg-amber-50 text-amber-700">Paused</span>}
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
             </div>
