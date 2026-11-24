@@ -41,7 +41,8 @@ api.interceptors.response.use(
                 }
             }
             // A staff role without access to this area: let the page show a friendly notice
-            if (error.response?.status === 403 && error.response?.data?.code === 'ROLE_FORBIDDEN') {
+            // (not for background loads that pass { quietForbidden: true } and handle the 403 themselves)
+            if (error.response?.status === 403 && error.response?.data?.code === 'ROLE_FORBIDDEN' && !(error.config as any)?.quietForbidden) {
                 window.dispatchEvent(new CustomEvent('pillora:forbidden', { detail: error.response.data.message }));
             }
             if (error.response?.status === 403 && error.response?.data?.code === 'PASSWORD_RESET_REQUIRED') {

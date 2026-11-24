@@ -19,6 +19,7 @@ import PaymentAnalytics from "@/components/PaymentAnalytics";
 import PaymentsAndCollections from "@/components/PaymentsAndCollections";
 import HospitalSettlements from "@/components/HospitalSettlements";
 import FollowUpRemindersAdmin from "@/components/FollowUpRemindersAdmin";
+import AiCallsPanel from "@/components/AiCallsPanel";
 import HospitalSubscriptionDashboard from "@/components/HospitalSubscriptionDashboard";
 import UsagePanel, { UsageWarningBanner } from "@/components/UsagePanel";
 import HospitalSettingsModule from "@/components/HospitalSettingsModule";
@@ -46,7 +47,7 @@ const csvCell = (value: unknown): string => {
 };
 
 // Hospital staff accounts: which permission each dashboard tab needs (enforced on the server too).
-type MainTab = "appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "subscription" | "settings";
+type MainTab = "appointments" | "slots" | "patients" | "payments" | "settlements" | "followups" | "aicalls" | "subscription" | "settings";
 const TAB_PERMISSION: Record<MainTab, string> = {
     appointments: "appointments",
     slots: "doctorsSlots",
@@ -54,6 +55,7 @@ const TAB_PERMISSION: Record<MainTab, string> = {
     payments: "payments",
     settlements: "settlements",
     followups: "followups",
+    aicalls: "followups", // call-backs are reception work: owner, administrator, receptionist
     subscription: "planView",
     settings: "self",
 };
@@ -449,12 +451,15 @@ export default function HospitalDashboard() {
                     throw err;
                 });
 
+            // On the first load the role isn't known yet, so these two may get 403:
+            // handled here, so no "your role does not have access" notice for them.
+            const quiet = { quietForbidden: true } as any;
             const [statsRes, doctorsRes, appointmentsRes, slotsRes, subRes] = await Promise.all([
                 api.get("/hospital/dashboard/stats"),
                 api.get("/hospital/dashboard/doctors"),
-                lacks("appointments") ? Promise.resolve({ data: [] }) : unless403(api.get("/hospital/dashboard/appointments"), []),
+                lacks("appointments") ? Promise.resolve({ data: [] }) : unless403(api.get("/hospital/dashboard/appointments", quiet), []),
                 api.get("/hospital/dashboard/slots"),
-                lacks("planView") ? Promise.resolve({ data: null }) : api.get("/hospital/dashboard/subscription").catch(err => {
+                lacks("planView") ? Promise.resolve({ data: null }) : api.get("/hospital/dashboard/subscription", quiet).catch(err => {
                     if (err?.response?.status !== 403) console.error("Failed to load subscription in dashboard", err);
                     return { data: null };
                 })
@@ -550,7 +555,7 @@ export default function HospitalDashboard() {
         if (typeof window !== "undefined") {
             const params = new URLSearchParams(window.location.search);
             const tab = params.get("tab");
-            if (tab && ["appointments", "slots", "patients", "payments", "settlements", "followups", "subscription", "settings"].includes(tab)) {
+            if (tab && (TAB_ORDER as string[]).includes(tab)) {
                 setActiveMainTab(tab as any);
             }
         }
@@ -961,6 +966,7 @@ export default function HospitalDashboard() {
             ) : null,
         },
         { id: "followups", label: "Follow-up reminders", short: "Follow-ups", icon: <BellRing className="w-[18px] h-[18px]" /> },
+        { id: "aicalls", label: "AI calls", short: "AI calls", icon: <PhoneCall className="w-[18px] h-[18px]" /> },
         {
             id: "subscription", label: "Plan & usage", short: "Plan & usage", icon: <CreditCard className="w-[18px] h-[18px]" />,
             badge: subFlags.isExpired ? dot("bg-rose-500 ring-4 ring-rose-500/20", "Subscription expired")
@@ -1253,6 +1259,8 @@ export default function HospitalDashboard() {
                             onClosePrefillModal={() => setFollowUpPrefillData(null)}
                         />
                     )}
+
+                    {showTab("aicalls") && <AiCallsPanel canSeePlan={can("planView")} />}
 
                     {showTab("subscription") && (
                         <div className="space-y-6">
